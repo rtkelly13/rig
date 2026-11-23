@@ -41,6 +41,12 @@ public sealed record PowerPolicy(string Ac, string Battery);
 /// <param name="BaseSize">The size in points.</param>
 public sealed record FontPolicy(int BaseSize);
 
+/// <summary>Hyprland's window spacing, in px: the gaps between windows, around them at the screen edge, and their border.</summary>
+/// <param name="GapsIn">Hyprland's <c>general:gaps_in</c>; Omarchy's default is 5.</param>
+/// <param name="GapsOut">Hyprland's <c>general:gaps_out</c>; Omarchy's default is 10.</param>
+/// <param name="BorderSize">Hyprland's <c>general:border_size</c>; Omarchy's default is 2.</param>
+public sealed record HyprlandPolicy(int GapsIn, int GapsOut, int BorderSize);
+
 /// <summary>
 /// What <c>config/omarchy.json</c> declares for this machine. A section left out is not checked or written.
 /// </summary>
@@ -51,6 +57,7 @@ public sealed record FontPolicy(int BaseSize);
 /// <param name="Power">The AC and battery power profiles, or null to leave them alone.</param>
 /// <param name="Font">The shell's base font size, or null to leave it alone.</param>
 /// <param name="Shell">Settings deep-merged into <c>shell.json</c>, such as <c>bar</c>, <c>dock</c> and <c>plugins</c>.</param>
+/// <param name="Hyprland">Hyprland's gaps and border, or null to leave them alone.</param>
 public sealed record OmarchyPolicy(
     IdlePolicy? Idle,
     SuspendPolicy? Suspend,
@@ -58,7 +65,8 @@ public sealed record OmarchyPolicy(
     string? Theme,
     PowerPolicy? Power,
     FontPolicy? Font,
-    JsonObject? Shell)
+    JsonObject? Shell,
+    HyprlandPolicy? Hyprland = null)
 {
     /// <summary>The policy file's path under a rig checkout.</summary>
     public static readonly string RelativePath = Path.Join("config", "omarchy.json");
@@ -74,6 +82,9 @@ public sealed record OmarchyPolicy(
 
     /// <summary>The largest text size <c>omarchy display text size</c> accepts, in px.</summary>
     public const int MaxFontSize = 20;
+
+    /// <summary>The largest gap or border the policy accepts, in px.</summary>
+    public const int MaxSpacing = 100;
 
     /// <summary>Reads the policy file at <paramref name="path"/>.</summary>
     /// <exception cref="InvalidDataException">The file is malformed.</exception>
@@ -129,7 +140,13 @@ public sealed record OmarchyPolicy(
         config.Font is { } font
             ? new FontPolicy(RequiredInt(font.BaseSize, "font.base_size", source, MinFontSize, MaxFontSize))
             : null,
-        ShellPolicy(config.Shell, source));
+        ShellPolicy(config.Shell, source),
+        config.Hyprland is { } hyprland
+            ? new HyprlandPolicy(
+                RequiredInt(hyprland.GapsIn, "hyprland.gaps_in", source, 0, MaxSpacing),
+                RequiredInt(hyprland.GapsOut, "hyprland.gaps_out", source, 0, MaxSpacing),
+                RequiredInt(hyprland.BorderSize, "hyprland.border_size", source, 0, MaxSpacing))
+            : null);
 
     private static int RequiredInt(int? value, string path, string source, int minimum = 0, int maximum = MaxIdleSeconds) =>
         value is { } number && number >= minimum && number <= maximum

@@ -276,4 +276,62 @@ public sealed class OmarchySyncTests : IDisposable
         Assert.All(actions, action => Assert.True(action.Error));
         Assert.All(actions, action => Assert.Contains("not installed", action.Detail, StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Read_asks_hyprctl_for_the_live_spacing()
+    {
+        Install();
+        _ = _proc.Answer(new Ran(0, """{"option": "general:gaps_in", "css": "2 2 2 2", "set": true}""", string.Empty), "hyprctl", "getoption", "general:gaps_in");
+        _ = _proc.Answer(new Ran(0, """{"option": "general:gaps_out", "css": "5 5 5 5", "set": true}""", string.Empty), "hyprctl", "getoption", "general:gaps_out");
+        _ = _proc.Answer(new Ran(0, """{"option": "general:border_size", "int": 1, "set": true}""", string.Empty), "hyprctl", "getoption", "general:border_size");
+
+        Assert.Equal(new HyprlandSpacing("2", "5", "1"), OmarchyState.Read(Paths, _proc).Hyprland);
+    }
+
+    [Fact]
+    public void Read_without_a_running_hyprland_has_no_spacing()
+    {
+        Install();
+
+        Assert.Null(OmarchyState.Read(Paths, _proc).Hyprland);
+    }
+
+    [Fact]
+    public async Task Apply_appends_rigs_spacing_block_after_the_users_settings()
+    {
+        Install();
+        Write(Paths.HyprLookAndFeelFile, "-- mine\nhl.config({ decoration = { rounding = 8 } })\n");
+        var policy = OmarchyPolicy.Empty with { Hyprland = new HyprlandPolicy(2, 5, 1) };
+        var state = OmarchyState.Read(Paths, _proc) with { Hyprland = new HyprlandSpacing("5", "10", "2") };
+
+        var actions = await OmarchySync.ApplyAsync(policy, state, Paths, _proc, apply: true, Token);
+
+        Assert.Equal(3, actions.Count);
+        Assert.All(actions, action => Assert.Equal(OmarchySync.AppliedStatus, action.Status));
+        var text = await File.ReadAllTextAsync(Paths.HyprLookAndFeelFile, Token);
+        Assert.StartsWith("-- mine\nhl.config({ decoration = { rounding = 8 } })\n\n" + OmarchySync.HyprlandBlockBegin, text, StringComparison.Ordinal);
+        Assert.Contains("gaps_in = 2,", text, StringComparison.Ordinal);
+        Assert.Contains("gaps_out = 5,", text, StringComparison.Ordinal);
+        Assert.Contains("border_size = 1,", text, StringComparison.Ordinal);
+        Assert.EndsWith(OmarchySync.HyprlandBlockEnd + "\n", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Rewriting_the_block_replaces_it_and_keeps_what_surrounds_it()
+    {
+        var first = OmarchySync.WithHyprlandBlock("-- before\n", new HyprlandPolicy(2, 5, 1)) + "-- after\n";
+
+        var second = OmarchySync.WithHyprlandBlock(first, new HyprlandPolicy(0, 0, 0));
+
+        Assert.Equal(1, second.Split(OmarchySync.HyprlandBlockBegin).Length - 1);
+        Assert.Contains("gaps_out = 0,", second, StringComparison.Ordinal);
+        Assert.DoesNotContain("gaps_out = 5,", second, StringComparison.Ordinal);
+        Assert.StartsWith("-- before\n", second, StringComparison.Ordinal);
+        Assert.EndsWith("-- after\n", second, StringComparison.Ordinal);
+        Assert.Equal(second, OmarchySync.WithHyprlandBlock(second, new HyprlandPolicy(0, 0, 0)));
+    }
+
+    [Fact]
+    public void A_block_without_its_end_marker_is_refused() =>
+        Assert.Throws<InvalidDataException>(() => OmarchySync.WithHyprlandBlock(OmarchySync.HyprlandBlockBegin + "\n", new HyprlandPolicy(2, 5, 1)));
 }

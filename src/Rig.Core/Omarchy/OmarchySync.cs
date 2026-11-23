@@ -31,6 +31,12 @@ public static class OmarchySync
     /// <summary>The status of a change the apply could not write.</summary>
     public const string ErrorStatus = "error";
 
+    /// <summary>The line that opens rig's block in <c>looknfeel.lua</c>.</summary>
+    public const string HyprlandBlockBegin = "-- rig:omarchy:hyprland:begin (written by rig omarchy sync from config/omarchy.json; edit that instead)";
+
+    /// <summary>The line that closes rig's block in <c>looknfeel.lua</c>.</summary>
+    public const string HyprlandBlockEnd = "-- rig:omarchy:hyprland:end";
+
     /// <summary>Plans the differences, and with <paramref name="apply"/> writes them.</summary>
     /// <param name="policy">What the machine should look like.</param>
     /// <param name="state">What it looks like now.</param>
@@ -70,6 +76,7 @@ public static class OmarchySync
 
         var shell = Indexes(pending, action => action.Check.Area is "idle" or "shell");
         var font = Indexes(pending, action => action.Check.Area == "font");
+        var hyprland = Indexes(pending, action => action.Check.Area == "hyprland");
         var theme = Indexes(pending, action => action.Check.Area == "theme");
         var power = Indexes(pending, action => action.Check.Area == "power");
         var menu = Indexes(pending, action => action.Check.Area == "suspend" && action.Check.Setting == "menu");
@@ -78,6 +85,7 @@ public static class OmarchySync
 
         await SetAsync(pending, shell, apply, () => Task.FromResult(WriteShell(policy, paths))).ConfigureAwait(false);
         await SetAsync(pending, font, apply, () => SetTextSize(policy.Font!.BaseSize, proc, cancellationToken)).ConfigureAwait(false);
+        await SetAsync(pending, hyprland, apply, () => Task.FromResult(WriteHyprland(policy.Hyprland!, paths))).ConfigureAwait(false);
         await SetAsync(pending, theme, apply, () => SetTheme(policy.Theme!, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, power, apply, () => SetPower(policy.Power!, proc, cancellationToken)).ConfigureAwait(false);
         await SetAsync(pending, menu, apply, () => Task.FromResult(SetSuspendMenu(policy.Suspend!, paths))).ConfigureAwait(false);
@@ -92,6 +100,54 @@ public static class OmarchySync
     {
         ArgumentNullException.ThrowIfNull(suspend);
         return "[Login]\n" + OmarchyPlan.LogindContents(suspend);
+    }
+
+    /// <summary>
+    /// <paramref name="text"/> with rig's spacing block replaced, or appended when it has none. Appending puts it after
+    /// the user's own settings, and a later <c>hl.config</c> wins, so the policy holds.
+    /// </summary>
+    /// <param name="text">The current <c>looknfeel.lua</c>, or empty.</param>
+    /// <param name="hyprland">The spacing to write.</param>
+    /// <exception cref="InvalidDataException">The file has a begin marker without an end marker after it.</exception>
+    public static string WithHyprlandBlock(string text, HyprlandPolicy hyprland)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(hyprland);
+        var block = string.Create(CultureInfo.InvariantCulture, $$"""
+            {{HyprlandBlockBegin}}
+            hl.config({
+              general = {
+                gaps_in = {{hyprland.GapsIn}},
+                gaps_out = {{hyprland.GapsOut}},
+                border_size = {{hyprland.BorderSize}},
+              },
+            })
+            {{HyprlandBlockEnd}}
+            """).ReplaceLineEndings("\n");
+        var begin = text.IndexOf(HyprlandBlockBegin, StringComparison.Ordinal);
+        if (begin < 0)
+        {
+            var body = text.TrimEnd('\n');
+            return (body.Length == 0 ? string.Empty : body + "\n\n") + block + "\n";
+        }
+
+        var end = text.IndexOf(HyprlandBlockEnd, begin, StringComparison.Ordinal);
+        if (end < 0)
+        {
+            throw new InvalidDataException($"rig's block in looknfeel.lua has no closing {HyprlandBlockEnd} line");
+        }
+
+        return text[..begin] + block + text[(end + HyprlandBlockEnd.Length)..];
+    }
+
+    // Hyprland reloads its config when a sourced file is saved, so writing is enough.
+    private static (bool Ok, string Detail) WriteHyprland(HyprlandPolicy hyprland, OmarchyPaths paths)
+    {
+        var path = paths.HyprLookAndFeelFile;
+        var current = File.Exists(path) ? File.ReadAllText(path) : string.Empty;
+        EnsureParent(path);
+        File.WriteAllText(path, WithHyprlandBlock(current, hyprland));
+        return (true, $"wrote rig's block in {path}");
     }
 
     private static async Task SetAsync(

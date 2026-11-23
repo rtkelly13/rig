@@ -43,6 +43,9 @@ public sealed record OmarchyPaths(
     /// <summary>The shell's TOML settings, which hold the font size.</summary>
     public string ShellTomlFile => Path.Join(ConfigDir, "shell.toml");
 
+    /// <summary>The user's Hyprland look-and-feel file, <c>~/.config/hypr/looknfeel.lua</c>, which holds rig's spacing block.</summary>
+    public string HyprLookAndFeelFile => Path.Join(ConfigHome, "hypr", "looknfeel.lua");
+
     /// <summary>Omarchy's runtime state folder, <c>~/.local/state/omarchy</c>.</summary>
     public string StateDir => Path.Join(StateHome, "omarchy");
 

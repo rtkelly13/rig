@@ -34,7 +34,9 @@ such as `tokyo-night`, applied with `omarchy theme set`. | | `power.ac`, `power.
 remembers for AC and battery; applied with `omarchy powerprofiles set` and then `autodetect`. | | `font.base_size` |
 Omarchy's text size in px (9–20), read from `~/.config/omarchy/shell.toml` and applied with `omarchy display text size`,
 which also scales GTK and the terminal font to match. For overall density, change the monitor scale instead (see
-[Density](#density)). | | `shell` | Objects deep-merged into `~/.config/omarchy/shell.json`: `bar`, `dock`, `plugins`
+[Density](#density)). | | `hyprland.gaps_in`, `hyprland.gaps_out`, `hyprland.border_size` | Hyprland's window
+spacing in px (Omarchy's defaults are 5, 10 and 2; the policy uses 2, 5 and 1). Read live with `hyprctl getoption`
+and written as a marked block at the end of `~/.config/hypr/looknfeel.lua`, which Hyprland reloads on save. | | `shell` | Objects deep-merged into `~/.config/omarchy/shell.json`: `bar`, `dock`, `plugins`
 and so on. Objects merge key by key; arrays and scalars replace. Keys the policy omits are kept. Do not declare
 `shell.idle`: use the top-level `idle` section. |
 
@@ -61,7 +63,7 @@ visibility is a toggle, not policy: rig does not put the bar back on its own, so
 
 ## Density
 
-Two knobs, both Omarchy's own:
+Three knobs:
 
 - **Monitor scale** sizes everything Wayland-native: windows, the bar, apps. `omarchy hyprland monitor scaling up` (or
   `down`, or a value such as `1.25`) applies it live and records it in `~/.config/hypr/monitors.lua`. Steps are 1, 1.25,
@@ -69,6 +71,8 @@ Two knobs, both Omarchy's own:
 - **Text size** (`font.base_size` above) sizes text only. Set it in `config/omarchy.json` and run
   `rig omarchy sync --apply`; running `omarchy display text size` by hand works too, but the next sync puts the policy's
   value back.
+- **Gaps and border** (`hyprland` above) set the space between windows and around them. rig owns the block between the
+  `rig:omarchy:hyprland` markers in `~/.config/hypr/looknfeel.lua`; keep your own settings outside it.
 
 ## Cheatsheet
 

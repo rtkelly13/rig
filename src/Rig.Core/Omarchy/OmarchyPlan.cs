@@ -5,7 +5,7 @@ using Rig.Core.Text;
 namespace Rig.Core.Omarchy;
 
 /// <summary>One setting as Omarchy has it and as the policy wants it.</summary>
-/// <param name="Area">What it belongs to: <c>omarchy</c>, <c>idle</c>, <c>shell</c>, <c>theme</c>, <c>power</c>, <c>font</c>, <c>suspend</c> or <c>logind</c>.</param>
+/// <param name="Area">What it belongs to: <c>omarchy</c>, <c>idle</c>, <c>shell</c>, <c>theme</c>, <c>power</c>, <c>font</c>, <c>hyprland</c>, <c>suspend</c> or <c>logind</c>.</param>
 /// <param name="Setting">The setting's name within the area.</param>
 /// <param name="Have">What Omarchy has.</param>
 /// <param name="Want">What the policy declares.</param>
@@ -90,6 +90,11 @@ public static class OmarchyPlan
             checks.Add(Simple("font", "base_size", Number(state.FontBaseSize), Number(font.BaseSize), $"Run omarchy display text size {font.BaseSize}"));
         }
 
+        if (policy.Hyprland is { } hyprland)
+        {
+            checks.AddRange(HyprlandChecks(hyprland, state.Hyprland));
+        }
+
         if (policy.Suspend is { } suspend)
         {
             if (suspend.Menu is { } menu)
@@ -141,6 +146,21 @@ public static class OmarchyPlan
             .Where(key => key.Value(suspend) is not null)
             .Select(key => $"{key.Key}={key.Value(suspend)}");
         return string.Join('\n', lines) + '\n';
+    }
+
+    private static IEnumerable<OmarchyCheck> HyprlandChecks(HyprlandPolicy policy, HyprlandSpacing? live)
+    {
+        (string Setting, int Want, string? Have)[] options =
+        [
+            ("gaps_in", policy.GapsIn, live?.GapsIn),
+            ("gaps_out", policy.GapsOut, live?.GapsOut),
+            ("border_size", policy.BorderSize, live?.BorderSize),
+        ];
+        return options.Select(option => live is null
+            ? new OmarchyCheck("hyprland", option.Setting, "unknown", Number(option.Want), CheckStatus.Skip,
+                "Hyprland did not answer hyprctl; check it in a desktop session")
+            : Simple("hyprland", option.Setting, option.Have, Number(option.Want),
+                "Run rig omarchy sync --apply; it writes rig's block in ~/.config/hypr/looknfeel.lua"));
     }
 
     private static OmarchyCheck Simple(string area, string setting, string? have, string want, string fix) =>

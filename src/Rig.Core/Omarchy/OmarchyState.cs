@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
 using Rig.Core.Text;
@@ -17,6 +19,7 @@ namespace Rig.Core.Omarchy;
 /// <param name="FontBaseSize">The shell's base font size from <c>shell.toml</c>, or null.</param>
 /// <param name="LogindText">The logind drop-in rig owns, or null when it does not exist.</param>
 /// <param name="SleepLockEnabled">Whether the sleep-lock user unit is enabled, or null when systemd could not be asked.</param>
+/// <param name="Hyprland">Hyprland's live gaps and border, or null when Hyprland could not be asked.</param>
 public sealed record OmarchyState(
     bool Installed,
     string InstallRoot,
@@ -27,7 +30,8 @@ public sealed record OmarchyState(
     bool SuspendOff,
     int? FontBaseSize,
     string? LogindText,
-    bool? SleepLockEnabled)
+    bool? SleepLockEnabled,
+    HyprlandSpacing? Hyprland = null)
 {
     /// <summary>The sleep-lock unit Omarchy ships to lock the session before it suspends.</summary>
     public const string SleepLockUnit = "omarchy-sleep-lock.service";
@@ -51,7 +55,8 @@ public sealed record OmarchyState(
             File.Exists(paths.ToggleFile("suspend-off")),
             ReadFont(paths.ShellTomlFile),
             Text(paths.LogindDropIn),
-            installed ? ReadSleepLock(proc) : null);
+            installed ? ReadSleepLock(proc) : null,
+            installed ? ReadHyprland(proc) : null);
     }
 
     /// <summary>The parsed <c>shell.json</c>, or the default document when it does not exist.</summary>
@@ -106,6 +111,56 @@ public sealed record OmarchyState(
         };
     }
 
+    // hyprctl answers from the running compositor, so this is what is on screen, whichever file set it.
+    private static HyprlandSpacing? ReadHyprland(IProc proc)
+    {
+        var values = new string?[3];
+        string[] options = ["gaps_in", "gaps_out", "border_size"];
+        for (var index = 0; index < options.Length; index++)
+        {
+            var ran = proc.Run(new ProcRequest(["hyprctl", "getoption", "general:" + options[index], "-j"]));
+            if (!ran.Ok)
+            {
+                return null;
+            }
+
+            values[index] = HyprOption(ran.Out);
+        }
+
+        return new(values[0], values[1], values[2]);
+    }
+
+    /// <summary>One <c>hyprctl getoption -j</c> answer as text: its <c>int</c>, or its CSS gap with four equal sides collapsed to one.</summary>
+    internal static string? HyprOption(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            if (root.TryGetProperty("int", out var number) && number.TryGetInt32(out var value))
+            {
+                return value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            if (root.TryGetProperty("css", out var css) && css.GetString() is { } sides)
+            {
+                var parts = sides.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                return parts.Length > 0 && parts.All(part => part == parts[0]) ? parts[0] : sides.Trim();
+            }
+
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static string? Text(string path)
     {
         if (!File.Exists(path))
@@ -117,3 +172,9 @@ public sealed record OmarchyState(
         return text.Length > 0 ? text : null;
     }
 }
+
+/// <summary>Hyprland's live window spacing, each as <c>hyprctl</c> reports it, or null when it reported none.</summary>
+/// <param name="GapsIn"><c>general:gaps_in</c>: one number, or four when the sides differ.</param>
+/// <param name="GapsOut"><c>general:gaps_out</c>: one number, or four when the sides differ.</param>
+/// <param name="BorderSize"><c>general:border_size</c>.</param>
+public sealed record HyprlandSpacing(string? GapsIn, string? GapsOut, string? BorderSize);

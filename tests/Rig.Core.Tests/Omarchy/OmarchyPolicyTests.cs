@@ -22,6 +22,7 @@ public sealed class OmarchyPolicyTests
         Assert.Equal("tokyo-night", policy.Theme);
         Assert.Equal(new PowerPolicy("performance", "power-saver"), policy.Power);
         Assert.Equal(new FontPolicy(13), policy.Font);
+        Assert.Equal(new HyprlandPolicy(2, 5, 1), policy.Hyprland);
         Assert.NotNull(policy.Shell);
         Assert.True(policy.Shell.ContainsKey("bar"));
         Assert.False(policy.Shell.ContainsKey("idle"));
@@ -38,6 +39,7 @@ public sealed class OmarchyPolicyTests
         Assert.Null(policy.Power);
         Assert.Null(policy.Font);
         Assert.Null(policy.Shell);
+        Assert.Null(policy.Hyprland);
     }
 
     [Theory]
@@ -54,6 +56,9 @@ public sealed class OmarchyPolicyTests
     [InlineData("""{"power": {"ac": "performance"}}""")]
     [InlineData("""{"font": {"base_size": 4}}""")]
     [InlineData("""{"font": {"base_size": 21}}""")]
+    [InlineData("""{"hyprland": {"gaps_in": 2, "gaps_out": 5}}""")]
+    [InlineData("""{"hyprland": {"gaps_in": -1, "gaps_out": 5, "border_size": 1}}""")]
+    [InlineData("""{"hyprland": {"gaps_in": 2, "gaps_out": 101, "border_size": 1}}""")]
     public void A_malformed_policy_is_refused(string text) =>
         Assert.Throws<InvalidDataException>(() => OmarchyPolicy.Parse(text));
 
@@ -199,4 +204,36 @@ public sealed class OmarchyPolicyTests
         Assert.Equal("HandleLidSwitch=ignore\nHandleLidSwitchExternalPower=ignore\nHandleLidSwitchDocked=ignore\nIdleAction=ignore\n", OmarchyPlan.LogindContents(suspend));
         Assert.Equal("[Login]\n" + OmarchyPlan.LogindContents(suspend), OmarchySync.LogindFile(suspend));
     }
+
+    [Fact]
+    public void Hyprland_spacing_is_checked_against_the_live_values()
+    {
+        var policy = OmarchyPolicy.Empty with { Hyprland = new HyprlandPolicy(2, 5, 1) };
+        var state = new OmarchyState(true, "/o", new JsonObject(), null, null, null, false, null, null, null, new HyprlandSpacing("2", "10", "1"));
+
+        var checks = OmarchyPlan.Compare(policy, state).Where(check => check.Area == "hyprland").ToList();
+
+        Assert.Equal(["gaps_in", "gaps_out", "border_size"], checks.Select(check => check.Setting));
+        Assert.Equal([CheckStatus.Ok, CheckStatus.Fail, CheckStatus.Ok], checks.Select(check => check.Status));
+        Assert.Equal(("10", "5"), (checks[1].Have, checks[1].Want));
+    }
+
+    [Fact]
+    public void Hyprland_spacing_is_skipped_when_hyprctl_does_not_answer()
+    {
+        var policy = OmarchyPolicy.Empty with { Hyprland = new HyprlandPolicy(2, 5, 1) };
+        var state = new OmarchyState(true, "/o", new JsonObject(), null, null, null, false, null, null, null);
+
+        Assert.All(
+            OmarchyPlan.Compare(policy, state).Where(check => check.Area == "hyprland"),
+            check => Assert.Equal(CheckStatus.Skip, check.Status));
+    }
+
+    [Theory]
+    [InlineData("""{"option": "general:gaps_in", "css": "2 2 2 2", "set": true}""", "2")]
+    [InlineData("""{"option": "general:gaps_out", "css": "5 10 5 10", "set": true}""", "5 10 5 10")]
+    [InlineData("""{"option": "general:border_size", "int": 1, "set": true}""", "1")]
+    [InlineData("""no such option""", null)]
+    public void A_hyprctl_answer_reads_as_its_value(string json, string? value) =>
+        Assert.Equal(value, OmarchyState.HyprOption(json));
 }

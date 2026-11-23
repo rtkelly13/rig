@@ -29,6 +29,9 @@ internal sealed record OmarchyConfig
 
     /// <summary>Settings deep-merged into <c>shell.json</c>, such as <c>bar</c>, <c>dock</c> and <c>plugins</c>.</summary>
     public JsonElement? Shell { get; init; }
+
+    /// <summary>Hyprland's gaps and border, or null to leave them alone.</summary>
+    public OmarchyHyprlandConfig? Hyprland { get; init; }
 }
 
 /// <summary>The <c>idle</c> section: seconds since idle began before the screensaver and the lock.</summary>
@@ -78,6 +81,19 @@ internal sealed record OmarchyFontConfig
 {
     /// <summary>The size in points.</summary>
     public int? BaseSize { get; init; }
+}
+
+/// <summary>The <c>hyprland</c> section: window spacing in px, named as Hyprland's <c>general</c> options are.</summary>
+internal sealed record OmarchyHyprlandConfig
+{
+    /// <summary>The gap between windows.</summary>
+    public int? GapsIn { get; init; }
+
+    /// <summary>The gap between windows and the screen edge.</summary>
+    public int? GapsOut { get; init; }
+
+    /// <summary>The window border's width.</summary>
+    public int? BorderSize { get; init; }
 }
 
 /// <summary>The <c>idle</c> object <c>rig omarchy sync</c> writes into <c>shell.json</c>.</summary>
