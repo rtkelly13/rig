@@ -4,9 +4,8 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-using Rig.Core.Processes;
 
-namespace Rig.Core.Otel;
+namespace Rig.Core.Processes;
 
 /// <summary>
 /// Starts a program that outlives rig: standard input from the null device, output and errors appended to a log, and

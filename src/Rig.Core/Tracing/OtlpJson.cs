@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Text;
 
-namespace Rig.Core.Otel;
+namespace Rig.Core.Tracing;
 
 /// <summary>
 /// Typed reads of OTLP/JSON, a format other tools own: fields rig reads are checked strictly and anything else is

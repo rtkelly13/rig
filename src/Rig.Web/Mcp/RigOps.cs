@@ -2,7 +2,6 @@ using System.Text.Json;
 using Rig.Core.Estate;
 using Rig.Core.Jobs;
 using Rig.Core.Orca;
-using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;

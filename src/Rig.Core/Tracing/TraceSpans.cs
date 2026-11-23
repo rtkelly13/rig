@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Text;
 
-namespace Rig.Core.Otel;
+namespace Rig.Core.Tracing;
 
 /// <summary>One span read from a trace file, with the resource and scope it was written under.</summary>
 /// <param name="TraceId">The span's trace.</param>

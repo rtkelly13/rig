@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Rig.Core.Otel;
+using Rig.Core.Tracing;
 
 namespace Rig.Core.Tests.Otel;
 

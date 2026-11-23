@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Rig.Core.Otel;
 using Rig.Core.Processes;
 using Rig.Core.Text;
 
