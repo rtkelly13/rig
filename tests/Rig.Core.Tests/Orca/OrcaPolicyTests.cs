@@ -25,6 +25,62 @@ public sealed class OrcaPolicyTests
     }
 
     [Fact]
+    public void The_checked_in_policy_runs_agents_without_auto_in_full_access()
+    {
+        var policy = OrcaPolicy.Load(CheckedInPolicy);
+
+        Assert.NotNull(policy.AgentPermissions);
+        Assert.Equal("auto", policy.AgentPermissions.Default);
+        Assert.Equal(
+            ("auto", "full-access", "full-access"),
+            (policy.AgentPermissions.Wanted("claude-agent-teams"), policy.AgentPermissions.Wanted("openclaude"), policy.AgentPermissions.Wanted("cursor")));
+    }
+
+    [Fact]
+    public void The_checked_in_policy_sleeps_agents_on_the_mac_only()
+    {
+        var policy = OrcaPolicy.Load(CheckedInPolicy);
+
+        Assert.NotNull(policy.AgentSleepOn("macos"));
+        Assert.Null(policy.AgentSleepOn("linux"));
+        Assert.Null(policy.AgentSleepOn("windows"));
+    }
+
+    [Fact]
+    public void An_agent_without_the_default_mode_takes_the_fallback()
+    {
+        var permissions = OrcaPolicy.Parse("""
+            {"agent_permissions": {"default": "auto", "fallback": "full-access", "agents": {"cursor": "own"}}}
+            """).AgentPermissions;
+
+        Assert.NotNull(permissions);
+        Assert.Equal("auto", permissions.Wanted("claude"));
+        Assert.Equal("auto", permissions.Wanted("codex"));
+        Assert.Equal("full-access", permissions.Wanted("antigravity"));
+        Assert.Equal("full-access", permissions.Wanted("aider"));
+        Assert.Equal("own", permissions.Wanted("cursor"));
+    }
+
+    [Fact]
+    public void Without_a_fallback_every_unnamed_agent_takes_the_default()
+    {
+        var permissions = OrcaPolicy.Parse("""{"agent_permissions": {"default": "auto"}}""").AgentPermissions;
+
+        Assert.NotNull(permissions);
+        Assert.Null(permissions.Fallback);
+        Assert.Equal("auto", permissions.Wanted("aider"));
+    }
+
+    [Fact]
+    public void Agent_sleep_without_platforms_is_checked_everywhere()
+    {
+        var policy = OrcaPolicy.Parse("""{"agent_sleep": {"enabled": true}}""");
+
+        Assert.All(AgentSleepPolicy.PlatformNames, platform => Assert.NotNull(policy.AgentSleepOn(platform)));
+        Assert.Contains(AgentSleepPolicy.CurrentPlatform, AgentSleepPolicy.PlatformNames);
+    }
+
+    [Fact]
     public void Every_policy_repo_starts_from_a_remote_ref()
     {
         var policy = OrcaPolicy.Load(CheckedInPolicy);
@@ -84,7 +140,11 @@ public sealed class OrcaPolicyTests
     {
         var policy = OrcaPolicy.Load(CheckedInPolicy);
         Assert.NotNull(policy.AgentPermissions);
-        var auto = policy.AgentPermissions.Agents.Where(pair => pair.Value == "auto").Select(pair => pair.Key).ToList();
+        var permissions = policy.AgentPermissions;
+        var auto = policy.AgentArgs.Keys.Concat(permissions.Agents.Keys)
+            .Where(AgentPermissions.IsConfigurable)
+            .Where(agent => permissions.Wanted(agent) == "auto")
+            .ToList();
 
         Assert.NotEmpty(auto);
         Assert.All(auto, agent => Assert.False(string.IsNullOrEmpty(AgentPermissions.FlagsFor("auto", agent))));
@@ -103,6 +163,9 @@ public sealed class OrcaPolicyTests
     [InlineData("""{"agent_permissions": {"agents": {"claude": "yolo"}}}""")]
     [InlineData("""{"agent_sleep": {"idle_minutes": 30}}""")]
     [InlineData("""{"agent_sleep": {"enabled": true, "idle_minutes": 0}}""")]
+    [InlineData("""{"agent_sleep": {"enabled": true, "platforms": ["darwin"]}}""")]
+    [InlineData("""{"agent_sleep": {"enabled": true, "platforms": [1]}}""")]
+    [InlineData("""{"agent_permissions": {"default": "auto", "fallback": "yolo"}}""")]
     [InlineData("""{"agent_args": {"claude": 1}}""")]
     [InlineData("[]")]
     [InlineData("not json")]

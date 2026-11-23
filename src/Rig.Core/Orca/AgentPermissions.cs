@@ -61,6 +61,10 @@ public static class AgentPermissions
     /// <summary>Whether Orca offers <paramref name="agent"/> a permission mode at all.</summary>
     public static bool IsConfigurable(string agent) => Configurable.Contains(agent);
 
+    /// <summary>Whether Orca gives <paramref name="agent"/> flags for <paramref name="mode"/>; <c>own</c> needs none.</summary>
+    public static bool Offers(string mode, string agent) =>
+        mode == "own" || (Flags.TryGetValue(mode, out var agents) && agents.ContainsKey(agent));
+
     /// <summary>The flags Orca adds to <paramref name="agent"/>'s launch line in <paramref name="mode"/>, or null when rig does not know them.</summary>
     public static string? FlagsFor(string mode, string agent) =>
         mode == "own" ? "" : Flags[mode].GetValueOrDefault(agent);

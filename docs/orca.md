@@ -36,9 +36,9 @@ daily against the default instance, which holds the work repos and the estate.
 | Key | Meaning |
 |---|---|
 | `agent_args` | Each agent's custom launch arguments (Settings → Agents, stored as `agentDefaultArgs`). `""` means none. Agents left out are not checked. Never put a permission flag here: that is what `agent_permissions` is for. |
-| `agent_permissions` | Each agent's permission mode (Settings → Agents): `own`, `ask`, `accept-edits`, `auto` or `full-access`. `default` covers agents not named in `agents`. See [Agent permissions](#agent-permissions). |
+| `agent_permissions` | Each agent's permission mode (Settings → Agents): `own`, `ask`, `accept-edits`, `auto` or `full-access`. `default` covers agents not named in `agents`; `fallback` covers those of them Orca offers no such mode (only Claude, Claude agent teams and Codex have Auto). See [Agent permissions](#agent-permissions). |
 | `workspace_dir` | Where Orca creates its worktrees (`~` is expanded). |
-| `agent_sleep` | Orca's experimental Agent sleep (`experimentalAgentHibernation`, `agentHibernationIdleMs`): `{"enabled": true, "idle_minutes": 30}`. Orca stops an agent terminal once its turn has been done for the idle window, and resumes it (`claude --resume <id>`) when the tab is opened again. The tab on screen, agents with running sub-agents and unsent drafts are never stopped. See [Agent sleep](#agent-sleep). |
+| `agent_sleep` | Orca's experimental Agent sleep (`experimentalAgentHibernation`, `agentHibernationIdleMs`): `{"enabled": true, "idle_minutes": 30, "platforms": ["macos"]}`; `platforms` (`linux`, `macos`, `windows`) limits where it is checked, and leaving it out checks it everywhere. Orca stops an agent terminal once its turn has been done for the idle window, and resumes it (`claude --resume <id>`) when the tab is opened again. The tab on screen, agents with running sub-agents and unsent drafts are never stopped. See [Agent sleep](#agent-sleep). |
 | `repos.<name>.path` | Optional filesystem path to repo (defaults to `<estate_root>/<name>`). |
 | `repos.<name>.setup` | The setup script each new Orca worktree should run. The repo's committed `orca.yaml` should declare it (see below). |
 | `repos.<name>.archive` | The archive script, run when a worktree is archived; same rule as `setup`. |
@@ -52,17 +52,16 @@ Repo names are Orca display names, which match the `managed-projects.json` names
 doctor also warns about any managed project cloned under the estate root but not
 registered in Orca.
 
-Current policy: Claude and Claude agent teams launch in **Auto** (`--permission-mode auto`), never
-with `--dangerously-skip-permissions`, and Codex in **Auto** (`--approve-for-me`). OpenCode 2
-(`opencode2`) launches with its own `--auto`, as a custom argument, since Orca offers OpenCode no
-permission mode. Antigravity (`agy`) runs in **Full access**. The default for every other agent is
-**Own**, so Orca adds no flags to them. The original OpenCode, Copilot and Muse are not in the
-policy: they are uninstalled, so Orca does not detect them.
+Current policy: the default is **Auto**, with **Full access** as the fallback. Claude and Claude
+agent teams launch in Auto (`--permission-mode auto`) and Codex in Auto (`--approve-for-me`). Every
+other agent Orca offers a mode for has no Auto, so it runs in Full access: Antigravity (`agy`),
+OpenClaude (`--dangerously-skip-permissions`) and the rest. OpenCode 2 (`opencode2`) launches with
+its own `--auto`, as a custom argument, since Orca offers OpenCode no permission mode.
 
-The rule behind it: no constant prompting, and nothing run dangerously. An agent uses its own
-auto mode where it has a workable one: Claude Code's auto mode keeps the allow and deny rules that
-`rig policy sync` projects, and OpenCode has `--auto`. Full access is only for a tool that
-prompts on every step and has no workable auto mode, as Antigravity does.
+The rule behind it: no constant prompting. An agent uses its own auto mode where it has one:
+Claude Code's auto mode keeps the allow and deny rules that `rig policy sync` projects, Codex's
+approves for you, and OpenCode has `--auto`. An agent with no auto mode runs in Full access rather
+than prompting on every step.
 
 ## Where the doctor reads from
 
@@ -249,8 +248,9 @@ resuming it.
 ### Agent sleep
 
 Every idle Claude session keeps 300–500 MB resident. On an 8 GB Mac, two dozen idle sessions pushed
-the machine deep into swap while CPU sat mostly free, so the policy turns Agent sleep on. Sleeping
-stops the terminal; the worktree and the session are kept, and opening the tab resumes it.
+the machine deep into swap while CPU sat mostly free, so the policy turns Agent sleep on there, and
+only there (`"platforms": ["macos"]`): the Linux machine has the memory to keep idle sessions live.
+Sleeping stops the terminal; the worktree and the session are kept, and opening the tab resumes it.
 
 Neither half can be set by rig while Orca runs: `settings.update` rejects the keys
 (`Unrecognized key: "experimentalAgentHibernation"`, Orca 1.4.250), and Orca's database is never

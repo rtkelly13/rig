@@ -25,19 +25,37 @@ public sealed record RepoPolicy(
 /// <summary>Orca's experimental Agent sleep: stop idle agent terminals, resume them when opened.</summary>
 /// <param name="Enabled">Whether it is on.</param>
 /// <param name="IdleMinutes">The idle window; Orca accepts 1 minute to 24 hours.</param>
-public sealed record AgentSleepPolicy(bool Enabled, int IdleMinutes = AgentSleepPolicy.DefaultMinutes)
+/// <param name="Platforms">The platforms it is checked on (<c>linux</c>, <c>macos</c>, <c>windows</c>), or null for all.</param>
+public sealed record AgentSleepPolicy(bool Enabled, int IdleMinutes = AgentSleepPolicy.DefaultMinutes, IReadOnlyList<string>? Platforms = null)
 {
     /// <summary>Orca's default idle window, used for a missing or out-of-range value.</summary>
     public const int DefaultMinutes = 30;
+
+    /// <summary>The platform names <see cref="Platforms"/> may hold.</summary>
+    public static readonly IReadOnlyCollection<string> PlatformNames = ["linux", "macos", "windows"];
+
+    /// <summary>This machine's platform name.</summary>
+    public static string CurrentPlatform =>
+        OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux";
+
+    /// <summary>Whether the policy is checked on <paramref name="platform"/>.</summary>
+    public bool AppliesOn(string platform) => Platforms is null || Platforms.Contains(platform, StringComparer.Ordinal);
 }
 
-/// <summary>The permission mode Orca should launch each agent with; agents not named take <see cref="Default"/>.</summary>
+/// <summary>
+/// The permission mode Orca should launch each agent with. Agents not named take <see cref="Default"/>, or
+/// <see cref="Fallback"/> when Orca offers them no such mode (only Claude, Claude agent teams and Codex have Auto).
+/// </summary>
 /// <param name="Default">The mode for agents <see cref="Agents"/> leaves out.</param>
 /// <param name="Agents">Each named agent's mode.</param>
-public sealed record AgentPermissionsPolicy(string Default, IReadOnlyDictionary<string, string> Agents)
+/// <param name="Fallback">The mode for unnamed agents <see cref="Default"/> has no flags for, or null to use the default anyway.</param>
+public sealed record AgentPermissionsPolicy(string Default, IReadOnlyDictionary<string, string> Agents, string? Fallback = null)
 {
     /// <summary>The mode <paramref name="agent"/> should launch in.</summary>
-    public string Wanted(string agent) => Agents.GetValueOrDefault(agent, Default);
+    public string Wanted(string agent) =>
+        Agents.TryGetValue(agent, out var mode) ? mode
+        : Fallback is { } fallback && !AgentPermissions.Offers(Default, agent) ? fallback
+        : Default;
 }
 
 /// <summary>What <c>config/orca.json</c> declares. Agents and repos it leaves out are not checked.</summary>
@@ -55,6 +73,9 @@ public sealed record OrcaPolicy(
 {
     /// <summary>The policy file's path under a rig checkout.</summary>
     public static readonly string RelativePath = System.IO.Path.Join("config", "orca.json");
+
+    /// <summary>Agent sleep as checked on <paramref name="platform"/>: null when unset or not for that platform.</summary>
+    public AgentSleepPolicy? AgentSleepOn(string platform) => AgentSleep is { } sleep && sleep.AppliesOn(platform) ? sleep : null;
 
     /// <summary>A policy that declares nothing.</summary>
     public static readonly OrcaPolicy Empty = new(new Dictionary<string, string>(), null, null, null, new Dictionary<string, RepoPolicy>());
@@ -105,7 +126,10 @@ public sealed record OrcaPolicy(
             Mode($"agents.{agent}", mode);
         }
 
-        return new(Mode("default", OrcaJson.String(permissions, "default") ?? "own"), agents);
+        return new(
+            Mode("default", OrcaJson.String(permissions, "default") ?? "own"),
+            agents,
+            OrcaJson.String(permissions, "fallback") is { } fallback ? Mode("fallback", fallback) : null);
     }
 
     private static string Mode(string key, string mode) =>
@@ -115,8 +139,24 @@ public sealed record OrcaPolicy(
     {
         var enabled = OrcaJson.Bool(sleep, "enabled") ?? throw new InvalidDataException("agent_sleep.enabled: required");
         var minutes = OrcaJson.Integer(sleep, "idle_minutes") ?? AgentSleepPolicy.DefaultMinutes;
-        return minutes is >= 1 and <= 24 * 60
-            ? new(enabled, (int)minutes)
-            : throw new InvalidDataException("agent_sleep.idle_minutes: must be 1 to 1440");
+        if (minutes is < 1 or > 24 * 60)
+        {
+            throw new InvalidDataException("agent_sleep.idle_minutes: must be 1 to 1440");
+        }
+
+        List<string>? platforms = null;
+        if (OrcaJson.Array(sleep, "platforms") is { } items)
+        {
+            platforms = [];
+            foreach (var item in items)
+            {
+                var name = item?.GetValueKind() == System.Text.Json.JsonValueKind.String ? item.GetValue<string>() : null;
+                platforms.Add(name is not null && AgentSleepPolicy.PlatformNames.Contains(name)
+                    ? name
+                    : throw new InvalidDataException($"agent_sleep.platforms: \"{item?.ToJsonString()}\" is not linux, macos or windows"));
+            }
+        }
+
+        return new(enabled, (int)minutes, platforms);
     }
 }
