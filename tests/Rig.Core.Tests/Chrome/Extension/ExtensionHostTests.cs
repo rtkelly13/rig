@@ -108,6 +108,23 @@ public sealed class ExtensionHostTests : IDisposable
         }
     }
 
+    [Fact]
+    public void A_host_that_never_answers_hello_is_skipped_after_the_short_hello_timeout()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "The host runs on Linux; Windows uses UI Automation.");
+        Directory.CreateDirectory(_folder);
+        var stuck = ExtensionPlaces.SocketFor(_folder, 45);
+        using var listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        listener.Bind(new UnixDomainSocketEndPoint(stuck));
+        listener.Listen();
+        var started = System.Diagnostics.Stopwatch.StartNew();
+
+        Assert.Empty(new SocketExtensionBridge(_folder, Patience).Connections());
+
+        Assert.True(started.Elapsed < Patience / 2, $"took {started.Elapsed}");
+        Assert.True(File.Exists(stuck), "a slow host is skipped, not removed");
+    }
+
     private static async Task<string> AskAsync(string socketPath, string line, CancellationToken cancel)
     {
         using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);

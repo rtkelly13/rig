@@ -43,7 +43,9 @@ After changing the extension's files, run `install` again and reload it in `chro
 ## What differs from Windows and macOS
 
 - **Nothing is brought forward and the mouse is never used**, so grouping does not wait for the machine to be idle.
-  Calls still hold everything back: audible tabs come from the snapshot.
+  Calls still hold everything back, but only a call that plays sound is seen: the snapshot marks audible tabs, and no
+  extension API says which tab holds the microphone, so a muted or silent call does not protect itself. Do not run
+  `organise --unattended` while on such a call.
 - **Every tab has its URL**, as on macOS, so duplicates are matched by address rather than title alone.
 - **No desktops and no saved groups**: no extension API reaches either.
 - **Profiles** come from the browser's `Local State`: matched by the signed-in email, else the browser's only
@@ -55,7 +57,7 @@ After changing the extension's files, run `install` again and reload it in `chro
 | `status` says | Check |
 |---|---|
 | `Extension: missing` | Run `install`. |
-| `Host manifest (chromium): names another program` | Run `install` again; the manifest names an old build. |
+| `Host manifest (chromium): names another program` | The manifest names an old build: run `install` again. After an `install --host-program <path>` (a dev build, say) this is expected, because `status` compares against the installed `rig`; rerun `install --host-program <path>` to keep that build, or plain `install` to return to the installed one. |
 | `Chromium flags: --load-extension does not name the extension` | An Omarchy update rewrote the file; run `install` again. |
 | `Connected: none` | Chromium was not restarted, or the extension is off in `chrome://extensions`. Its service worker's console shows host errors such as `Specified native messaging host not found`. |
 

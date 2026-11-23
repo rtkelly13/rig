@@ -155,49 +155,51 @@ public sealed class ExtensionInstaller(string home, string hostPath)
         return new InstallReport(lines);
     }
 
-    /// <summary><paramref name="flags"/> with <paramref name="folder"/> in its <c>--load-extension</c> list, adding the line if there is none.</summary>
+    /// <summary>
+    /// <paramref name="flags"/> with <paramref name="folder"/> in its <c>--load-extension</c> list, adding the line if
+    /// there is none. Only that argument changes: a line can hold several, and the others keep their text and quoting.
+    /// </summary>
     public static string WithExtension(string flags, string folder)
     {
         ArgumentNullException.ThrowIfNull(flags);
         var lines = Lines(flags);
-        var at = lines.FindIndex(IsLoadLine);
-        if (at < 0)
+        if (FindLoad(lines) is not { } load)
         {
             lines.Add(LoadExtension + folder);
-        }
-        else
-        {
-            var folders = Folders(lines[at]);
-            if (folders.Contains(folder, StringComparer.Ordinal))
-            {
-                return flags;
-            }
-
-            lines[at] = LoadExtension + string.Join(',', [.. folders, folder]);
+            return string.Join('\n', lines) + "\n";
         }
 
-        return string.Join('\n', lines) + "\n";
-    }
-
-    /// <summary><paramref name="flags"/> without <paramref name="folder"/>; the line goes when nothing else is on it.</summary>
-    public static string WithoutExtension(string flags, string folder)
-    {
-        ArgumentNullException.ThrowIfNull(flags);
-        var lines = Lines(flags);
-        var at = lines.FindIndex(IsLoadLine);
-        if (at < 0 || !Folders(lines[at]).Contains(folder, StringComparer.Ordinal))
+        if (load.Folders.Contains(folder, StringComparer.Ordinal))
         {
             return flags;
         }
 
-        var rest = Folders(lines[at]).Where(other => other != folder).ToList();
-        if (rest.Count == 0)
+        lines[load.Line] = load.Replace([.. load.Folders, folder]);
+        return string.Join('\n', lines) + "\n";
+    }
+
+    /// <summary>
+    /// <paramref name="flags"/> without <paramref name="folder"/>. The argument goes when it names nothing else, and
+    /// its line when nothing else is on it.
+    /// </summary>
+    public static string WithoutExtension(string flags, string folder)
+    {
+        ArgumentNullException.ThrowIfNull(flags);
+        var lines = Lines(flags);
+        if (FindLoad(lines) is not { } load || !load.Folders.Contains(folder, StringComparer.Ordinal))
         {
-            lines.RemoveAt(at);
+            return flags;
+        }
+
+        var rest = load.Folders.Where(other => other != folder).ToList();
+        var line = load.Replace(rest);
+        if (line.Trim().Length == 0)
+        {
+            lines.RemoveAt(load.Line);
         }
         else
         {
-            lines[at] = LoadExtension + string.Join(',', rest);
+            lines[load.Line] = line;
         }
 
         return lines.Count == 0 ? "" : string.Join('\n', lines) + "\n";
@@ -209,14 +211,67 @@ public sealed class ExtensionInstaller(string home, string hostPath)
         return text.Length == 0 ? [] : [.. text.Split('\n')];
     }
 
-    private static bool IsLoadLine(string line) => line.TrimStart().StartsWith(LoadExtension, StringComparison.Ordinal);
+    private static List<string> Folders(string flags) => FindLoad(Lines(flags))?.Folders ?? [];
 
-    private static List<string> Folders(string text)
+    /// <summary>
+    /// The first <c>--load-extension=</c> argument outside a comment: an argument starts the line or follows
+    /// whitespace, and runs to the next whitespace outside quotes.
+    /// </summary>
+    private static LoadArgument? FindLoad(List<string> lines)
     {
-        var line = text.Split('\n').FirstOrDefault(IsLoadLine);
-        return line is null
-            ? []
-            : [.. line.Trim()[LoadExtension.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+        for (var number = 0; number < lines.Count; number++)
+        {
+            var line = lines[number];
+            if (line.AsSpan().TrimStart().StartsWith("#", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var at = 0;
+            while (at < line.Length)
+            {
+                while (at < line.Length && char.IsWhiteSpace(line[at]))
+                {
+                    at++;
+                }
+
+                var start = at;
+                char? quote = null;
+                while (at < line.Length && (quote is not null || !char.IsWhiteSpace(line[at])))
+                {
+                    quote = line[at] is '"' or '\'' ? (quote is null ? line[at] : quote == line[at] ? null : quote) : quote;
+                    at++;
+                }
+
+                var argument = line[start..at];
+                var bare = argument.Replace("\"", "", StringComparison.Ordinal).Replace("'", "", StringComparison.Ordinal);
+                if (bare.StartsWith(LoadExtension, StringComparison.Ordinal))
+                {
+                    var folders = bare[LoadExtension.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    return new LoadArgument(number, line, start, at, argument.Length != bare.Length, [.. folders]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>One <c>--load-extension=</c> argument: where it sits in its line and the folders it names.</summary>
+    private sealed record LoadArgument(int Line, string Text, int Start, int End, bool Quoted, List<string> Folders)
+    {
+        /// <summary>The line with this argument naming <paramref name="folders"/>, or gone when they are none.</summary>
+        public string Replace(List<string> folders)
+        {
+            var argument = folders.Count == 0 ? "" : LoadExtension + string.Join(',', folders);
+            if (Quoted && argument.Length > 0)
+            {
+                argument = $"\"{argument}\"";
+            }
+
+            var before = Text[..Start];
+            var after = Text[End..];
+            return argument.Length > 0 ? before + argument + after : (before.TrimEnd() + (before.Trim().Length > 0 && after.Trim().Length > 0 ? " " : "") + after.TrimStart());
+        }
     }
 
     private static bool WriteIfChanged(string path, string content)

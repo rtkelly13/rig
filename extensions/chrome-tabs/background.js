@@ -94,31 +94,57 @@ async function answer(request) {
   }
 }
 
-/** @param {number} delay */
-function connect(delay) {
-  /** @param {number} wait @param {number} next */
-  const retry = (wait, next) => setTimeout(() => connect(Math.min(next, RECONNECT_MAX_MS)), wait);
-  /** @type {chrome.runtime.Port} */
-  let port;
-  try {
-    port = chrome.runtime.connectNative(HOST_NAME);
-  } catch {
-    retry(delay, delay * 2);
-    return;
-  }
-  let heard = false;
-  port.onMessage.addListener((message) => {
-    heard = true;
-    if (message?.type === "request" && typeof message.id === "string" && typeof message.cmd === "string") {
-      void answer(message).then((reply) => port.postMessage(reply));
-    }
-  });
-  port.onDisconnect.addListener(() => {
-    void chrome.runtime.lastError;
-    if (heard) retry(RECONNECT_MIN_MS, RECONNECT_MIN_MS * 2);
-    else retry(delay, delay * 2);
-  });
-  void commands.hello({}).then((hello) => port.postMessage({ type: "hello", ...hello }));
+const RECONNECT_ALARM = "rig-reconnect";
+/** Chrome's shortest alarm, which outlives the worker being stopped while no port keeps it alive. */
+const ALARM_MIN_MINUTES = 0.5;
+
+/** @type {chrome.runtime.Port | null} */
+let port = null;
+let delay = RECONNECT_MIN_MS;
+
+/**
+ * Tries again after `wait`. The timer keeps short retries quick; the alarm survives Chrome stopping this worker,
+ * which it may do 30 s after the last port closed, and a new worker connects at start anyway.
+ * @param {number} wait
+ */
+function retry(wait) {
+  delay = Math.min(wait * 2, RECONNECT_MAX_MS);
+  setTimeout(connect, wait);
+  void chrome.alarms.create(RECONNECT_ALARM, { delayInMinutes: Math.max(ALARM_MIN_MINUTES, wait / 60000) });
 }
 
-connect(RECONNECT_MIN_MS);
+function connect() {
+  if (port) return;
+  /** @type {chrome.runtime.Port} */
+  let opened;
+  try {
+    opened = chrome.runtime.connectNative(HOST_NAME);
+  } catch {
+    retry(delay);
+    return;
+  }
+  port = opened;
+  let heard = false;
+  opened.onMessage.addListener((message) => {
+    if (!heard) {
+      heard = true;
+      delay = RECONNECT_MIN_MS;
+      void chrome.alarms.clear(RECONNECT_ALARM);
+    }
+    if (message?.type === "request" && typeof message.id === "string" && typeof message.cmd === "string") {
+      void answer(message).then((reply) => opened.postMessage(reply));
+    }
+  });
+  opened.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
+    if (port === opened) port = null;
+    retry(heard ? RECONNECT_MIN_MS : delay);
+  });
+  void commands.hello({}).then((hello) => opened.postMessage({ type: "hello", ...hello }));
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === RECONNECT_ALARM) connect();
+});
+chrome.runtime.onStartup.addListener(connect);
+connect();

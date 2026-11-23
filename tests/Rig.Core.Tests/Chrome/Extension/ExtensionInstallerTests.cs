@@ -10,6 +10,25 @@ public sealed class ExtensionInstallerTests : IDisposable
 
     public void Dispose() => _home.Dispose();
 
+    [Theory]
+    [InlineData("--load-extension=/a --ozone-platform=wayland\n", "--load-extension=/a,/x --ozone-platform=wayland\n")]
+    [InlineData("--ozone-platform=wayland --load-extension=/a\n", "--ozone-platform=wayland --load-extension=/a,/x\n")]
+    [InlineData("\"--load-extension=/a b\" --x\n", "\"--load-extension=/a b,/x\" --x\n")]
+    [InlineData("# --load-extension=/old\n--a\n", "# --load-extension=/old\n--a\n--load-extension=/x\n")]
+    public void Changes_only_the_load_extension_argument_on_a_line_of_several(string flags, string expected)
+    {
+        var added = ExtensionInstaller.WithExtension(flags, "/x");
+
+        Assert.Equal(expected, added);
+        Assert.Equal(flags, ExtensionInstaller.WithoutExtension(added, "/x"));
+    }
+
+    [Fact]
+    public void Removing_the_only_folder_keeps_the_other_arguments_on_its_line()
+    {
+        Assert.Equal("--a --b\n", ExtensionInstaller.WithoutExtension("--a --load-extension=/x --b\n", "/x"));
+    }
+
     [Fact]
     public void The_folder_joins_an_existing_load_extension_list_once()
     {

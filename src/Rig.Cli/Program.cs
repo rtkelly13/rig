@@ -66,6 +66,8 @@ internal static class Program
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
+        var exportLinuxTree = exportTree && !exportWindowsTree && !exportMacTree;
+        var linux = exportTree ? exportLinuxTree : OperatingSystem.IsLinux();
         // The code root and the checkout, resolved once; everything below derives its paths from this layout.
         var layout = EstateLayout.Current();
         var codeRoot = layout.CodeRoot;
@@ -209,13 +211,13 @@ internal static class Program
 #pragma warning restore CA1416
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
-                        : !exportTree && OperatingSystem.IsLinux() ? new ChromeTabsDriver(
-                            () => LinuxChrome.Open(Environment.GetEnvironmentVariable, home),
+                        : linux ? new ChromeTabsDriver(
+                            () => OperatingSystem.IsLinux() ? LinuxChrome.Open(Environment.GetEnvironmentVariable, home) : throw new PlatformNotSupportedException("Inspection never opens a native driver."),
                             new GhApi(proc),
                             () => ChromeTabsDriver.LoadOwners(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))
                         : null,
                     exportTree ? exportWindowsTree : OperatingSystem.IsWindowsVersionAtLeast(8, 1),
-                    extension: !exportTree && OperatingSystem.IsLinux()
+                    extension: linux
                         ? new ChromeExtensionCommand(
                             new ExtensionInstaller(home, ProgramPath.Find("rig") ?? Environment.ProcessPath ?? "rig"),
                             LinuxChrome.Bridge(Environment.GetEnvironmentVariable, home),

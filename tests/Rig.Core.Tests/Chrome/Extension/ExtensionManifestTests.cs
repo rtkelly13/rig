@@ -38,7 +38,7 @@ public sealed class ExtensionManifestTests
     public void The_extension_asks_only_for_what_the_driver_uses()
     {
         Assert.Equal(
-            ["identity", "identity.email", "nativeMessaging", "tabGroups", "tabs"],
+            ["alarms", "identity", "identity.email", "nativeMessaging", "tabGroups", "tabs"],
             Manifest()["permissions"]!.AsArray().Select(permission => (string)permission!).Order(StringComparer.Ordinal));
         Assert.Null(Manifest()["host_permissions"]);
     }

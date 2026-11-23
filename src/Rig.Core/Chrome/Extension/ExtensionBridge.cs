@@ -84,6 +84,12 @@ public interface IExtensionBridge
 /// <param name="timeout">How long one request may take, the extension's work included.</param>
 public sealed class SocketExtensionBridge(string folder, TimeSpan timeout) : IExtensionBridge
 {
+    /// <summary>
+    /// The longest a <c>hello</c> may take. The host answers it without asking the extension, so a host slower than
+    /// this is stuck, and one stuck host must not add the full timeout to every read.
+    /// </summary>
+    public static readonly TimeSpan HelloTimeout = TimeSpan.FromSeconds(2);
+
     /// <inheritdoc/>
     public IReadOnlyList<ExtensionConnection> Connections()
     {
@@ -97,7 +103,7 @@ public sealed class SocketExtensionBridge(string folder, TimeSpan timeout) : IEx
         {
             try
             {
-                var hello = Request(socket, ExtensionProtocol.HelloCommand, null) as JsonObject;
+                var hello = Request(socket, ExtensionProtocol.HelloCommand, null, timeout < HelloTimeout ? timeout : HelloTimeout) as JsonObject;
                 found.Add(new ExtensionConnection(socket, Text(hello, "email"), Text(hello, "version"), Text(hello, "browser")));
             }
             catch (ExtensionCallException error) when (error.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused })
@@ -118,20 +124,33 @@ public sealed class SocketExtensionBridge(string folder, TimeSpan timeout) : IEx
     public JsonNode? Send(ExtensionConnection connection, string command, JsonObject? args = null)
     {
         ArgumentNullException.ThrowIfNull(connection);
-        return Request(connection.Socket, command, args);
+        return Request(connection.Socket, command, args, timeout);
     }
 
-    private JsonNode? Request(string socketPath, string command, JsonObject? args)
+    private static JsonNode? Request(string socketPath, string command, JsonObject? args, TimeSpan limit)
     {
         string? line;
         try
         {
             using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
             {
-                ReceiveTimeout = (int)timeout.TotalMilliseconds,
-                SendTimeout = (int)timeout.TotalMilliseconds,
+                ReceiveTimeout = (int)limit.TotalMilliseconds,
+                SendTimeout = (int)limit.TotalMilliseconds,
             };
-            socket.Connect(new UnixDomainSocketEndPoint(socketPath));
+
+            // A host that stopped accepting, with its backlog full, would block a plain Connect for ever.
+            using (var connecting = new CancellationTokenSource(limit))
+            {
+                try
+                {
+                    socket.ConnectAsync(new UnixDomainSocketEndPoint(socketPath), connecting.Token).AsTask().GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException error)
+                {
+                    throw new ExtensionCallException($"{command}: the host at {socketPath} did not accept within {limit.TotalSeconds:0.#}s", error);
+                }
+            }
+
             using var stream = new NetworkStream(socket, ownsSocket: false);
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
             writer.WriteLine(new JsonObject { ["cmd"] = command, ["args"] = args }.ToJsonString());
