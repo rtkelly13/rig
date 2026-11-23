@@ -91,13 +91,18 @@ or an image URL. The doctor fails an icon outside that set, and a test holds `co
 to it. `OrcaRepoIcon.Lucide` in `src/Rig.Core/Orca/OrcaState.cs` mirrors the list; update it when Orca's
 picker changes.
 
-## Worktrees under each repo's `temp/`
+## Worktrees beside each repo
 
-Every managed repo gitignores `temp/`, and `worktree_base_path: "temp"` makes Orca create new
-worktrees there instead of under `workspace_dir`. Orca's "nest workspaces" setting (on here)
-still adds the repo's folder name, so a new rig worktree lands at
-`~/code/personal/rig/temp/rig/<name>`; with nesting off it is `temp/<name>`. That setting is
-global and only changes in Orca's Settings. Existing worktrees stay where they are.
+`worktree_base_path: "../.worktrees"` makes Orca create new worktrees in the scope folder,
+beside the repo, instead of inside it or under `workspace_dir`. Orca's "nest workspaces" setting
+(on here) adds the repo's folder name, so a new rig worktree lands at
+`<code root>/personal/.worktrees/rig/<name>`; with nesting off every repo in a scope would share
+`.worktrees/<name>`, so keep nesting on. That setting is global and only changes in Orca's
+Settings. Existing worktrees under `temp/` stay where they are.
+
+Nesting a worktree inside its checkout breaks builds: MSBuild, tsconfig, eslint and pnpm all walk
+up the tree for config, so the worktree inherits the parent checkout's. See
+[git/worktrees.md](git/worktrees.md).
 
 ## Base refs and stale local `main`
 

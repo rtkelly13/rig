@@ -60,7 +60,8 @@ public static class EstateRules
         when GitHub allows it. Each repo's `AGENTS.md` names its commands.
 
         **Scratch files belong in `temp/`** (gitignored) — never loose in a repo root.
-        Worktrees live in `.worktrees/`.
+        Worktrees live beside the repo, in `../.worktrees/<repo>/<name>` — never inside a
+        checkout, where the parent's build config leaks into them.
 
         **Never silently skip a missing file.** If a referenced skill, template, or config
         cannot be found, say so and ask for the correct path rather than guessing or

@@ -20,7 +20,8 @@ appears. Locked worktrees are not judged on PR state, and merged or open PRs are
 not decisions. PR state comes from `gh` and is fetched only for clones with an
 idle, clean, pushed worktree; when `gh` cannot reach the clone's GitHub origin,
 those worktrees are left out rather than reported as having no PR. A
-`locked-path` is a directory under `.worktrees/` or `temp/worktrees/` with no
+`locked-path` is a directory under the clone's `<scope>/.worktrees/<repo>/`, its
+in-repo `.worktrees/`, or `temp/worktrees/` with no
 live `.git` pointer, or one directly under `temp/` whose `.git` file points at an
 admin directory that is gone. Sizes never follow symlinks or junctions, so a
 leftover workspace checkout does not count the clones linked under its
