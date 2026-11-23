@@ -3,6 +3,7 @@ using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.Estate;
 

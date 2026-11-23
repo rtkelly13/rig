@@ -46,6 +46,8 @@ using Rig.Core.Tools;
 using Rig.Core.Vault;
 using Rig.Core.WorkItems;
 using Rig.Core.Workspace;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using Rig.Image;
 using Rig.Web.Mcp;
 

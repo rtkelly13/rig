@@ -4,6 +4,7 @@ using Rig.Core.Roots;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Text;
 using Rig.Core.WorkItems;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.WorkItems;
 

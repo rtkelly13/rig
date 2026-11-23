@@ -8,6 +8,8 @@ using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Tests;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using Rig.Web.Ops;
 
 namespace Rig.Web.Tests;

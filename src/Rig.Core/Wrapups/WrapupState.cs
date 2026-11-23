@@ -7,7 +7,7 @@ using Rig.Core.Processes;
 using Rig.Core.Storage;
 using Rig.Core.Text;
 
-namespace Rig.Core.Estate;
+namespace Rig.Core.Wrapups;
 
 /// <summary>One prompt rig delivered to one agent pane.</summary>
 /// <param name="At">When the send was accepted, UTC ISO 8601.</param>

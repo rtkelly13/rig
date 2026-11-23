@@ -1,6 +1,6 @@
-using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.WorkItems;
 

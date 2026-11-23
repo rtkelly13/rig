@@ -1,5 +1,6 @@
 using Rig.Core.Text;
 using Rig.Core.WorkItems;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.WorkItems;
 

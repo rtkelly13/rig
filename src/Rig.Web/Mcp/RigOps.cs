@@ -5,6 +5,7 @@ using Rig.Core.Orca;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Workspace;
+using Rig.Core.Worktrees;
 
 using Rig.Web.Ops;
 

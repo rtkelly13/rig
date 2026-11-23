@@ -8,6 +8,7 @@ using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 

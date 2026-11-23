@@ -2,6 +2,7 @@ using System.Globalization;
 using Rig.Core.Processes;
 using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 

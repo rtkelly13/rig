@@ -8,6 +8,7 @@ using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Cli.Estate;
 
