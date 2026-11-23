@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Rig.Core.Markup;
+using Rig.Core.Text;
 
 namespace Rig.Core.Vault;
 

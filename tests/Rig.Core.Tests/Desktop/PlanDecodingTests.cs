@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Rig.Core.Desktop;
+using Rig.Core.Screens;
 using Rig.Core.Text;
 
 namespace Rig.Core.Tests.Desktop;

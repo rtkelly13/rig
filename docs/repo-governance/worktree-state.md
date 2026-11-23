@@ -5,7 +5,7 @@
 Some rig features need to remember things about one worktree between runs, such as when a session
 was asked to wrap up and what it answered. That memory belongs to the worktree, not to rig's
 checkout or a central database, so it travels with the folder and goes when the folder goes. This
-page is the standard for where that state lives and how it is written. `WorktreeState` in `src/Rig.Core/Estate/WrapupState.cs`
+page is the standard for where that state lives and how it is written. `WorktreeState` in `src/Rig.Core/Wrapups/WrapupState.cs`
 implements it, and every feature uses that type rather than choosing its own path.
 
 ## The rules
@@ -39,7 +39,7 @@ implements it, and every feature uses that type rather than choosing its own pat
   missing entry `worktree-state`. `--apply` can't fix that safely, so it is reported for a hand edit.
 - **Writers check before writing.** A repo outside governance (a work repo, a clone without the
   ignore) never gets a state file. The feature reports `state not recorded: temp/.rig/ is not
-  gitignored here` instead. The check and the atomic write live in `WorktreeState` (`src/Rig.Core/Estate/WrapupState.cs`).
+  gitignored here` instead. The check and the atomic write live in `WorktreeState` (`src/Rig.Core/Wrapups/WrapupState.cs`).
 
 ## Files in use
 

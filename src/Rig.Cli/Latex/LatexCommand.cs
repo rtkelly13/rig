@@ -1,5 +1,6 @@
 using System.CommandLine;
 using DotMake.CommandLine;
+using Rig.Cli.Commands;
 using Rig.Core;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -68,7 +69,7 @@ internal sealed class LatexCommand(IProc proc, LatexHost host, TextWriter output
 
     private static string BlogDirectory(LatexHost host)
     {
-        var candidate = System.IO.Path.Combine(host.CodeRoot, CodeRoot.PersonalFolder, "blog");
+        var candidate = System.IO.Path.Combine(CodeRoot.Personal(host.CodeRoot), "blog");
         if (Directory.Exists(candidate))
         {
             return candidate;

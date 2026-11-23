@@ -109,14 +109,14 @@ public static partial class EdgeRegularity
     internal static string Coordinate(double value, int places)
     {
         var text = PythonNumber.FormatFixed(value, places);
-        return text.StartsWith('-') && text.AsSpan(1).IndexOfAnyExcept('0', '.') < 0 ? text[1..] : text;
+        return text.StartsWith('-', StringComparison.Ordinal) && text.AsSpan(1).IndexOfAnyExcept('0', '.') < 0 ? text[1..] : text;
     }
 
     /// <summary>Python's <c>f"{value:+.{places}f}"</c>.</summary>
     internal static string Signed(double value, int places)
     {
         var text = PythonNumber.FormatFixed(value, places);
-        return text.StartsWith('-') ? text : "+" + text;
+        return text.StartsWith('-', StringComparison.Ordinal) ? text : "+" + text;
     }
 
     [GeneratedRegex("(<path\\b[^>]*\\bd=\")([^\"]*)(\")")]

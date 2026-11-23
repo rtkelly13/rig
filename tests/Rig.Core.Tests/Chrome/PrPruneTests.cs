@@ -435,7 +435,7 @@ public sealed class PrPruneTests
                 "Close: superseded by a lower stack member",
                 "4 to close, 2 PR tabs kept, 0 reported, 5 PRs seen",
             ],
-            TabPlanText.Prune(plan).Where(line => !line.StartsWith(' ')).Select(line => line.Split(" (")[0]));
+            TabPlanText.Prune(plan).Where(line => !line.StartsWith(' ', StringComparison.Ordinal)).Select(line => line.Split(" (")[0]));
     }
 
     [Fact]

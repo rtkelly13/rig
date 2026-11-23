@@ -8,6 +8,7 @@ using Rig.Core.Estate;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Cli.Estate;
 
@@ -23,7 +24,7 @@ internal sealed record EstateHost(
     string CodeRoot, string Home, string WorkingDirectory, string ScopesFile = "", string MachineConfigFile = "", string? LocalAppData = null, string ManagedProjectsFile = "")
 {
     /// <summary>The personal estate folder, the default <c>--root</c>.</summary>
-    public string PersonalDir => Path.Join(CodeRoot, "personal");
+    public string PersonalDir => Rig.Core.Roots.CodeRoot.Personal(CodeRoot);
 
     /// <summary>The clone list cache.</summary>
     public string CacheFile => CloneDiscovery.CacheFileUnder(Home);

@@ -1,3 +1,5 @@
+using Rig.Core.Screens;
+
 namespace Rig.Core.Desktop;
 
 /// <summary>
@@ -103,6 +105,9 @@ public interface IDesktopPort
 
     /// <summary>Bring every window of the named processes to the front; how many were raised.</summary>
     int BringProcessWindowsToFront(IReadOnlySet<string> processNames);
+
+    /// <summary>Close or minimize window <paramref name="handle"/>, as <paramref name="action"/> names (<see cref="BackgroundApp.Actions"/>).</summary>
+    void PutAwayWindow(long handle, string action);
 
     /// <summary>Open a note for each missing path the restore hit; the actions taken.</summary>
     IReadOnlyList<string> OpenMissingPathFallbacks(RestoreFailureFallbacks fallbacks, IRunLog log);

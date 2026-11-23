@@ -1,5 +1,6 @@
 using Rig.Core.Chrome;
 using Rig.Core.GitHub;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
 
 namespace Rig.Core.Tests.Chrome;

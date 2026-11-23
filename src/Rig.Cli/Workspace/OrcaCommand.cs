@@ -3,6 +3,7 @@ using System.CommandLine;
 using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
 using Rig.Cli.Rendering;
+using Rig.Core;
 using Rig.Core.Orca;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
@@ -121,7 +122,10 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var userData = orca.Locations.UserData(orcaData);
         var (snapshot, _) = await SnapshotAsync(userData, cancellationToken).ConfigureAwait(false);
         var managed = Projects().Where(spec => spec.Enabled).Select(spec => spec.Name).ToList();
-        var findings = OrcaDoctor.Diagnose(OrcaPolicy.Load(policyPath), snapshot, Paths(root), managed, time.GetUtcNow());
+        var policy = OrcaPolicy.Load(policyPath);
+        var paths = Paths(root);
+        var localBase = await LocalBaseAsync(policy, snapshot, paths, cancellationToken).ConfigureAwait(false);
+        var findings = OrcaDoctor.Diagnose(policy, snapshot, paths, managed, time.GetUtcNow(), localBase);
 
         if (json)
         {
@@ -133,7 +137,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["detail"] = f.Detail,
                 ["fix"] = f.Fix,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -149,7 +153,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 }
             }
 
-            await output.WriteAsync(table.Render()).ConfigureAwait(false);
+            await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         }
 
         return findings.Any(f => f.Status == CheckStatus.Fail) ? 1 : 0;
@@ -163,7 +167,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
         var (snapshot, live) = await SnapshotAsync(userData, cancellationToken).ConfigureAwait(false);
         if (snapshot.LaunchArgs is null)
         {
-            await orca.Error.WriteLineAsync("Orca is not running, so there is nothing to sync; retry once it starts.").ConfigureAwait(false);
+            await orca.Error.WriteLineAsync("Orca is not running, so there is nothing to sync; retry once it starts.", cancellationToken).ConfigureAwait(false);
             return Unavailable;
         }
 
@@ -190,11 +194,11 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 ["applied"] = a.Applied,
                 ["detail"] = a.Detail,
             })]);
-            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(rows.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
         }
         else if (actions.Count == 0)
         {
-            await output.WriteLineAsync("All Orca repositories are in sync with policy.").ConfigureAwait(false);
+            await output.WriteLineAsync("All Orca repositories are in sync with policy.", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         else
@@ -212,7 +216,7 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
                 }
             }
 
-            await output.WriteAsync(table.Render()).ConfigureAwait(false);
+            await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         }
 
         return actions.Any(a => a.Action == "error") ? 1 : 0;
@@ -230,6 +234,35 @@ internal sealed class OrcaCommand(WorkspaceHost host, OrcaHost orca, IProc proc,
             : Path.GetFullPath(config);
 
     private IReadOnlyList<ManagedRepoSpec> Projects() => ManagedProjects.Load(host.ManagedProjectsFile);
+
+    /// <summary>
+    /// Each policy repo with a <c>base_ref</c>, read against its registered checkout, so the doctor can warn when the
+    /// local branch Orca would otherwise start from is behind the remote-tracking ref.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, LocalBaseState>> LocalBaseAsync(
+        OrcaPolicy policy, OrcaSnapshot snapshot, OrcaPaths paths, CancellationToken cancellationToken)
+    {
+        var byName = new Dictionary<string, OrcaRepo>(StringComparer.Ordinal);
+        foreach (var repo in snapshot.Repos ?? [])
+        {
+            byName[repo.DisplayName] = repo;
+        }
+
+        var repos = policy.Repos
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Value.BaseRef))
+            .Select(pair => (
+                Name: pair.Key,
+                Path: byName.TryGetValue(pair.Key, out var repo)
+                    ? repo.Path
+                    : pair.Value.Path is { } path ? paths.RepoPath(path) : OrcaPaths.Posix(Path.Join(paths.EstateRoot, pair.Key)),
+                BaseRef: pair.Value.BaseRef!))
+            .ToList();
+        return await OrcaBaseRef.InspectAsync(
+            CodeGit, repos, cancellationToken, Math.Clamp(Environment.ProcessorCount, 1, 8)).ConfigureAwait(false);
+    }
+
+    // Git hardened under the configured code root (the personal folder's parent), never one derived from --root.
+    private Git CodeGit => new(proc, Path.GetDirectoryName(PathResolution.Resolve(host.PersonalDir)) ?? host.PersonalDir);
 
     private OrcaPaths Paths(string? root)
     {

@@ -22,11 +22,12 @@ public sealed record Registration(string? Transport, string? Target)
 
 /// <summary>Where the knowledge server's files live for one user.</summary>
 /// <param name="Home">The user's home folder.</param>
+/// <param name="Personal">The code root's <c>personal/</c> folder, holding the vault repo.</param>
 /// <param name="AppData">rig's app-state folder; see <see cref="Roots.AppData"/>.</param>
-public sealed record KnowledgeServerPlaces(string Home, string AppData)
+public sealed record KnowledgeServerPlaces(string Home, string AppData, string Personal)
 {
     /// <summary>The vault repository, which holds <c>.ok/</c> and the skill library; the notes are under it in <c>Vault/</c>.</summary>
-    public string ProjectRoot => Path.Join(Home, "code", "personal", "obsidian-vault");
+    public string ProjectRoot => Path.Join(Personal, "obsidian-vault");
 
     /// <summary>Where the pinned package is installed.</summary>
     public string Prefix => Path.Join(AppData, "open-knowledge");

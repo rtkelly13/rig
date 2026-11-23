@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Rig.Core</RootNamespace>
-    <!-- LibraryImport generates unsafe marshalling stubs (Otel/DetachedStart.cs). -->
+    <!-- LibraryImport generates unsafe marshalling stubs (Processes/DetachedStart.cs). -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -9,13 +10,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Its parser only: rig applies PyYAML's tag resolution itself (Vault/Frontmatter.cs). -->
-    <PackageReference Include="YamlDotNet" />
     <!-- Reads pyproject.toml manifests for the estate graph (Connectivity/Manifests.cs). -->
-    <PackageReference Include="Tomlyn" />
     <!-- Reads Orca's profile-state database, read-only (Orca/OrcaProfile.cs). -->
-    <PackageReference Include="Microsoft.Data.Sqlite" />
     <!-- Build time only: generates the UI Automation COM interop from Windows' metadata (Desktop/Windows/NativeMethods.txt). -->
-    <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="Desktop/Windows/NativeMethods.txt" />
@@ -35,4 +32,5 @@
     <EmbeddedResource Include="Governance/Templates/review/*" LogicalName="Rig.Core.Governance.Templates.review.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Governance/Templates/dotnet/.editorconfig" LogicalName="Rig.Core.Governance.Templates.dotnet..editorconfig" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

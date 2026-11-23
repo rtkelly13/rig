@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using Rig.Core.GitHub;
 using Rig.Core.Orca;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 
@@ -568,7 +568,7 @@ public static class OrcaLayout
     internal static string Posix(string path)
     {
         var slashed = OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
-        return slashed.Length > 1 && slashed.EndsWith('/') && !slashed.EndsWith(":/", StringComparison.Ordinal) ? slashed.TrimEnd('/') : slashed;
+        return slashed.Length > 1 && slashed.EndsWith('/', StringComparison.Ordinal) && !slashed.EndsWith(":/", StringComparison.Ordinal) ? slashed.TrimEnd('/') : slashed;
     }
 
     private static string Native(string path) => OperatingSystem.IsWindows() ? path.Replace('/', '\\') : path;

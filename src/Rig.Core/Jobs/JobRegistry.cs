@@ -55,7 +55,7 @@ public sealed record JobsEnvironment(
     private string[] Parts(string path)
     {
         var parts = path.Split(Windows ? ['/', '\\'] : ['/'], StringSplitOptions.RemoveEmptyEntries);
-        return path.StartsWith('/') || (Windows && path.StartsWith('\\')) ? ["/", .. parts] : parts;
+        return path.StartsWith('/', StringComparison.Ordinal) || (Windows && path.StartsWith('\\', StringComparison.Ordinal)) ? ["/", .. parts] : parts;
     }
 }
 

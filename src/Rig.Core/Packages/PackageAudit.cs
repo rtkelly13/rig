@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Rig.Core.GitHub;
+using Rig.Core.Config;
+using Rig.Core.Text;
 
 namespace Rig.Core.Packages;
 

@@ -26,7 +26,7 @@ through `Licenses`, `OssTemplates`, `Gitignores` and `ReviewToolConfigs`, apps t
 
 | Guide | When to use |
 |:------|:------------|
-| [required-checks.md](required-checks.md) | Naming a required check; adding a check to `required_checks` in `config/repo_policies.json`; the smoke-then-full `ready-to-merge` gate |
+| [required-checks.md](required-checks.md) | Naming a required check; adding a check to `required_checks` in `config/repo_policies.json`; the smoke-then-full `ready-to-merge` gate; what still runs on a docs-only PR |
 | [action-pinning.md](action-pinning.md) | SHA-pinning workflow actions with pinact, Dependabot and zizmor, and what replaced rig's own pinner |
 | [rulesets.md](rulesets.md) | What the ruleset payload declares, and how `enforce` finds and repairs a live ruleset that has drifted |
 | [policy-config.md](policy-config.md) | `config/repo_policies.json`, which repos governance touches, and shared `.gitignore` entries |

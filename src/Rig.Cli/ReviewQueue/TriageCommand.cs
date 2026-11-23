@@ -3,6 +3,7 @@ using System.CommandLine.Parsing;
 using System.Text.Json;
 using DotMake.CommandLine;
 using Microsoft.Data.Sqlite;
+using Rig.Cli.Commands;
 using Rig.Core;
 using Rig.Core.GitHub;
 using Rig.Core.ReviewQueue;
@@ -103,7 +104,7 @@ internal sealed class TriageCommand(TriageHost host, IQueueSource source, TextWr
         public int Run(CliContext context)
         {
             // System.CommandLine accepts an unmatched option as a positional string.
-            if (Path?.StartsWith('-') == true && !context.Result.ParseResult.Tokens.Any(token => token.Type == TokenType.DoubleDash))
+            if (Path?.StartsWith('-', StringComparison.Ordinal) == true && !context.Result.ParseResult.Tokens.Any(token => token.Type == TokenType.DoubleDash))
             {
                 error.Write($"rig: Unrecognized command or argument '{Path}'.\nRun 'rig --help' for the commands.\n");
                 return (int)ExitCode.Error;

@@ -258,11 +258,11 @@ public static class Volume
 
     private static int Depth(string path) => path.Count(c => c == '\\');
 
-    private static string Parent(string path) => path.LastIndexOf('\\') is var at and >= 0 ? path[..at] : string.Empty;
+    private static string Parent(string path) => path.LastIndexOf('\\', StringComparison.Ordinal) is var at and >= 0 ? path[..at] : string.Empty;
 
     private static string? Category(string path, string codeRoot)
     {
-        var name = path[(path.LastIndexOf('\\') + 1)..].ToLowerInvariant();
+        var name = path[(path.LastIndexOf('\\', StringComparison.Ordinal) + 1)..].ToLowerInvariant();
         return Anywhere.TryGetValue(name, out var anywhere) ? anywhere
             : path.ToLowerInvariant().StartsWith(codeRoot, StringComparison.Ordinal) && CodeOnly.TryGetValue(name, out var code) ? code
             : null;

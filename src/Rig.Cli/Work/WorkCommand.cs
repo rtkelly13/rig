@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Globalization;
 using DotMake.CommandLine;
+using Rig.Cli.Commands;
 using Rig.Cli.Rendering;
 using Rig.Core;
 using Rig.Core.WorkItems;

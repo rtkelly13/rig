@@ -32,8 +32,8 @@ using Rig.Core.Browser;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
-using Rig.Core.GitHub;
 using Rig.Core.Jobs;
+using Rig.Core.Layout;
 using Rig.Core.Orca;
 using Rig.Core.Otel;
 using Rig.Core.Processes;
@@ -41,10 +41,14 @@ using Rig.Core.ReviewQueue;
 using Rig.Core.Roots;
 using Rig.Core.Services;
 using Rig.Core.Skills;
+using Rig.Core.Storage;
+using Rig.Core.Text;
 using Rig.Core.Tools;
 using Rig.Core.Vault;
 using Rig.Core.WorkItems;
 using Rig.Core.Workspace;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using Rig.Image;
 using Rig.Web.Mcp;
 
@@ -61,12 +65,10 @@ internal static class Program
         var exportTree = args.Length > 0 && args[0] == "--export-command-tree";
         var exportWindowsTree = exportTree && args.Contains("windows", StringComparer.Ordinal);
         var exportMacTree = exportTree && args.Contains("macos", StringComparer.Ordinal);
-        var codeRoot = CodeRoot.Current();
-        // RIG_HOME first; then the runtime copy a published rig runs from, so its jobs use that copy; then the checkout.
-        var rigHome = Environment.GetEnvironmentVariable(RigCheckout.HomeVariable);
-        var checkout = RigCheckout.Resolve(
-            string.IsNullOrEmpty(rigHome) ? JobsSite.CopyOf(AppContext.BaseDirectory, AppData.Current()) ?? JobsSite.PublishedCheckout(AppContext.BaseDirectory) : rigHome,
-            codeRoot);
+        // The code root and the checkout, resolved once; everything below derives its paths from this layout.
+        var layout = EstateLayout.Current();
+        var codeRoot = layout.CodeRoot;
+        var checkout = layout.Checkout;
         // The root command and every process it runs are traced, so a failure says which folder and line caused it.
         var scopes = new Dictionary<string, string>
         {
@@ -83,8 +85,8 @@ internal static class Program
         using var registries = new HttpClient(registryHandler) { Timeout = TimeSpan.FromSeconds(30) };
         var workspace = new WorkspaceCommand(
             new WorkspaceHost(
-                Path.Join(codeRoot, "personal"),
-                Path.Join(checkout, "config", EstateScopes.FileName),
+                layout.Personal,
+                layout.ScopesFile,
                 home,
                 ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory),
                 AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home)),
@@ -111,7 +113,7 @@ internal static class Program
         var otelRuntime = new CollectorRuntime(otelPaths, proc, detached, OperatingSystem.IsWindows());
         var devenvHost = new DevenvHost(
             home,
-            Path.Join(checkout, "config", "cli-allowlists.json"),
+            layout.Config("cli-allowlists.json"),
             OperatingSystem.IsWindows(),
             checkout,
             codeRoot,
@@ -121,7 +123,8 @@ internal static class Program
             macOs,
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
-            Console.In);
+            Console.In,
+            layout.ForHome);
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
@@ -170,17 +173,17 @@ internal static class Program
                     Console.Error).Build,
                 new MdLintCommand(
                     proc,
-                    new MdLintHost(Environment.GetEnvironmentVariable, home),
+                    new MdLintHost(Environment.GetEnvironmentVariable, home, layout.Personal),
                     Console.Error).Build,
                 new VaultCommand(
                     proc,
-                    new VaultHost(Environment.GetEnvironmentVariable, home),
+                    new VaultHost(Environment.GetEnvironmentVariable, home, layout.Personal),
                     new KnowledgeServerCommand(
                         proc,
                         async ct => new KnowledgeServer(
                             proc,
                             new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(macOs ? await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false) : 0)),
-                            new KnowledgeServerPlaces(home, AppData.Current()),
+                            new KnowledgeServerPlaces(home, AppData.Current(), layout.Personal),
                             ProgramPath.Find,
                             http),
                         macOs,
@@ -242,7 +245,7 @@ internal static class Program
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
                     new QueueGitHub(github), Console.Out, Console.Error).Build,
-                new JobsCommand(JobsHostFor(codeRoot, checkout, home, proc), Console.Out).Build,
+                new JobsCommand(JobsHostFor(layout, home, proc), Console.Out).Build,
                 new WorkCommand(new WorkHost(codeRoot, home), WorkCollectorFor(git, proc, home).CollectAsync, TimeProvider.System, Console.Out, Console.Error).Build,
                 new RuntimeCommand(
                     new RuntimeHost(
@@ -255,7 +258,7 @@ internal static class Program
                     Console.Out).Build,
                 () => tools.Build(),
                 new MailCommand(
-                    new MailHost(Environment.GetEnvironmentVariable, home, Path.Join(codeRoot, "personal"), TimeProvider.System),
+                    new MailHost(Environment.GetEnvironmentVariable, home, layout.Personal, TimeProvider.System),
                     Console.Out,
                     Console.Error).Build,
                 new OtelStackCommand(
@@ -288,7 +291,7 @@ internal static class Program
                     Console.Error).Build,
                 () => new ModelsCommand(new ModelDiscovery(proc, home, ProgramPath.Find), Console.Out).Build(),
                 new PolicyCommand(
-                    new PolicyHost(Path.Join(checkout, "config", "cli-allowlists.json"), home, Path.Join(codeRoot, "personal"), OperatingSystem.IsWindows()),
+                    new PolicyHost(layout.Config("cli-allowlists.json"), home, layout.Personal, OperatingSystem.IsWindows(), layout.ForHome),
                     Console.Out,
                     Console.Error).Build,
                 new SkillsCommand(
@@ -322,7 +325,7 @@ internal static class Program
                         codeRoot,
                         home,
                         Environment.CurrentDirectory,
-                        Path.Join(checkout, "config", EstateScopes.FileName),
+                        layout.ScopesFile,
                         AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home),
                         Environment.GetEnvironmentVariable("LOCALAPPDATA"),
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
@@ -349,7 +352,7 @@ internal static class Program
                     OpenBrowser,
                     Console.Out,
                     Console.Error,
-                    RigOps.ForCheckout(checkout),
+                    RigOps.For(layout),
                     tools.BuildWebAliases()).Build,
             ],
             new AgentLauncher(
@@ -418,8 +421,9 @@ internal static class Program
     }
 
     // The jobs registry for this checkout: its scripts and the per-user plan.
-    private static JobsHost JobsHostFor(string codeRoot, string checkout, string home, IProc proc)
+    private static JobsHost JobsHostFor(EstateLayout layout, string home, IProc proc)
     {
+        var (codeRoot, checkout) = (layout.CodeRoot, layout.Checkout);
         var windows = OperatingSystem.IsWindows();
         var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         var machineConfig = AgentHost.ConfigUnder(Environment.GetEnvironmentVariable("WORKSPACE_HOME"), home);
@@ -427,7 +431,7 @@ internal static class Program
             checkout,
             AppData.Current(),
             JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows),
-            Path.Join(codeRoot, "personal"));
+            layout.Personal);
         var environment = new JobsEnvironment(
             Rig.Core.Runtime.RuntimeManager.PublishedFolder(checkout),
             site.Plan,

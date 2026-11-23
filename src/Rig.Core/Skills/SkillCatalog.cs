@@ -1,9 +1,10 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Markup;
 using Rig.Core.Policy;
 using Rig.Core.Roots;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Skills;
 
@@ -139,7 +140,7 @@ public sealed record SkillPlaces(string Checkout, string Home, string WorkingDir
             sources.AddRange(Directory.EnumerateDirectories(vendors)
                 .Select(Path.GetFileName)
                 .OfType<string>()
-                .Where(name => !name.StartsWith('.'))
+                .Where(name => !name.StartsWith('.', StringComparison.Ordinal))
                 .Order(UnicodeText.CodePointOrder)
                 .Select(name => new SkillSource(name, Path.Join(vendors, name))));
         }
@@ -332,7 +333,7 @@ public sealed class SkillCatalog(IReadOnlyList<SkillSource> sources, IReadOnlyLi
         foreach (var entry in Directory.EnumerateFileSystemEntries(folder))
         {
             var name = Path.GetFileName(entry);
-            if (name.StartsWith('.') || Ignored.Contains(name))
+            if (name.StartsWith('.', StringComparison.Ordinal) || Ignored.Contains(name))
             {
                 continue;
             }

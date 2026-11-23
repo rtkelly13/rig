@@ -8,6 +8,7 @@ using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 
@@ -365,7 +366,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
 
         var joined = string.Join('/', parts);
         var last = parts[^1];
-        return (normal.EndsWith('/') && Regenerable.Contains(last))
+        return (normal.EndsWith('/', StringComparison.Ordinal) && Regenerable.Contains(last))
             || RegenerableFiles.Contains(last, StringComparer.Ordinal)
             || parts.Any(part => RegenerableSuffixes.Any(suffix => part.EndsWith(suffix, StringComparison.Ordinal)))
             || parts[..^1].Any(CacheDirs.Contains)
@@ -587,7 +588,7 @@ public sealed partial class Shelver(Git git, TreeRemoval removal, TimeProvider c
         }
 
         var keep = status.Ignored.Where(entry => !IsRegenerable(entry)).ToList();
-        var nested = await NestedReposAsync(clone, path, [.. keep, .. status.Untracked.Where(entry => entry.EndsWith('/'))]).ConfigureAwait(false);
+        var nested = await NestedReposAsync(clone, path, [.. keep, .. status.Untracked.Where(entry => entry.EndsWith('/', StringComparison.Ordinal))]).ConfigureAwait(false);
         if (nested.Count > 0)
         {
             // No flag clears this: removing the worktree would delete the nested one.

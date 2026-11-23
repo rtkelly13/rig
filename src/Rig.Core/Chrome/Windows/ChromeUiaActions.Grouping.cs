@@ -1,8 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using Rig.Core.Desktop.Windows;
-using Rig.Core.Desktop.Windows.Uia;
 using Rig.Core.Text;
-using Rig.Core.Vault;
+using Rig.Core.Windows;
+using Rig.Core.Windows.Uia;
 
 namespace Rig.Core.Chrome.Windows;
 

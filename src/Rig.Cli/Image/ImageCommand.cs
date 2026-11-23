@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using DotMake.CommandLine;
+using Rig.Cli.Commands;
 using Rig.Core;
 using Rig.Image;
 

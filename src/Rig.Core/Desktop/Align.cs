@@ -1,5 +1,6 @@
 using System.Globalization;
-using Rig.Core.Vault;
+using Rig.Core.Screens;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 

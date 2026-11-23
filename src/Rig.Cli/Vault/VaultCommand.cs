@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Globalization;
 using Rig.Cli.Rendering;
+using Rig.Core.Layout;
 using Rig.Core.Processes;
 using Rig.Core.Vault;
 
@@ -10,7 +11,12 @@ namespace Rig.Cli.Vault;
 /// <summary>What <c>rig vault</c> needs from the machine.</summary>
 /// <param name="Environment">Reads an environment variable, or returns null.</param>
 /// <param name="Home">The user's home folder.</param>
-internal sealed record VaultHost(Func<string, string?> Environment, string Home);
+/// <param name="Personal"></param>
+internal sealed record VaultHost(Func<string, string?> Environment, string Home, string? Personal = null)
+{
+    /// <summary>The code root's <c>personal/</c> folder: the one given, else the isolated layout's under <see cref="Home"/>.</summary>
+    public string PersonalDir => Personal ?? EstateLayout.Isolated(Home).Personal;
+}
 
 /// <summary>
 /// <c>rig vault</c>: link health, orphans, metadata and filename maintenance for the Obsidian vault, plus the shared
@@ -28,7 +34,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
         lint-ignore) in its frontmatter: one code, a list of codes, TVS for every TVS code, or ALL. Prefer fixing the note.
         """;
 
-    private string Vault => VaultPath.Resolve(host.Environment, host.Home);
+    private string Vault => VaultPath.Resolve(host.Environment, host.Home, host.PersonalDir);
 
     /// <summary>The <c>rig vault</c> command.</summary>
     public Command Build()
@@ -191,7 +197,7 @@ internal sealed class VaultCommand(IProc proc, VaultHost host, KnowledgeServerCo
         {
             if (!parsed.GetValue(flag))
             {
-                await output.WriteLineAsync($"Dry run only. Re-run with --apply to {what}.").ConfigureAwait(false);
+                await output.WriteLineAsync($"Dry run only. Re-run with --apply to {what}.", ct).ConfigureAwait(false);
                 return;
             }
 

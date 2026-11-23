@@ -135,7 +135,7 @@ internal sealed class VolumeCommand(
         var largest = new TextTable($"Largest folders (>= {request.Min})", [("Folder", false), ("Allocated", true), ("Logical", true)]);
         foreach (var row in drill)
         {
-            var label = row.Level == 0 ? row.Folder.Path : new string(' ', 2 * row.Level) + row.Folder.Path[(row.Folder.Path.LastIndexOf('\\') + 1)..];
+            var label = row.Level == 0 ? row.Folder.Path : new string(' ', 2 * row.Level) + row.Folder.Path[(row.Folder.Path.LastIndexOf('\\', StringComparison.Ordinal) + 1)..];
             _ = largest.Add(label, Bytes.Human(row.Folder.Allocated), Bytes.Human(row.Folder.Size));
         }
 

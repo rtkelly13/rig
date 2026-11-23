@@ -1,4 +1,6 @@
 using Rig.Core.Desktop;
+using Rig.Core.Screens;
+using Rig.Core.Text;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Fakes;
@@ -89,6 +91,9 @@ public sealed class FakeDesktop : IDesktopPort
 
     /// <summary>Whether the current desktop cannot be read.</summary>
     public bool CurrentUnknown { get; set; }
+
+    /// <summary>The windows restore minimized.</summary>
+    public HashSet<long> Minimized { get; } = [];
 
     /// <summary>The missing-path fallbacks restore asked to open, as entry names.</summary>
     public List<string> OpenedFallbacks { get; } = [];
@@ -339,6 +344,19 @@ public sealed class FakeDesktop : IDesktopPort
     {
         var wanted = processNames.Select(UnicodeText.CaseFold).ToHashSet(StringComparer.Ordinal);
         return Visible().Count(window => wanted.Contains(UnicodeText.CaseFold(window.ProcessName)));
+    }
+
+    /// <inheritdoc/>
+    public void PutAwayWindow(long handle, string action)
+    {
+        if (action == BackgroundApp.Minimize)
+        {
+            _ = Minimized.Add(handle);
+        }
+        else
+        {
+            _ = Windows.RemoveAll(window => window.Handle == handle);
+        }
     }
 
     /// <inheritdoc/>

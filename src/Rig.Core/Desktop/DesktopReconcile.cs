@@ -1,4 +1,5 @@
-using Rig.Core.Vault;
+using Rig.Core.Text;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop;
 

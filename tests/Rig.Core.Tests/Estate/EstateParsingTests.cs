@@ -1,4 +1,5 @@
 using Rig.Core.Estate;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.Estate;
 

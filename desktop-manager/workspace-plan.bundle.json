@@ -36,6 +36,13 @@
   },
   "workspace": "{workspace-root}",
   "personal-workspace": "{rig-root}",
+  "background": [
+    {
+      "name": "Docker Desktop",
+      "window_process_name": "Docker Desktop.exe",
+      "summary": "Starts at sign-in for the WSL engine and opens its Containers dashboard, which belongs in the tray. Closing the dashboard leaves the engine running. Turning off Open Docker Dashboard when Docker Desktop starts, in the Docker settings, stops the window at the source; this entry keeps it off the desktops either way."
+    }
+  ],
   "bundle": {
     "desktops": [
       { "path": "bundles/ide.json" },

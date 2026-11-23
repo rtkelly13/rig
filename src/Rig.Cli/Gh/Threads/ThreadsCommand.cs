@@ -2,7 +2,6 @@
 using System.CommandLine;
 using System.Text.Json;
 using Rig.Core;
-using Rig.Core.GitHub;
 using Rig.Core.Text;
 
 namespace Rig.Cli.Gh.Threads;
@@ -92,14 +91,14 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         }
         catch (GitHubException problem)
         {
-            await error.WriteLineAsync(problem.Message).ConfigureAwait(false);
+            await error.WriteLineAsync(problem.Message, cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 
         var open = observed.Select(item => item.Thread).Where(thread => !thread.Resolved).ToList();
         if (asJson)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(open.Select(PrintedThread.Of), JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(open.Select(PrintedThread.Of), JsonOutputOptions.SnakeCaseIndented), cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -126,13 +125,13 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         }
         catch (GitHubException problem)
         {
-            await error.WriteLineAsync(problem.Message).ConfigureAwait(false);
+            await error.WriteLineAsync(problem.Message, cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 
         if (decision is not ResolvePlan plan)
         {
-            await error.WriteLineAsync($"Refused: {((Refusal)decision).Reason}").ConfigureAwait(false);
+            await error.WriteLineAsync($"Refused: {((Refusal)decision).Reason}", cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Drift;
         }
 
@@ -144,11 +143,11 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
 
         if (args.Json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(outcome, JsonOutputOptions.SnakeCaseIndented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(outcome, JsonOutputOptions.SnakeCaseIndented), cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            await output.WriteLineAsync(Describe(plan, outcome)).ConfigureAwait(false);
+            await output.WriteLineAsync(Describe(plan, outcome), cancellationToken).ConfigureAwait(false);
         }
 
         return (int)ExitCode.Clean;
@@ -180,17 +179,17 @@ internal sealed class ThreadsCommand(ThreadsGitHub github, OriginReader origin, 
         {
             if (url is not null)
             {
-                await error.WriteLineAsync($"Replied ({url}) but did not resolve. Rerun to resolve; the reply is not repeated.")
+                await error.WriteLineAsync($"Replied ({url}) but did not resolve. Rerun to resolve; the reply is not repeated.", cancellationToken)
                     .ConfigureAwait(false);
             }
 
             if (asJson)
             {
                 var partial = new ResolveOutcome(threadId, plan.Sha, url, url is not null, Resolved: false, DryRun: false);
-                await output.WriteLineAsync(JsonSerializer.Serialize(partial, JsonOutputOptions.SnakeCaseCompact)).ConfigureAwait(false);
+                await output.WriteLineAsync(JsonSerializer.Serialize(partial, JsonOutputOptions.SnakeCaseCompact), cancellationToken).ConfigureAwait(false);
             }
 
-            await error.WriteLineAsync(problem.Message).ConfigureAwait(false);
+            await error.WriteLineAsync(problem.Message, cancellationToken).ConfigureAwait(false);
             return null;
         }
 

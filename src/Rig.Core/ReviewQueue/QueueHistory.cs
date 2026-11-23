@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 
@@ -32,7 +33,7 @@ public sealed record QueueInteraction(string Repo, int Number, string Action, st
     /// <summary>Validates the public input contract of an interaction.</summary>
     public void Validate()
     {
-        if (Number <= 0 || Note is null || Vault.UnicodeText.Length(Note) > 10000
+        if (Number <= 0 || Note is null || UnicodeText.Length(Note) > 10000
             || Action is not ("opened" or "unread" or "archived" or "unarchived" or "review_requested" or "reviewed"
                 or "changes_requested" or "deferred" or "resumed" or "note"))
         {

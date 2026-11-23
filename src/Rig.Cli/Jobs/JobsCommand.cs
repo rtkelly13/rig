@@ -4,6 +4,7 @@ using System.Text;
 using Rig.Cli.Rendering;
 using Rig.Core.Jobs;
 using Rig.Core.Processes;
+using Rig.Core.Storage;
 
 namespace Rig.Cli.Jobs;
 
@@ -124,13 +125,13 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs install requires Windows.").ConfigureAwait(false);
+            await output.WriteLineAsync("jobs install requires Windows.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         if (host.MissingRig() is { } missingRig)
         {
-            await output.WriteLineAsync(MissingRigMessage(missingRig, refuse: true)).ConfigureAwait(false);
+            await output.WriteLineAsync(MissingRigMessage(missingRig, refuse: true), cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -142,7 +143,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             foreach (var name in CoordinatorTasks.All)
             {
                 await tasks.RegisterAsync(name, JobsTaskXml.Render(name, target, user, now), cancellationToken).ConfigureAwait(false);
-                await output.WriteLineAsync($"Registered {name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Registered {name}", cancellationToken).ConfigureAwait(false);
             }
 
             var retired = new List<string>();
@@ -161,15 +162,15 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
 
             foreach (var name in retired)
             {
-                await output.WriteLineAsync($"Retired {name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Retired {name}", cancellationToken).ConfigureAwait(false);
             }
 
-            await output.WriteLineAsync($"Runs from: {target.Rig}\nLauncher: {target.Pythonw ?? "direct"}\nPlan: {target.Plan}").ConfigureAwait(false);
+            await output.WriteLineAsync($"Runs from: {target.Rig}\nLauncher: {target.Pythonw ?? "direct"}\nPlan: {target.Plan}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         catch (Exception error) when (error is ProcException or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            await output.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await output.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }
@@ -183,14 +184,14 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs uninstall requires Windows.").ConfigureAwait(false);
+            await output.WriteLineAsync("jobs uninstall requires Windows.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         foreach (var name in CoordinatorTasks.All)
         {
             var removed = await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false);
-            await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {name}").ConfigureAwait(false);
+            await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {name}", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -249,7 +250,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         }
 
         text.Append("Logs: ").Append(LogsDir).Append('\n');
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
         return 0;
     }
 

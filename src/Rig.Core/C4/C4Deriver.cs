@@ -609,7 +609,7 @@ public sealed partial class C4Deriver
 
     private static string PosixParent(string path)
     {
-        var index = path.LastIndexOf('/');
+        var index = path.LastIndexOf('/', StringComparison.Ordinal);
         return index < 0 ? "." : path[..index];
     }
 

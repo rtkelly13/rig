@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using Rig.Core.GitHub;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 

@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
+using Rig.Core;
+using Rig.Core.Config;
 using Rig.Core.Packages;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
@@ -166,7 +168,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
                 ["registry_url"] = r.RegistryUrl,
                 ["detail"] = r.Detail,
             })]);
-            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -184,7 +186,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
                 r.Status.Label(), published, r.RegistryUrl);
         }
 
-        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -203,7 +205,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
                 ["detail"] = f.Detail,
                 ["fix"] = f.Fix,
             })]);
-            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(payload.ToJsonString(JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
             return exit;
         }
 
@@ -230,7 +232,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
             _ = text.AppendLine("NuGet policies have no API; pass --trust to print every policy's checklist.");
         }
 
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
         return exit;
     }
 
@@ -254,7 +256,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
 
         if (json)
         {
-            await output.WriteLineAsync(JsonSerializer.Serialize(rows, JsonOutputOptions.Indented)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonSerializer.Serialize(rows, JsonOutputOptions.Indented), cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
@@ -275,7 +277,7 @@ internal sealed class PackagesCommand(WorkspaceHost host, IProc proc, HttpClient
             .AppendLine(CultureInfo.InvariantCulture, $"{rows.Count} packages · {synced} synced · {rows.Count - synced - unpublished} flagged · {unpublished} unpublished")
             .AppendLine()
             .AppendLine("`workspace packages dashboard --json` for machine-readable output");
-        await output.WriteAsync(text.ToString()).ConfigureAwait(false);
+        await output.WriteAsync(text.ToString(), cancellationToken).ConfigureAwait(false);
         return 0;
     }
 

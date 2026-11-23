@@ -30,7 +30,7 @@ rig estate tidy --merged --all --apply
 ## 2. External Worktree Pitfall (Estate Root Worktrees)
 
 A registered git worktree can live anywhere on disk.
-- **The Convention**: Worktrees belong at `<repo>/.worktrees/<name>`.
+- **The Convention**: Worktrees belong beside the repo at `<scope>/.worktrees/<repo>/<name>` (older ones at `<repo>/.worktrees/<name>`).
 - **The Pitfall**: An agent or script checks out a worktree at the virtual monorepo root: `<estate-root>/temp/<name>` (e.g. `personal/temp/obsidian-drop-claude-md`).
 - **The Consequence**: If the parent repository contains large binary files (e.g. an Obsidian vault or video assets), this loose worktree duplicates the entire 15 GB footprint outside normal per-repo scans!
 

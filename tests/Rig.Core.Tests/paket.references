@@ -1,0 +1,5 @@
+Microsoft.CodeAnalysis.BannedApiAnalyzers
+xunit.v3.mtp-v2
+coverlet.MTP
+Microsoft.Testing.Extensions.TrxReport
+CsCheck

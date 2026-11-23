@@ -114,9 +114,9 @@ public static partial class CollectorProcess
     // urlsplit's hostname and port: a host after any user info, then a port that is all digits and at most 65535.
     private static bool HasHostAndPort(string netloc)
     {
-        var hostPort = netloc[(netloc.LastIndexOf('@') + 1)..];
+        var hostPort = netloc[(netloc.LastIndexOf('@', StringComparison.Ordinal) + 1)..];
         int portAt;
-        if (hostPort.StartsWith('['))
+        if (hostPort.StartsWith('[', StringComparison.Ordinal))
         {
             var close = hostPort.IndexOf(']', StringComparison.Ordinal);
             if (close < 2)
@@ -124,7 +124,7 @@ public static partial class CollectorProcess
                 return false;
             }
 
-            portAt = hostPort.IndexOf(':', close);
+            portAt = hostPort.IndexOf(':', close, StringComparison.Ordinal);
         }
         else
         {

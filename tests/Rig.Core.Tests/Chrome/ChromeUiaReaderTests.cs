@@ -1,8 +1,9 @@
 using Rig.Core.Chrome;
 using Rig.Core.Chrome.Windows;
 using Rig.Core.Desktop;
-using Rig.Core.Desktop.Windows.Uia;
+using Rig.Core.Screens;
 using Rig.Core.Tests.Desktop.Windows;
+using Rig.Core.Windows.Uia;
 
 namespace Rig.Core.Tests.Chrome;
 

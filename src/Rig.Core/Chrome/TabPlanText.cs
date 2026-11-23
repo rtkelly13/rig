@@ -196,7 +196,7 @@ public static class TabPlanText
         var cut = new StringBuilder();
         foreach (var rune in runes.Take(width - 1))
         {
-            cut.Append(rune.ToString());
+            cut.Append(rune);
         }
 
         return cut.Append('…').ToString();

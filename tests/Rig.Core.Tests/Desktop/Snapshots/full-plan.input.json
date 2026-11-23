@@ -4,6 +4,10 @@
   "personal-workspace": "C:/personal",
   "switch_delay_ms": 700,
   "features": {"lab": true, "warp": false},
+  "background": [
+    {"name": "Tray", "window_process_name": "tray.exe", "summary": "closes to the tray"},
+    {"name": "Quitter", "window_process_name": "quitter.exe", "action": "minimize", "window_wait_timeout_ms": 5000, "disabled": true}
+  ],
   "notes": ["one", "2"],
   "aliases": {"tools": "{workspace}/tools", "n": "3"},
   "desktops": [

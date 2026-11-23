@@ -112,6 +112,6 @@ public sealed class SvgSimplifierTests
     private static string Path(string svg)
     {
         var start = svg.IndexOf("d=\"", StringComparison.Ordinal) + 3;
-        return svg[start..svg.IndexOf('"', start)];
+        return svg[start..svg.IndexOf('"', start, StringComparison.Ordinal)];
     }
 }

@@ -27,7 +27,7 @@ public static partial class MermaidGenerator
     /// <summary>A container or external container macro line.</summary>
     /// <param name="alias">The Mermaid alias.</param>
     /// <param name="name">The project name.</param>
-    /// <param name="technology">Its technology, such as <c>library · net10.0</c>.</param>
+    /// <param name="technology">Its technology, such as <c>library · net11.0</c>.</param>
     /// <param name="detail">The detail line, such as <c>12 source files</c>.</param>
     /// <param name="link">The bundle-relative view it zooms into without <c>.md</c>, such as <c>components/api</c>, or null.</param>
     /// <param name="external">Whether to write <c>Container_Ext</c>.</param>

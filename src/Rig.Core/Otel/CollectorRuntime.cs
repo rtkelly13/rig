@@ -1,41 +1,9 @@
 using System.Globalization;
-using System.Net.Sockets;
 using System.Text;
 using Rig.Core.Processes;
 using Rig.Core.Storage;
 
 namespace Rig.Core.Otel;
-
-/// <summary>Whether something accepts TCP connections on a local port.</summary>
-public interface IPortProbe
-{
-    /// <summary>Whether <paramref name="host"/>:<paramref name="port"/> accepts a connection within half a second.</summary>
-    Task<bool> ListeningAsync(int port, string host = CollectorConfig.Host, CancellationToken cancellationToken = default);
-}
-
-/// <summary>Probes with a real TCP connection.</summary>
-public sealed class TcpPortProbe : IPortProbe
-{
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(0.5);
-
-    /// <inheritdoc/>
-    public async Task<bool> ListeningAsync(int port, string host = CollectorConfig.Host, CancellationToken cancellationToken = default)
-    {
-        using var client = new TcpClient();
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(Timeout);
-        try
-        {
-            await client.ConnectAsync(host, port, deadline.Token).ConfigureAwait(false);
-            return true;
-        }
-        catch (Exception e) when (e is SocketException or OperationCanceledException)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return false;
-        }
-    }
-}
 
 /// <summary>Who listens on a port: its pid, its executable, and whether that is this collector.</summary>
 /// <param name="Pid">The listening process.</param>
@@ -124,7 +92,7 @@ public sealed class CollectorRuntime(OtelPaths paths, IProc proc, IDetachedStart
         }
 
         var output = await RunAsync(cancellationToken, "tasklist", "/FI", $"PID eq {Text(pid)}", "/FO", "CSV", "/NH").ConfigureAwait(false);
-        return output.StartsWith('"') ? output.Split(',')[0].Trim('"') : string.Empty;
+        return output.StartsWith('"', StringComparison.Ordinal) ? output.Split(',')[0].Trim('"') : string.Empty;
     }
 
     /// <summary>Whether <paramref name="record"/>'s pid is still the collector it launched, not a later process given the same pid.</summary>

@@ -1,7 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Rig.Core.Vault;
+using Rig.Core.Screens;
+using Rig.Core.Text;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop.Windows;
 

@@ -51,7 +51,7 @@ public sealed class LayerTests
         {
             for (var current = type; current is not null; current = current.DeclaringType)
             {
-                if (current.Name.StartsWith('<')
+                if (current.Name.StartsWith('<', StringComparison.Ordinal)
                     || current.CustomAttributes.Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute"))
                 {
                     return false;

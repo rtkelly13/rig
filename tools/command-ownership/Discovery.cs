@@ -62,8 +62,9 @@ internal static class Discovery
             var outputType = Capture(proc, root, "dotnet", "msbuild", project, "-nologo", "-getProperty:OutputType").Trim();
             if (outputType is "Exe" or "WinExe")
             {
+                // Rig.Paket is a sidecar read over stdin and stdout; it registers no rig commands.
                 // SHORT-TERM: loc-report is a report-only CI tool with no command tree. Remove this exemption with it (#320).
-                if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "tools/command-ownership/CommandOwnership.csproj" or "tools/loc-report/LocReport.csproj"))
+                if (project is not ("src/Rig.Cli/Rig.Cli.csproj" or "src/Rig.Paket/Rig.Paket.csproj" or "tools/command-ownership/CommandOwnership.csproj" or "tools/loc-report/LocReport.csproj"))
                 {
                     throw new InvalidOperationException($"Unsupported executable project: {project}; add its runtime discovery adapter");
                 }

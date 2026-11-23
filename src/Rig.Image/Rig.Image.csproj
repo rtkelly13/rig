@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The image pipeline (ADR 0024, #321): two SVG renderers, the raster work, the drift metrics and the cross-check. -->
   <PropertyGroup>
@@ -5,11 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The authoritative renderer. The package pins the Chromium revision, so CI and a developer install the same browser. -->
-    <PackageReference Include="Microsoft.Playwright" />
     <!-- The fast renderer, no browser. SkiaSharp is used only inside it. -->
-    <PackageReference Include="Svg.Skia" />
     <!-- Svg.Skia throws on Linux without a native Skia; the macOS and Windows assets arrive with SkiaSharp itself. -->
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Rig.Image.Simplifier/Rig.Image.Simplifier.csproj" />
@@ -29,4 +27,5 @@
     <InternalsVisibleTo Include="Rig.Image.BrowserTests" />
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
   </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -3,9 +3,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Rig.Core.Otel;
+using Rig.Core.Markup;
 using Rig.Core.Text;
-using Rig.Core.Vault;
+using Rig.Core.Tracing;
 
 namespace Rig.Core.Chrome;
 

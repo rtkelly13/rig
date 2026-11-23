@@ -8,6 +8,8 @@ using Rig.Core.Tests;
 using Rig.Core.Tests.Estate;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.Otel;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 
 namespace Rig.Cli.Tests.Estate;
 

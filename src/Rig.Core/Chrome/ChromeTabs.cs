@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome;
 
@@ -173,7 +174,7 @@ public static partial class TabNames
     private static string RStrip(string text)
     {
         var end = text.Length;
-        while (end > 0 && Vault.UnicodeText.IsSpace(text[end - 1]))
+        while (end > 0 && UnicodeText.IsSpace(text[end - 1]))
         {
             end--;
         }

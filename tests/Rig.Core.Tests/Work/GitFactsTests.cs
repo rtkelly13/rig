@@ -4,6 +4,7 @@ using Rig.Core.Roots;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Text;
 using Rig.Core.WorkItems;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Tests.WorkItems;
 
@@ -16,15 +17,6 @@ public sealed class GitFactsTests : IDisposable
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     public void Dispose() => _temp.Dispose();
-
-    [Fact]
-    public void ParseTrack_reads_ahead_behind_gone_and_no_upstream()
-    {
-        Assert.Equal(new Track(null, null, false), WorkGitParsers.ParseTrack("", ""));
-        Assert.Equal(new Track(null, null, true), WorkGitParsers.ParseTrack("origin/x", "[gone]"));
-        Assert.Equal(new Track(2, 1, false), WorkGitParsers.ParseTrack("origin/x", "[ahead 2, behind 1]"));
-        Assert.Equal(new Track(0, 0, false), WorkGitParsers.ParseTrack("origin/x", ""));
-    }
 
     [Fact]
     public void ParseRefs_maps_branches_default_branch_and_unpushed_counts()

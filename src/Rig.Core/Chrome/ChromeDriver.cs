@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Chrome;
 
@@ -261,7 +261,7 @@ public static class TabMenus
 
         var head = entry[..(entry.Length - suffix.Length)];
         var title = UnicodeText.Lower(UnicodeText.Strip(activeTitle));
-        if (head.EndsWith('…'))
+        if (head.EndsWith('…', StringComparison.Ordinal))
         {
             return head.Length > 1 && title.StartsWith(head[..^1], StringComparison.Ordinal);
         }

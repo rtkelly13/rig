@@ -4,6 +4,7 @@ using Rig.Core;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Tests.Fakes;
+using Rig.Core.Text;
 
 namespace Rig.Cli.Tests;
 

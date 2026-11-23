@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Layout;
 using Rig.Core.Text;
 using IOPath = System.IO.Path;
 
@@ -21,7 +22,8 @@ public sealed record CommandPrefix(IReadOnlyList<string> Tokens, bool Wildcard)
 /// <param name="System">The agent surface: <c>claude</c>, <c>codex</c>, <c>opencode</c> or <c>antigravity</c>.</param>
 /// <param name="Path">Its native permission file, or null when it exposes none.</param>
 /// <param name="Windows">Whether files are written with CRLF line endings.</param>
-public sealed record NativeProjection(string System, string? Path, bool Windows)
+/// <param name="EstateRoot">The code root as opencode writes it (<c>~/…</c>), so sibling repos stay reachable.</param>
+public sealed record NativeProjection(string System, string? Path, bool Windows, string EstateRoot)
 {
     /// <summary>Every surface, in the order <c>policy sync</c> visits them.</summary>
     public static readonly IReadOnlyList<string> Systems = ["opencode", "claude", "codex", "antigravity"];
@@ -36,10 +38,12 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     // Surfaces whose rules always match as prefixes: an exact policy command still allows anything after it.
     private static readonly HashSet<string> PrefixMatchOnly = new(["codex", "antigravity"], StringComparer.Ordinal);
 
-    /// <summary>The projection for <paramref name="system"/> under <paramref name="home"/>; only opencode's looks at disk.</summary>
-    public static NativeProjection For(string system, string home, bool windows)
+    /// <summary>The projection for <paramref name="system"/> under <paramref name="layout"/>'s home; only opencode's looks at disk.</summary>
+    public static NativeProjection For(string system, EstateLayout layout, bool windows)
     {
         ArgumentNullException.ThrowIfNull(system);
+        ArgumentNullException.ThrowIfNull(layout);
+        var home = layout.Home;
         var path = system switch
         {
             "claude" => IOPath.Join(home, ".claude", "settings.json"),
@@ -48,12 +52,12 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
             "antigravity" => IOPath.Join(home, ".gemini", "antigravity-cli", "settings.json"),
             _ => throw new ArgumentException($"Unknown native permission system: {system}", nameof(system)),
         };
-        return new NativeProjection(system, path, windows);
+        return new NativeProjection(system, path, windows, layout.Display(layout.CodeRoot));
     }
 
-    /// <summary>Applies <paramref name="policy"/> to each of <paramref name="systems"/> under <paramref name="home"/>.</summary>
-    public static IReadOnlyList<ProjectionResult> ApplyAll(CommandPolicy policy, IEnumerable<string> systems, string home, bool dryRun, bool windows) =>
-        [.. systems.Select(s => For(s, home, windows).Apply(policy, dryRun))];
+    /// <summary>Applies <paramref name="policy"/> to each of <paramref name="systems"/> under <paramref name="layout"/>'s home.</summary>
+    public static IReadOnlyList<ProjectionResult> ApplyAll(CommandPolicy policy, IEnumerable<string> systems, EstateLayout layout, bool dryRun, bool windows) =>
+        [.. systems.Select(s => For(s, layout, windows).Apply(policy, dryRun))];
 
     /// <summary>Writes <paramref name="policy"/> into the native file, or says what it would do when <paramref name="dryRun"/>.</summary>
     public ProjectionResult Apply(CommandPolicy policy, bool dryRun)
@@ -100,7 +104,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         var trimmed = pattern.TrimEnd();
-        var wildcard = trimmed.EndsWith('*');
+        var wildcard = trimmed.EndsWith('*', StringComparison.Ordinal);
         var text = wildcard ? trimmed[..^1].TrimEnd() : pattern.Trim();
         if (text.IndexOfAny(['*', '?']) >= 0)
         {
@@ -205,7 +209,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
                 continue;
             }
 
-            if (text.StartsWith("unsandboxed(", StringComparison.Ordinal) && text.EndsWith(')'))
+            if (text.StartsWith("unsandboxed(", StringComparison.Ordinal) && text.EndsWith(')', StringComparison.Ordinal))
             {
                 text = $"command({text["unsandboxed(".Length..^1]})";
             }
@@ -308,7 +312,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
         UnifyShellRules(shells);
 
         // Sibling repos across the estate root stay reachable without tripping OpenCode's external_directory guard.
-        _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd("~/code/**", "allow");
+        _ = ObjectAt(permission, "external_directory", "permission.external_directory").TryAdd($"{EstateRoot}/**", "allow");
         return rendered;
     }
 
@@ -421,7 +425,7 @@ public sealed record NativeProjection(string System, string? Path, bool Windows)
 
             var head = deny.Split('*', 2)[0];
             var words = head.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            var headTokens = head.EndsWith(' ') ? words : words[..^Math.Min(1, words.Length)];
+            var headTokens = head.EndsWith(' ', StringComparison.Ordinal) ? words : words[..^Math.Min(1, words.Length)];
             var shorter = Math.Min(headTokens.Length, prefix.Tokens.Count);
             return prefix.Tokens.Take(shorter).SequenceEqual(headTokens.Take(shorter), StringComparer.Ordinal);
         });

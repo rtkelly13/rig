@@ -1,0 +1,4 @@
+Microsoft.CodeAnalysis.BannedApiAnalyzers
+
+group Sidecar
+Paket.Core

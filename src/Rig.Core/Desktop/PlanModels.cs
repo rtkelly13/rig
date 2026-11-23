@@ -1,31 +1,7 @@
 using System.Text.Json.Nodes;
+using Rig.Core.Screens;
 
 namespace Rig.Core.Desktop;
-
-/// <summary>A screen rectangle in pixels.</summary>
-/// <param name="Left">The left edge.</param>
-/// <param name="Top">The top edge.</param>
-/// <param name="Width">The width.</param>
-/// <param name="Height">The height.</param>
-public sealed record Rect(int Left, int Top, int Width, int Height)
-{
-    /// <summary>The right edge, one past the last column.</summary>
-    public int Right => Left + Width;
-
-    /// <summary>The bottom edge, one past the last row.</summary>
-    public int Bottom => Top + Height;
-
-    /// <summary>The horizontal centre, rounded down.</summary>
-    public int CenterX => Left + FloorHalf(Width);
-
-    /// <summary>The vertical centre, rounded down.</summary>
-    public int CenterY => Top + FloorHalf(Height);
-
-    /// <summary>The rectangle as a plan file holds it.</summary>
-    public JsonObject ToJson() => new() { ["left"] = Left, ["top"] = Top, ["width"] = Width, ["height"] = Height };
-
-    private static int FloorHalf(int value) => (int)Math.Floor(value / 2.0);
-}
 
 /// <summary>Where a window sits on its screen.</summary>
 /// <param name="Mode"><c>full</c>, <c>halves</c>, <c>thirds</c>, <c>two-thirds</c>, <c>quarters</c> or <c>columns</c>.</param>
@@ -199,6 +175,50 @@ public sealed record DesktopPlan(string Name)
     public JsonObject BundleRef(string path) => new JsonObject { ["path"] = path }.AddText("feature", Feature).AddIf(Disabled, "disabled", true);
 }
 
+/// <summary>
+/// An app that starts itself at sign-in and belongs in the tray, not on a desktop. Restore puts away the window it
+/// opens anyway, such as Docker Desktop's dashboard, after placing the planned windows.
+/// </summary>
+/// <param name="Name">What the plan calls the app.</param>
+/// <param name="ProcessName">The image name of the process whose windows are put away, e.g. <c>Docker Desktop.exe</c>.</param>
+public sealed record BackgroundApp(string Name, string ProcessName)
+{
+    /// <summary>Ask the window to close, as its close button would: right for an app that closes to the tray.</summary>
+    public const string Close = "close";
+
+    /// <summary>Minimize the window: for an app that would quit if its window closed.</summary>
+    public const string Minimize = "minimize";
+
+    /// <summary>Every <see cref="Action"/> a plan may name.</summary>
+    public static readonly IReadOnlyList<string> Actions = [Close, Minimize];
+
+    /// <summary><see cref="Close"/> or <see cref="Minimize"/>.</summary>
+    public string Action { get; init; } = Close;
+
+    /// <summary>
+    /// How long to wait, in milliseconds, for the window of an app that is running but has none open yet. Unset is no
+    /// wait: only the windows open when restore reaches the app are put away, so an app already sitting in the tray
+    /// costs a restore nothing.
+    /// </summary>
+    public int? WindowWaitTimeoutMs { get; init; }
+
+    /// <summary>Why the app is here.</summary>
+    public string? Summary { get; init; }
+
+    /// <summary>Kept in the plan but left alone.</summary>
+    public bool Disabled { get; init; }
+
+    /// <summary>The wait <see cref="WindowWaitTimeoutMs"/> sets.</summary>
+    public TimeSpan WindowWait => WindowWaitTimeoutMs is { } ms ? TimeSpan.FromMilliseconds(ms) : TimeSpan.Zero;
+
+    /// <summary>The app as a plan file holds it.</summary>
+    public JsonObject ToJson() => new JsonObject { ["name"] = Name, ["window_process_name"] = ProcessName }
+        .AddIf(Action != Close, "action", Action)
+        .AddIf(WindowWaitTimeoutMs is not null, "window_wait_timeout_ms", WindowWaitTimeoutMs)
+        .AddText("summary", Summary)
+        .AddIf(Disabled, "disabled", true);
+}
+
 /// <summary>The whole workspace: every desktop, in order, and the plan's settings.</summary>
 public sealed record WorkspacePlan
 {
@@ -219,6 +239,9 @@ public sealed record WorkspacePlan
 
     /// <summary>The desktops, in position order.</summary>
     public IReadOnlyList<DesktopPlan> Desktops { get; init; } = [];
+
+    /// <summary>Apps that start themselves and whose windows a full restore puts away.</summary>
+    public IReadOnlyList<BackgroundApp> Background { get; init; } = [];
 
     /// <summary>Free-form notes.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];
@@ -289,6 +312,7 @@ public sealed record WorkspacePlan
     }
 
     private JsonObject WithNotesAndAliases(JsonObject data) => data
+        .AddIf(Background.Count > 0, "background", new JsonArray([.. Background.Select(JsonNode (app) => app.ToJson())]))
         .AddIf(Notes.Count > 0, "notes", new JsonArray([.. Notes.Select(note => JsonValue.Create(note))]))
         .AddIf(Aliases.Count > 0, "aliases", PlanJsonWriter.Map(Aliases, value => JsonValue.Create(value)));
 }

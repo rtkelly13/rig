@@ -73,7 +73,7 @@ internal sealed record AgentHost(string ConfigPath, string WorkingDirectory, Fun
     {
         var folder = string.IsNullOrEmpty(workspaceHome)
             ? Path.Join(home, ".workspace")
-            : workspaceHome.StartsWith('~') ? Path.Join(home, workspaceHome[1..]) : workspaceHome;
+            : workspaceHome.StartsWith('~', StringComparison.Ordinal) ? Path.Join(home, workspaceHome[1..]) : workspaceHome;
         return Path.Join(folder, "config.json");
     }
 }

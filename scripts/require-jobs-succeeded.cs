@@ -13,7 +13,7 @@ using System.Text.Json;
 JsonElement needs;
 try
 {
-    needs = JsonDocument.Parse(Environment.GetEnvironmentVariable("NEEDS_JSON") ?? string.Empty).RootElement;
+    needs = JsonElement.Parse(Environment.GetEnvironmentVariable("NEEDS_JSON") ?? string.Empty);
 }
 catch (JsonException)
 {

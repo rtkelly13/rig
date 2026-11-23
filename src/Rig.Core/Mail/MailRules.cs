@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Rig.Core.Markup;
 using Rig.Core.Text;
-using Rig.Core.Vault;
 
 namespace Rig.Core.Mail;
 
@@ -226,7 +226,7 @@ public sealed partial record MailRuleSet(IReadOnlyList<MailRule> Rules)
         return terms;
     }
 
-    private static string Quote(string term) => HasSpace(term) && !term.StartsWith('"') ? $"\"{term}\"" : term;
+    private static string Quote(string term) => HasSpace(term) && !term.StartsWith('"', StringComparison.Ordinal) ? $"\"{term}\"" : term;
 
     private static string AnyOf(string op, IReadOnlyList<string> values)
     {

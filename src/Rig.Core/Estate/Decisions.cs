@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.Estate;
 
@@ -201,7 +203,7 @@ public sealed class Decisions(Git git, TimeProvider time, PullRequestLookup pull
     {
         // Inside a worktree container a directory with no `.git` at all is what an interrupted delete leaves; in plain
         // `temp/` it is ordinary scratch, so a marker is required.
-        var containers = new[] { Path.Join(clone, ".worktrees"), Path.Join(clone, "temp", "worktrees") };
+        var containers = new[] { WorktreeHome.For(clone), Path.Join(clone, ".worktrees"), Path.Join(clone, "temp", "worktrees") };
         var found = containers.SelectMany(Subdirs).Where(child => IsLeftBehind(child, needsMarker: false));
         var scratch = Subdirs(Path.Join(clone, "temp")).Where(child => Path.GetFileName(child) != "worktrees" && IsLeftBehind(child, needsMarker: true));
         return [.. found, .. scratch];

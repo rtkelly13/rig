@@ -26,7 +26,8 @@ public sealed class KnowledgeServerTests : IDisposable
     {
         handler = new Handler((r, t) => send(r, t));
         http = new HttpMessageInvoker(handler);
-        Places = new KnowledgeServerPlaces(temp.Folder("home"), Path.Join(temp.Path, "appdata"));
+        var home = temp.Folder("home");
+        Places = new KnowledgeServerPlaces(home, Path.Join(temp.Path, "appdata"), Path.Join(home, "code", "personal"));
         Agents = Path.Join(Places.Home, "Library", "LaunchAgents");
     }
 

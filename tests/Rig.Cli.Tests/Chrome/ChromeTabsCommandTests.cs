@@ -8,6 +8,7 @@ using Rig.Cli.Chrome;
 using Rig.Core.Chrome;
 using Rig.Core.GitHub;
 using Rig.Core.Jobs;
+using Rig.Core.Screens;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Workspace;

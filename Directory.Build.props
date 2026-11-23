@@ -1,11 +1,10 @@
 <Project>
   <!-- Every C# project in rig. ADR 0022 sets the bar: nullable on, warnings are errors, all analyzers. -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest-all</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
@@ -16,13 +15,24 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <IsPackable>false</IsPackable>
     <AnalysisModePerformance>AllEnabled</AnalysisModePerformance>
+    <!-- Paket lists every package in paket.lock as a direct PackageReference, including ones the net11.0 shared framework
+         already provides. NuGet's package pruning then warns (NU1510) that it will not prune them; the warning is noise here. -->
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
+  <!-- Nothing from a checkout above this one. A worktree lives inside another rig checkout (temp/, .worktrees/), and
+       the SDK looks upward for both files: a second .globalconfig makes Roslyn unset the keys they share, so the
+       banned-API analyzer flags generated code, and an older checkout's Directory.Packages.props duplicates the
+       versions Paket already pins (NU1506). Only this repo's .globalconfig is read, and Paket owns package versions. -->
+  <PropertyGroup>
+    <DiscoverGlobalAnalyzerConfigFiles>false</DiscoverGlobalAnalyzerConfigFiles>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory).globalconfig" Condition="Exists('$(MSBuildThisFileDirectory).globalconfig')" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" Condition="Exists('$(MSBuildThisFileDirectory)BannedSymbols.txt')" />
   </ItemGroup>
 

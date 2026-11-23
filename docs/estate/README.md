@@ -17,6 +17,20 @@ They live in the same directory tree, which is why "clean up my repos" is not a
 one-liner. Measured on this estate at first run: **539 commits on no remote** and
 **14 GB reclaimable**, of which `temp/` was 9.2 GB.
 
+## Where the code root is
+
+The code root is whichever folder holds `personal/` and the org folders; `~/code` is only the
+default. `Rig.Core.Roots.CodeRoot` resolves it in this order: `CODE_ROOT`; the nearest ancestor
+with an `AGENTS.md` beside `personal/`; the folder two above the rig checkout, since rig is
+cloned at `<root>/personal/rig` (Omarchy machines use `~/Work/personal/rig`, giving `~/Work`);
+then `~/code`. An installed runtime copy uses the checkout it was installed from.
+
+`Rig.Core.Layout.EstateLayout` resolves this once per process, together with the rig checkout rig reads
+its `config/` from, and is passed down. Paths that come from the root (`Personal`, `ScopesFile`,
+`Config(name)`, `Display`) come from the layout rather than being joined at each call site. A
+command given `--home` asks for `layout.ForHome(home)`, which resolves from that home alone (no environment, running checkout or marked root above it),
+so a temporary home stays hermetic; a host that is given no layout uses `EstateLayout.Isolated(home)`.
+
 ## Personal and work scope
 
 Which folders count as personal and which as work is configuration, never a folder-name

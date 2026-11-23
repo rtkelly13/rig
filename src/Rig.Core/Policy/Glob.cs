@@ -64,7 +64,7 @@ public static class Glob
             j++;
         }
 
-        var close = pattern.IndexOf(']', j);
+        var close = pattern.IndexOf(']', j, StringComparison.Ordinal);
         if (close < 0)
         {
             _ = regex.Append(@"\[");
@@ -72,7 +72,7 @@ public static class Glob
         }
 
         var body = pattern[(open + 1)..close];
-        var negated = body.StartsWith('!');
+        var negated = body.StartsWith('!', StringComparison.Ordinal);
         if (negated)
         {
             body = body[1..];
@@ -83,7 +83,7 @@ public static class Glob
         {
             _ = regex.Append('^');
         }
-        else if (body.StartsWith('^'))
+        else if (body.StartsWith('^', StringComparison.Ordinal))
         {
             _ = regex.Append('\\');
         }

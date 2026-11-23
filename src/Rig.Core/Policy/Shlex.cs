@@ -20,7 +20,7 @@ public static class Shlex
     public static IReadOnlyList<string> ShellTokens(string text) => Tokens(text, shell: true);
 
     // Past the end of the line a comment started on.
-    private static int SkipLine(string text, int i) => text.IndexOf('\n', i) is var newline and >= 0 ? newline + 1 : text.Length;
+    private static int SkipLine(string text, int i) => text.IndexOf('\n', i, StringComparison.Ordinal) is var newline and >= 0 ? newline + 1 : text.Length;
 
     private static List<string> Tokens(string text, bool shell)
     {

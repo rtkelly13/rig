@@ -126,7 +126,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
         var failures = await RunStepAsync(root, Steps[0].Lines(run), cancellationToken).ConfigureAwait(false);
         if (failures.Count > 0)
         {
-            await error.WriteLineAsync($"✗ {string.Join("; ", failures)}").ConfigureAwait(false);
+            await error.WriteLineAsync($"✗ {string.Join("; ", failures)}", cancellationToken).ConfigureAwait(false);
         }
 
         return failures.Count > 0 ? 1 : 0;
@@ -135,27 +135,27 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
     private async Task<int> SetupAsync(Command root, SetupRun run, int start, CancellationToken cancellationToken)
     {
         var platform = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux";
-        await output.WriteLineAsync($"Starting Development Environment Setup ({platform} - {run.Mode} mode)").ConfigureAwait(false);
+        await output.WriteLineAsync($"Starting Development Environment Setup ({platform} - {run.Mode} mode)", cancellationToken).ConfigureAwait(false);
         var failed = false;
         for (var number = Math.Max(start, 1); number <= Steps.Count; number++)
         {
             var step = Steps[number - 1];
-            await output.WriteLineAsync($"\n── Step {number}/{Steps.Count}: {step.Name} ──\n   {step.Description}").ConfigureAwait(false);
+            await output.WriteLineAsync($"\n── Step {number}/{Steps.Count}: {step.Name} ──\n   {step.Description}", cancellationToken).ConfigureAwait(false);
             if (!await ShouldRunAsync(step, run.Mode).ConfigureAwait(false))
             {
-                await output.WriteLineAsync($"Skipped: {step.Name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"Skipped: {step.Name}", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             var failures = await RunStepAsync(root, step.Lines(run), cancellationToken).ConfigureAwait(false);
             if (failures.Count == 0)
             {
-                await output.WriteLineAsync($"✓ Completed: {step.Name}").ConfigureAwait(false);
+                await output.WriteLineAsync($"✓ Completed: {step.Name}", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             failed = true;
-            await error.WriteLineAsync($"✗ Step '{step.Name}' failed: {string.Join("; ", failures)}").ConfigureAwait(false);
+            await error.WriteLineAsync($"✗ Step '{step.Name}' failed: {string.Join("; ", failures)}", cancellationToken).ConfigureAwait(false);
             // Agent mode has no one to answer: record the failure and carry on.
             if (run.Mode != "agent" && !await ConfirmAsync("Continue with remaining steps?", true).ConfigureAwait(false))
             {
@@ -163,7 +163,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             }
         }
 
-        await output.WriteLineAsync(failed ? "\n! Setup finished with failed steps." : "\n✓ Setup sequence complete!").ConfigureAwait(false);
+        await output.WriteLineAsync(failed ? "\n! Setup finished with failed steps." : "\n✓ Setup sequence complete!", cancellationToken).ConfigureAwait(false);
         return failed ? 1 : 0;
     }
 
@@ -183,7 +183,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             var code = await root.Parse(line).InvokeAsync(new InvocationConfiguration { Output = output, Error = error }, cancellationToken).ConfigureAwait(false);
             if (code != 0)
             {
-                failures.Add($"rig {string.Join(' ', line.TakeWhile(word => !word.StartsWith('-')))} exited {code}");
+                failures.Add($"rig {string.Join(' ', line.TakeWhile(word => !word.StartsWith('-', StringComparison.Ordinal)))} exited {code}");
             }
         }
 
@@ -194,6 +194,6 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
     {
         await output.WriteAsync($"{question} [{(fallback ? "Y/n" : "y/N")}]: ").ConfigureAwait(false);
         var answer = (await Input.ReadLineAsync().ConfigureAwait(false))?.Trim();
-        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y') || answer.StartsWith('Y');
+        return string.IsNullOrEmpty(answer) ? fallback : answer.StartsWith('y', StringComparison.Ordinal) || answer.StartsWith('Y', StringComparison.Ordinal);
     }
 }

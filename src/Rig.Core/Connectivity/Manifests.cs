@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Rig.Core.Paket;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Text;
@@ -49,7 +50,9 @@ public sealed class Inventory
 
 /// <summary>
 /// Reads package declarations and consumption from a repo's tracked, bounded manifests: <c>package.json</c>,
-/// <c>pyproject.toml</c>, <c>*.csproj</c>, <c>Directory.Packages.props</c> and <c>Directory.Build.props</c>.
+/// <c>pyproject.toml</c>, <c>*.csproj</c>, <c>Directory.Packages.props</c>, <c>Directory.Build.props</c> and, for projects
+/// managed by Paket, <c>paket.dependencies</c> with each project's <c>paket.references</c>, which an
+/// <see cref="IPaketManifests"/> reads with Paket's own parsers.
 /// </summary>
 public static partial class Manifests
 {
@@ -78,7 +81,7 @@ public static partial class Manifests
 
     private static readonly HashSet<string> ManifestNames = new(StringComparer.Ordinal)
     {
-        "package.json", "pyproject.toml", "Directory.Packages.props", "Directory.Build.props",
+        "package.json", "pyproject.toml", "Directory.Packages.props", "Directory.Build.props", "paket.dependencies", "paket.references",
     };
 
     /// <summary>A package's identity: Python's names normalise <c>-_.</c> runs to <c>-</c>; every registry ignores case.</summary>
@@ -117,8 +120,9 @@ public static partial class Manifests
     /// What <paramref name="repo"/>, checked out at <paramref name="root"/>, publishes and consumes, each relationship
     /// keeping the manifest it was read from. A manifest that cannot be read is a warning, not a failure.
     /// </summary>
-    public static async Task<Inventory> ReadAsync(Git git, string root, string repo, TimeSpan? listTimeout = null, CancellationToken cancellationToken = default)
+    public static async Task<Inventory> ReadAsync(Git git, IPaketManifests paket, string root, string repo, TimeSpan? listTimeout = null, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(paket);
         ArgumentNullException.ThrowIfNull(root);
         var inventory = new Inventory();
         try
@@ -133,10 +137,15 @@ public static partial class Manifests
 
         var central = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
         var manifests = new List<(string Evidence, string Full)>();
+        var paketFiles = new List<(string Evidence, string Full)>();
         foreach (var evidence in inventory.Paths)
         {
             var full = Path.GetFullPath(Path.Join(root, evidence));
-            if (Path.GetFileName(full) == "Directory.Packages.props")
+            if (Path.GetFileName(full) is "paket.dependencies" or "paket.references")
+            {
+                paketFiles.Add((evidence, full));
+            }
+            else if (Path.GetFileName(full) == "Directory.Packages.props")
             {
                 try
                 {
@@ -158,6 +167,7 @@ public static partial class Manifests
             }
         }
 
+        await ReadPaketAsync(inventory, paket, paketFiles, repo, cancellationToken).ConfigureAwait(false);
         foreach (var (evidence, full) in manifests)
         {
             try
@@ -266,18 +276,7 @@ public static partial class Manifests
             inventory.PublicationsFound.Add(new Publication("nuget", Canonical("nuget", id.Groups[1].Value), repo, evidence));
         }
 
-        // The nearest Directory.Packages.props above the project sets its central versions.
-        IReadOnlyDictionary<string, string> versions = new Dictionary<string, string>();
-        for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
-        {
-            if (central.TryGetValue(folder, out var found))
-            {
-                versions = found;
-                break;
-            }
-        }
-
-        inventory.ConsumptionsFound.AddRange(NuGetReferences(text, repo, evidence, versions));
+        inventory.ConsumptionsFound.AddRange(NuGetReferences(text, repo, evidence, NearestVersions(full, central)));
         foreach (Match reference in ProjectReferenceTag().Matches(text))
         {
             var target = Attribute(reference.Value, "Include");
@@ -287,6 +286,86 @@ public static partial class Manifests
                 inventory.ProjectRefsFound.Add(new ProjectLink(resolved, evidence));
             }
         }
+    }
+
+    /// <summary>The versions set by the nearest <c>Directory.Packages.props</c> or <c>paket.dependencies</c> above <paramref name="full"/>.</summary>
+    private static Dictionary<string, string> NearestVersions(string full, Dictionary<string, Dictionary<string, string>> central)
+    {
+        for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
+        {
+            if (central.TryGetValue(folder, out var found))
+            {
+                return found;
+            }
+        }
+
+        return new Dictionary<string, string>();
+    }
+
+    /// <summary>
+    /// Reads every Paket file of a repo in one call to <paramref name="paket"/>. Each <c>paket.references</c> package takes
+    /// its version from the nearest <c>paket.dependencies</c> above it: the locked version, else the constraint. A reader
+    /// that cannot run skips the repo's Paket files with one warning.
+    /// </summary>
+    private static async Task ReadPaketAsync(Inventory inventory, IPaketManifests paket, List<(string Evidence, string Full)> files, string repo, CancellationToken cancellationToken)
+    {
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        // git ls-files lists a conflicted path once per index stage; the sidecar answers once per path.
+        var unique = files.DistinctBy(file => file.Full, StringComparer.Ordinal).ToList();
+        var reading = await paket.ReadAsync([.. unique.Select(file => file.Full)], cancellationToken).ConfigureAwait(false);
+        if (reading.Unavailable is { } reason)
+        {
+            inventory.WarningsFound.Add($"Paket manifests skipped: {reason}");
+            return;
+        }
+
+        var read = reading.Files.DistinctBy(file => file.Path, StringComparer.Ordinal).ToDictionary(file => file.Path, StringComparer.Ordinal);
+        var readable = unique
+            .Select(file => (file.Evidence, file.Full, Reading: read.GetValueOrDefault(file.Full) ?? new PaketFile(file.Full, [], "the Paket sidecar did not answer for this file", null)))
+            .ToList();
+        inventory.WarningsFound.AddRange(readable
+            .Where(file => file.Reading.Error is not null || file.Reading.Warning is not null)
+            .Select(file => $"{file.Evidence}: {file.Reading.Error ?? file.Reading.Warning}"));
+
+        // A dependencies file that failed to read still bounds the lookup: its references resolve to no version rather than
+        // to one from a dependencies file further up. Its groups are empty, so its map is too.
+        var versions = readable
+            .Where(file => Path.GetFileName(file.Full) == "paket.dependencies")
+            .ToDictionary(
+                file => Path.GetDirectoryName(file.Full)!,
+                file => file.Reading.Groups
+                    .SelectMany(group => group.Packages.Select(package => (Key: (Group: group.Name.ToUpperInvariant(), Canonical("nuget", package.Name)), Version: PaketRequirement(package.Version))))
+                    .GroupBy(entry => entry.Key)
+                    .ToDictionary(entries => entries.Key, entries => entries.Last().Version),
+                StringComparer.Ordinal);
+        inventory.ConsumptionsFound.AddRange(readable
+            .Where(file => Path.GetFileName(file.Full) == "paket.references" && file.Reading.Error is null)
+            .SelectMany(file => file.Reading.Groups.SelectMany(group => group.Packages.Select(package =>
+            {
+                var key = Canonical("nuget", package.Name);
+                return new Consumption("nuget", key, repo, NearestPaketVersions(file.Full, versions).GetValueOrDefault((group.Name.ToUpperInvariant(), key), "centrally resolved"), "runtime", file.Evidence);
+            }))));
+    }
+
+    /// <summary>A Paket constraint as a requirement: an exact pin reads as its version, and no constraint as <c>unconstrained</c>.</summary>
+    private static string PaketRequirement(string? version) =>
+        version?.TrimStart('=', ' ') is { Length: > 0 } requirement ? requirement : "unconstrained";
+
+    private static Dictionary<(string Group, string Package), string> NearestPaketVersions(string full, Dictionary<string, Dictionary<(string Group, string Package), string>> versions)
+    {
+        for (var folder = Path.GetDirectoryName(full); folder is not null; folder = Path.GetDirectoryName(folder))
+        {
+            if (versions.TryGetValue(folder, out var found))
+            {
+                return found;
+            }
+        }
+
+        return [];
     }
 
     private static List<Consumption> NuGetReferences(string text, string repo, string evidence, IReadOnlyDictionary<string, string> versions)

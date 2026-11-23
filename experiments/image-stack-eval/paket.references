@@ -1,0 +1,4 @@
+Microsoft.CodeAnalysis.BannedApiAnalyzers
+Microsoft.Playwright
+SixLabors.ImageSharp
+Svg.Skia

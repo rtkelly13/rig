@@ -17,10 +17,10 @@ namespace Rig.Cli.Governance;
 internal sealed record GovernanceHost(string CodeRoot, string Cwd, string Checkout)
 {
     /// <summary>The personal estate folder.</summary>
-    public string PersonalDir => Path.Join(CodeRoot, "personal");
+    public string PersonalDir => Rig.Core.Roots.CodeRoot.Personal(CodeRoot);
 
     /// <summary>The estate scopes file, naming the org folders beside the personal folder.</summary>
-    public string ScopesFile => Path.Join(Checkout, "config", EstateScopes.FileName);
+    public string ScopesFile => RigCheckout.Config(Checkout, EstateScopes.FileName);
 
     /// <summary>The policy: the working directory's <c>config/repo_policies.json</c> when it has one, else the checkout's.</summary>
     public string PolicyFile =>
@@ -137,14 +137,14 @@ internal sealed partial class GovernanceCommand(
                 ["report_only_checks"] = new JsonArray([.. AgentsMdAudit.ReportOnlyChecks.Select(name => (JsonNode?)name)]),
                 ["rubric"] = Rubric,
             };
-            await output.WriteLineAsync(JsonOutput.Format(payload)).ConfigureAwait(false);
+            await output.WriteLineAsync(JsonOutput.Format(payload), cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            await output.WriteAsync(RenderAudit(results)).ConfigureAwait(false);
+            await output.WriteAsync(RenderAudit(results), cancellationToken).ConfigureAwait(false);
             if (options.Remote)
             {
-                await output.WriteAsync(RenderRemote(sweep)).ConfigureAwait(false);
+                await output.WriteAsync(RenderRemote(sweep), cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -157,7 +157,7 @@ internal sealed partial class GovernanceCommand(
                 {
                     await output.WriteLineAsync(
                         $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(targets[i]))}: wrote {written} stub(s) to {AgentsMdAudit.WaiverFileName} — "
-                        + "fill in each `reason` or the audit stays red.").ConfigureAwait(false);
+                        + "fill in each `reason` or the audit stays red.", cancellationToken).ConfigureAwait(false);
                 }
             }
         }

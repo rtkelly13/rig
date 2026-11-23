@@ -1,3 +1,4 @@
+using Rig.Core.Config;
 using Rig.Core.Packages;
 
 namespace Rig.Core.Tests.Fakes;

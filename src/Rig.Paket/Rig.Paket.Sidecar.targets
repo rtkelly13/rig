@@ -1,0 +1,20 @@
+<Project>
+  <!-- Imported by the projects that run the Rig.Paket sidecar: builds it first and copies its whole output into paket/ under
+       their own, so PaketSidecar.DefaultPath finds it. A published rig gets the same folder from RuntimeManager. The sidecar
+       keeps its own deps.json in that folder; its Paket.Core, FSharp.Core and Newtonsoft.Json never reach rig's. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Rig.Paket.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="RigCopyPaketSidecar" AfterTargets="Build" DependsOnTargets="ResolveProjectReferences">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Rig.Paket.csproj" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="_RigPaketDll" />
+    </MSBuild>
+    <PropertyGroup>
+      <_RigPaketOut>$([System.IO.Path]::GetDirectoryName($(_RigPaketDll)))</_RigPaketOut>
+    </PropertyGroup>
+    <ItemGroup>
+      <_RigPaketFiles Include="$(_RigPaketOut)/**" Exclude="$(_RigPaketOut)/**/*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_RigPaketFiles)" DestinationFiles="@(_RigPaketFiles->'$(OutDir)paket/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

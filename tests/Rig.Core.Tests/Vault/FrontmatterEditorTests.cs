@@ -1,3 +1,4 @@
+using Rig.Core.Markup;
 using Rig.Core.Vault;
 
 namespace Rig.Core.Tests.Vault;

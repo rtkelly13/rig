@@ -14,8 +14,8 @@ per surface and capability/platform. It is a review ledger, not the discovery me
 ```text
 dotnet build rig.slnx -c Release
 dotnet run --project tools/command-ownership -- --help
-dotnet run --project tools/command-ownership --no-build -c Release -- . src/Rig.Cli/bin/Release/net10.0/rig.dll --inventory
-dotnet run --project tools/command-ownership --no-build -c Release -- . src/Rig.Cli/bin/Release/net10.0/rig.dll --base origin/main
+dotnet run --project tools/command-ownership --no-build -c Release -- . src/Rig.Cli/bin/Release/net11.0/rig.dll --inventory
+dotnet run --project tools/command-ownership --no-build -c Release -- . src/Rig.Cli/bin/Release/net11.0/rig.dll --base origin/main
 ```
 
 The inspector combines:

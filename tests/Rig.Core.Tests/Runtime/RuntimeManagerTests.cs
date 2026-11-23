@@ -57,7 +57,12 @@ public sealed class RuntimeManagerTests : IDisposable
     public void Install_copies_the_commit_not_the_working_tree()
     {
         var repo = NewRepo();
-        var sha = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "committed\n" });
+        var sha = Commit(repo, new Dictionary<string, string>
+        {
+            ["app.txt"] = "committed\n",
+            [".config/dotnet-tools.json"] = "{}\n",
+            ["src/Rig.Paket/Rig.Paket.csproj"] = "<Project />\n",
+        });
         File.WriteAllText(Path.Join(repo, "app.txt"), "uncommitted edit\n");
         var tools = new Tools(_system);
         var manager = Manager(tools);
@@ -73,18 +78,42 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Equal(Path.GetFileName(copy), state.Current);
         Assert.Null(state.Previous);
         Assert.Equal(PathResolution.Resolve(repo), state.Repo);
-        // Only rig is published: the scheduled tasks start it through pythonw, or directly, never through a second executable.
+        // rig and its Paket sidecar are published, and the sidecar into its own folder: the scheduled tasks start rig through
+        // pythonw, or directly, and the sidecar's dependencies stay out of rig's deps.json.
         Assert.Equal(
-            [Path.Join(copy, "src", "Rig.Cli")],
+            [Path.Join(copy, "src", "Rig.Cli"), Path.Join(copy, "src", "Rig.Paket")],
             tools.Calls.Where(call => call.Argv is ["dotnet", "publish", ..]).Select(call => call.Argv[2]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Cli"), "-c", "Release", "-o", Path.Join(copy, "rig"), "-m:2", "-v", "q"]));
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
+            ["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", Path.Join(copy, "rig", "paket"), "-m:2", "-v", "q"]));
+        // Paket's restore targets run the paket local tool, so the copy restores its tools before the first publish.
+        Assert.Equal(["tool", "restore"], tools.Calls.First(call => call.Argv[0] == "dotnet").Argv.Skip(1));
         var windows = OperatingSystem.IsWindows();
+        Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.PublishedSidecar(copy, windows), "--check"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "install", "--help"]));
         // No interpreter environment is built or probed: the copy is the published rig and nothing else.
         Assert.DoesNotContain(tools.Calls, call => call.Argv[0] == "uv" || call.Argv.Contains("import rig.csharp_cli", StringComparer.Ordinal));
         Assert.False(Directory.Exists(Path.Join(copy, ".venv")));
+    }
+
+    [Fact]
+    public void A_commit_before_the_sidecar_installs_without_it()
+    {
+        var repo = NewRepo();
+        var sha = Commit(repo, new Dictionary<string, string> { ["app.txt"] = "1\n" });
+        var tools = new Tools(_system);
+
+        var result = Manager(tools).Install(repo, "HEAD", fetch: false);
+
+        var copy = Path.Join(Root, sha[..RuntimeManager.ShortShaLength]);
+        Assert.True(result.Changed);
+        Assert.Equal(
+            [Path.Join(copy, "src", "Rig.Cli")],
+            tools.Calls.Where(call => call.Argv is ["dotnet", "publish", ..]).Select(call => call.Argv[2]));
+        Assert.DoesNotContain(tools.Calls, call => call.Argv is [_, "--check"]);
+        Assert.DoesNotContain(tools.Calls, call => call.Argv is ["dotnet", "tool", "restore"]);
     }
 
     [Fact]
@@ -340,6 +369,8 @@ public sealed class RuntimeManagerTests : IDisposable
     {
         Assert.EndsWith(Path.Join("rig", "rig"), RuntimeManager.Published("/rt/curr", "rig", windows: false), StringComparison.Ordinal);
         Assert.EndsWith(Path.Join("rig", "rig.exe"), RuntimeManager.Published(@"C:\rt\curr", "rig", windows: true), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "paket", "Rig.Paket"), RuntimeManager.PublishedSidecar("/rt/curr", windows: false), StringComparison.Ordinal);
+        Assert.EndsWith(Path.Join("rig", "paket", "Rig.Paket.exe"), RuntimeManager.PublishedSidecar(@"C:\rt\curr", windows: true), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -21,7 +21,7 @@ public sealed class NotePath
         get
         {
             var name = Name;
-            var dot = name.LastIndexOf('.');
+            var dot = name.LastIndexOf('.', StringComparison.Ordinal);
             return dot > 0 && dot < name.Length - 1 ? name[..dot] : name;
         }
     }

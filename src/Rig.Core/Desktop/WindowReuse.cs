@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
-using Rig.Core.Vault;
+using Rig.Core.Screens;
+using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
@@ -461,7 +462,7 @@ public static class WindowReuse
         var path = netlocEnd < 0 ? string.Empty : rest[netlocEnd..];
         var pathEnd = path.IndexOfAny(['?', '#']);
         path = pathEnd < 0 ? path : path[..pathEnd];
-        var paramsAt = path.IndexOf(';', Math.Max(path.LastIndexOf('/'), 0));
+        var paramsAt = path.IndexOf(';', Math.Max(path.LastIndexOf('/', StringComparison.Ordinal), 0), StringComparison.Ordinal);
         return (netloc, paramsAt < 0 ? path : path[..paramsAt]);
     }
 }

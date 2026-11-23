@@ -1,3 +1,5 @@
+using Rig.Core.Text;
+
 namespace Rig.Core.Desktop;
 
 /// <summary>
@@ -15,10 +17,10 @@ public static class WorkspaceScope
             return plan;
         }
 
-        var wanted = Vault.UnicodeText.CaseFold(desktop);
+        var wanted = UnicodeText.CaseFold(desktop);
         return plan with
         {
-            Desktops = [.. plan.Desktops.Where(item => Vault.UnicodeText.CaseFold(item.Name) == wanted)],
+            Desktops = [.. plan.Desktops.Where(item => UnicodeText.CaseFold(item.Name) == wanted)],
         };
     }
 

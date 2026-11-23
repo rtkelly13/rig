@@ -6,6 +6,8 @@ using System.Text.Json.Nodes;
 using Rig.Core.Estate;
 using Rig.Core.ReviewQueue;
 using Rig.Core.Tests;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 using Rig.Web.Ops;
 using Rig.Web.Tests.Fakes;
 

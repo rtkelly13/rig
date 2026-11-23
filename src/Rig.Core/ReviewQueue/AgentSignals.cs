@@ -1,8 +1,9 @@
-using Rig.Core.Estate;
-using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
+using Rig.Core.Text;
 using Rig.Core.Workspace;
+using Rig.Core.Worktrees;
+using Rig.Core.Wrapups;
 
 namespace Rig.Core.ReviewQueue;
 

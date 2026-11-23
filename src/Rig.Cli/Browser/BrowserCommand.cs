@@ -54,7 +54,7 @@ internal sealed class BrowserCommand(BrowserHost host, IProc proc, TextWriter ou
         var outcome = await For(home).ApplyEnvironmentAsync(dryRun, force, error.WriteLine, cancellationToken).ConfigureAwait(false);
         if (outcome is { Skipped: > 0, Applied: > 0 })
         {
-            await error.WriteLineAsync($"{outcome.Skipped} var(s) already set — left untouched.").ConfigureAwait(false);
+            await error.WriteLineAsync($"{outcome.Skipped} var(s) already set — left untouched.", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;

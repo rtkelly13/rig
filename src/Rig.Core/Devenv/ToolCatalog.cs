@@ -45,7 +45,7 @@ public static class ToolCatalog
 
         foreach (var custom in CustomCatalogs(home))
         {
-            var path = custom.StartsWith('~') ? Path.Join(home, custom[1..]) : custom;
+            var path = custom.StartsWith('~', StringComparison.Ordinal) ? Path.Join(home, custom[1..]) : custom;
             if (File.Exists(path))
             {
                 texts.Add((path, File.ReadAllText(path)));

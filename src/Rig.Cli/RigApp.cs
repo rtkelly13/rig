@@ -2,6 +2,7 @@
 using System.CommandLine;
 using System.Diagnostics;
 using Rig.Cli.Agent;
+using Rig.Cli.Commands;
 using Rig.Cli.Gh;
 using Rig.Cli.Gh.Threads;
 using Rig.Core;
@@ -107,10 +108,10 @@ internal sealed class RigApp(
         {
             foreach (var problem in parsed.Errors)
             {
-                await error.WriteLineAsync($"rig: {problem.Message}").ConfigureAwait(false);
+                await error.WriteLineAsync($"rig: {problem.Message}", cancellationToken).ConfigureAwait(false);
             }
 
-            await error.WriteLineAsync("Run 'rig --help' for the commands.").ConfigureAwait(false);
+            await error.WriteLineAsync("Run 'rig --help' for the commands.", cancellationToken).ConfigureAwait(false);
             return (int)ExitCode.Error;
         }
 

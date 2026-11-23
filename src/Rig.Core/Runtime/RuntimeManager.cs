@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using Rig.Core.Files;
+using Rig.Core.Paket;
 using Rig.Core.Processes;
 using Rig.Core.Roots;
 using Rig.Core.Storage;
@@ -109,6 +110,15 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <summary>The projects published into <see cref="PublishedFolder"/>, <c>rig</c>.</summary>
     public static IReadOnlyList<string> PublishedProjects { get; } = ["Rig.Cli"];
 
+    /// <summary>
+    /// The folder the <c>Rig.Paket</c> sidecar is published into: <c>paket</c> under <see cref="PublishedFolder"/>, never the
+    /// same folder as rig, so its <c>deps.json</c> and Paket.Core, FSharp.Core and Newtonsoft.Json stay out of rig's.
+    /// </summary>
+    public static string PublishedSidecarFolder(string copy) => Path.Join(PublishedFolder(copy), PaketSidecar.Folder);
+
+    /// <summary>A copy's published Paket sidecar, as <c>dotnet publish</c> wrote it.</summary>
+    public static string PublishedSidecar(string copy, bool windows) => Path.Join(PublishedSidecarFolder(copy), PaketSidecar.FileName(windows));
+
     /// <summary>A copy's published <c>rig</c>, as <c>dotnet publish</c> wrote it.</summary>
     public static string Published(string copy, string name, bool windows) =>
         Path.Join(PublishedFolder(copy), windows ? $"{name}.exe" : name);
@@ -116,8 +126,26 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     /// <summary>The folder this manager keeps its copies in.</summary>
     public string Root => root;
 
+    /// <summary>
+    /// The checkout the copies under <paramref name="runtimeRoot"/> were built from, as its state file records it;
+    /// null when nothing is installed or the state cannot be read.
+    /// </summary>
+    public static string? RecordedRepo(string runtimeRoot)
+    {
+        try
+        {
+            return ReadStateAt(runtimeRoot).Repo is { Length: > 0 } repo ? repo : null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>The recorded current and previous copies; empty when nothing is installed.</summary>
-    public RuntimeState ReadState()
+    public RuntimeState ReadState() => ReadStateAt(root);
+
+    private static RuntimeState ReadStateAt(string root)
     {
         var path = Path.Join(root, StateName);
         if (!File.Exists(path))
@@ -405,11 +433,25 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
     // rig first: publishing only the launcher leaves out rig.deps.json, so rig cannot find its native libraries (SQLite).
     private void Publish(string copy)
     {
+        // Paket's restore targets call the paket local tool, which a fresh account has not restored yet.
+        if (File.Exists(Path.Join(copy, ".config", "dotnet-tools.json")))
+        {
+            _ = Must(["dotnet", "tool", "restore"], copy);
+        }
+
         foreach (var project in PublishedProjects)
         {
             _ = Must(["dotnet", "publish", Path.Join(copy, "src", project), "-c", "Release", "-o", PublishedFolder(copy), "-m:2", "-v", "q"], copy);
         }
+
+        if (HasSidecar(copy))
+        {
+            _ = Must(["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", PublishedSidecarFolder(copy), "-m:2", "-v", "q"], copy);
+        }
     }
+
+    /// <summary>Whether the revision being installed has the <c>Rig.Paket</c> sidecar; commits before it install without one.</summary>
+    private static bool HasSidecar(string copy) => File.Exists(Path.Join(copy, "src", "Rig.Paket", "Rig.Paket.csproj"));
 
     private List<string> Check(string copy)
     {
@@ -420,6 +462,12 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
             [Published(copy, "rig", windows), "jobs", "run", "--help"],
             [Published(copy, "rig", windows), "jobs", "install", "--help"],
         ];
+        if (HasSidecar(copy))
+        {
+            // --check parses a one-line dependencies file: it fails unless Paket.Core published with the sidecar.
+            commands.Add([PublishedSidecar(copy, windows), "--check"]);
+        }
+
         var plan = Path.Join(copy, "desktop-manager", "workspace-plan.bundle.json");
         // The desktop plan names Windows folders and placeholders, so it only validates on Windows.
         if (windows && File.Exists(plan))

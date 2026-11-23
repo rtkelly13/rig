@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using DotMake.CommandLine;
+using Rig.Cli.Commands;
 using Rig.Cli.Rendering;
 using Rig.Core;
 using Rig.Core.Mail;

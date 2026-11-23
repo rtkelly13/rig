@@ -95,7 +95,7 @@ coverage floor. The brand pipeline `tools/image-drift` is the one Python project
   real desktop is left to the Windows runner: skip it elsewhere with `Assert.SkipUnless(OperatingSystem.IsWindows(), ...)`.
 - The browser tests are Playwright tests in `tests/Rig.Web.BrowserTests`, driving an in-process `RigWebHost`
   ([web-routes.md](web-routes.md#testing)). Install Chromium once after a build:
-  `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net10.0/playwright.ps1 install chromium`.
+  `pwsh tests/Rig.Web.BrowserTests/bin/Debug/net11.0/playwright.ps1 install chromium`.
 
 Windows-safe tests (the Windows jobs catch these, but write them right first time):
 
@@ -111,7 +111,7 @@ Windows-safe tests (the Windows jobs catch these, but write them right first tim
 
 ## Standards and quality gates
 
-- **Package managers**: NuGet for C#, `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
+- **Package managers**: Paket for C# (`dotnet tool restore` once, then `dotnet restore`; versions live in `paket.dependencies`, ADR 0025), `pnpm` for the Tailwind build, `uv` for `tools/image-drift` only.
 - **Local analytics**: DuckDB for structured ledger querying and cross-referencing large JSON feeds, to avoid
   repeating API calls.
 - **Workflow**: every change goes through a pull request, never a direct push to `main`. All required CI checks pass

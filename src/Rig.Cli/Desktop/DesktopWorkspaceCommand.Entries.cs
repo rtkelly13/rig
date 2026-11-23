@@ -3,7 +3,6 @@ using System.CommandLine;
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
 using Rig.Core.Text;
-using Rig.Core.Vault;
 
 namespace Rig.Cli.Desktop;
 
@@ -84,7 +83,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var entries = FindEntries(plan, name, desktop);
         if (entries.Count == 0)
         {
-            await host.Output.WriteLineAsync("No matching entries found in the plan.").ConfigureAwait(false);
+            await host.Output.WriteLineAsync("No matching entries found in the plan.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -95,7 +94,7 @@ internal sealed partial class DesktopWorkspaceCommand
             var processName = location.Entry.WindowProcessName;
             if (string.IsNullOrEmpty(processName))
             {
-                await host.Output.WriteLineAsync($"  {location.Desktop.Name} / {location.Entry.Name}  - no process name configured").ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  {location.Desktop.Name} / {location.Entry.Name}  - no process name configured", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -104,11 +103,11 @@ internal sealed partial class DesktopWorkspaceCommand
             {
                 foundAny = true;
                 await host.Output.WriteLineAsync(
-                    $"  * {location.Desktop.Name} / {location.Entry.Name}  running ({handles.Count} window{(handles.Count == 1 ? string.Empty : "s")})").ConfigureAwait(false);
+                    $"  * {location.Desktop.Name} / {location.Entry.Name}  running ({handles.Count} window{(handles.Count == 1 ? string.Empty : "s")})", cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await host.Output.WriteLineAsync($"  - {location.Desktop.Name} / {location.Entry.Name}  not running").ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"  - {location.Desktop.Name} / {location.Entry.Name}  not running", cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -131,12 +130,12 @@ internal sealed partial class DesktopWorkspaceCommand
         }
         catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await host.Output.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         var substitutions = host.Substitutions(plan);
-        await host.Output.WriteLineAsync($"  - {WindowReuse.DescribeLaunch(entry, substitutions)}").ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"  - {WindowReuse.DescribeLaunch(entry, substitutions)}", cancellationToken).ConfigureAwait(false);
         if (dryRun)
         {
             return 0;
@@ -145,12 +144,12 @@ internal sealed partial class DesktopWorkspaceCommand
         try
         {
             _ = machine.Launching.Launch(entry, substitutions);
-            await host.Output.WriteLineAsync($"Launched: {entry.Name}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Launched: {entry.Name}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         catch (DesktopException error)
         {
-            await host.Error.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await host.Error.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }
@@ -168,25 +167,25 @@ internal sealed partial class DesktopWorkspaceCommand
             var current = machine.Desktops.CurrentNumber;
             if (current < 1 || current > plan.Desktops.Count)
             {
-                await host.Output.WriteLineAsync("Could not determine the current desktop.").ConfigureAwait(false);
+                await host.Output.WriteLineAsync("Could not determine the current desktop.", cancellationToken).ConfigureAwait(false);
                 return 1;
             }
 
             resolvedDesktop = plan.Desktops[current - 1].Name;
-            await host.Output.WriteLineAsync($"Using current desktop: {resolvedDesktop}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Using current desktop: {resolvedDesktop}", cancellationToken).ConfigureAwait(false);
         }
 
         var location = FindEntries(plan, name, resolvedDesktop).FirstOrDefault();
         if (location is null)
         {
-            await host.Output.WriteLineAsync($"Entry not found on desktop `{resolvedDesktop}`: {name}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Entry not found on desktop `{resolvedDesktop}`: {name}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         var substitutions = host.Substitutions(plan);
         var entry = location.Entry;
-        await host.Output.WriteLineAsync($"Desktop {location.DesktopIndex}: {location.Desktop.Name}").ConfigureAwait(false);
-        await host.Output.WriteLineAsync($"  - {WindowReuse.DescribeLaunch(entry, substitutions)}").ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"Desktop {location.DesktopIndex}: {location.Desktop.Name}", cancellationToken).ConfigureAwait(false);
+        await host.Output.WriteLineAsync($"  - {WindowReuse.DescribeLaunch(entry, substitutions)}", cancellationToken).ConfigureAwait(false);
         if (dryRun)
         {
             return 0;
@@ -211,12 +210,12 @@ internal sealed partial class DesktopWorkspaceCommand
                 log.Log($"Applied placement {entry.Placement.ToJson().ToJsonString()} to {entry.Name}: placed={outcome.Placed}");
             }
 
-            await host.Output.WriteLineAsync($"\nLog: {log.RunPath}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"\nLog: {log.RunPath}", cancellationToken).ConfigureAwait(false);
             return 0;
         }
         catch (DesktopException error)
         {
-            await host.Error.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await host.Error.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
     }
@@ -237,7 +236,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var matches = FindEntries(plan, name, desktop);
         if (matches.Count == 0)
         {
-            await host.Output.WriteLineAsync($"App not found in plan: {name}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"App not found in plan: {name}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -254,7 +253,7 @@ internal sealed partial class DesktopWorkspaceCommand
             {
                 await host.Output.WriteLineAsync(
                     $"Would restart {entry.Name} on {location.Desktop.Name}: "
-                    + $"{WindowReuse.DescribeLaunch(entry, substitutions)}").ConfigureAwait(false);
+                    + $"{WindowReuse.DescribeLaunch(entry, substitutions)}", cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -289,7 +288,7 @@ internal sealed partial class DesktopWorkspaceCommand
                     }
                 }
 
-                await host.Output.WriteLineAsync($"Restarted {entry.Name} on {location.Desktop.Name}").ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"Restarted {entry.Name} on {location.Desktop.Name}", cancellationToken).ConfigureAwait(false);
                 log?.Log($"Restarted {entry.Name} on desktop {location.DesktopIndex} ({location.Desktop.Name})");
                 _ = port.EnsureCurrentDesktop(location.DesktopIndex, TimeSpan.FromMilliseconds(plan.SwitchDelayMs));
                 _ = port.Launch(entry, substitutions);
@@ -300,14 +299,14 @@ internal sealed partial class DesktopWorkspaceCommand
             }
             catch (DesktopException error)
             {
-                await host.Error.WriteLineAsync(error.Message).ConfigureAwait(false);
+                await host.Error.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
                 return 1;
             }
         }
 
         if (log is not null)
         {
-            await host.Output.WriteLineAsync($"\nLog: {log.RunPath}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"\nLog: {log.RunPath}", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -328,7 +327,7 @@ internal sealed partial class DesktopWorkspaceCommand
         var path = ConfigPath(config);
         if (!File.Exists(path))
         {
-            await host.Output.WriteLineAsync($"Config not found: {path}").ConfigureAwait(false);
+            await host.Output.WriteLineAsync($"Config not found: {path}", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -339,7 +338,7 @@ internal sealed partial class DesktopWorkspaceCommand
         }
         catch (Exception error) when (error is InvalidPlanException or JsonInputException or UnknownFeatureException or IOException)
         {
-            await host.Output.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await host.Output.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -362,13 +361,13 @@ internal sealed partial class DesktopWorkspaceCommand
         }
         catch (Exception error) when (error is DesktopException or IOException or UnauthorizedAccessException)
         {
-            await host.Error.WriteLineAsync(error.Message).ConfigureAwait(false);
+            await host.Error.WriteLineAsync(error.Message, cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         foreach (var action in result.Actions)
         {
-            await host.Output.WriteLineAsync(action).ConfigureAwait(false);
+            await host.Output.WriteLineAsync(action, cancellationToken).ConfigureAwait(false);
         }
 
         if (!dryRun)
@@ -386,18 +385,18 @@ internal sealed partial class DesktopWorkspaceCommand
                         _ = port.ApplyWindowPlacement(entry, new(TimeSpan.FromSeconds(10), desktopIndex), log ?? RunLog.Discard);
                     }
 
-                    await host.Output.WriteLineAsync($"  - relaunched `{entry.Name}` on {desktop.Name}").ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"  - relaunched `{entry.Name}` on {desktop.Name}", cancellationToken).ConfigureAwait(false);
                 }
                 catch (DesktopException error)
                 {
-                    await host.Output.WriteLineAsync($"  - could not relaunch `{entry.Name}` on {desktop.Name}: {error.Message}").ConfigureAwait(false);
+                    await host.Output.WriteLineAsync($"  - could not relaunch `{entry.Name}` on {desktop.Name}: {error.Message}", cancellationToken).ConfigureAwait(false);
                     result = result with { Ok = false };
                 }
             }
 
             if (log is not null)
             {
-                await host.Output.WriteLineAsync($"\nLog: {log.RunPath}").ConfigureAwait(false);
+                await host.Output.WriteLineAsync($"\nLog: {log.RunPath}", cancellationToken).ConfigureAwait(false);
             }
         }
 

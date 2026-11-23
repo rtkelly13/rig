@@ -4,6 +4,7 @@ using Rig.Core.GitHub;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 using Rig.Core.Tests.WorkItems;
+using Rig.Core.Text;
 using Rig.Core.WorkItems;
 
 namespace Rig.Cli.Tests.Work;

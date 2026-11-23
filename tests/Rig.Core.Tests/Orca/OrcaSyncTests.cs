@@ -107,17 +107,25 @@ public sealed class OrcaSyncTests : IDisposable
         var cli = new FakeOrcaCli(args => args[1] == "set-base-ref" ? null : "{}");
         var live = new FakeOrcaLive();
 
-        var actions = await Sync(Repos(("rig", new RepoPolicy(ExternalWorktreeVisibility: "show", BaseRef: "develop"))), [Hooked(repoPath, "{}")], cli, live, apply: true);
+        var actions = await Sync(Repos(("rig", new RepoPolicy(ExternalWorktreeVisibility: "show", BaseRef: "origin/main"))), [Hooked(repoPath, "{}")], cli, live, apply: true);
 
         var selector = $"path:{repoPath}";
         Assert.Equal(
             [
                 ["repo", "set", "--repo", selector, "--external-worktree-visibility", "show"],
-                ["repo", "set-base-ref", "--repo", selector, "--ref", "develop"],
+                ["repo", "set-base-ref", "--repo", selector, "--ref", "origin/main"],
             ],
             cli.Calls);
         Assert.Empty(live.Updates);
         Assert.Equal([("external worktrees", true), ("base ref", false)], actions.Select(a => (a.Field, a.Applied)));
+    }
+
+    [Fact]
+    public async Task A_matching_remote_tracking_base_ref_needs_no_update()
+    {
+        var repo = Repo("rig", _dir.Folder("rig"), baseRef: "origin/main");
+
+        Assert.Empty(await Sync(Repos(("rig", new RepoPolicy(BaseRef: "origin/main"))), [repo], new FakeOrcaCli(), new FakeOrcaLive()));
     }
 
     [Fact]

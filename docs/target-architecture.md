@@ -17,7 +17,7 @@ scored against something.
 
 ## Language
 
-rig is C# on .NET 10 ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)). The brand-asset pipeline
+rig is C# on .NET 11 ([ADR 0022](adr/0022-csharp-is-rigs-primary-language.md)). The brand-asset pipeline
 (`tools/image-drift`) is the one Python project, kept because its output must stay byte-identical
 ([ADR 0009](adr/0009-deterministic-svg-render-pipeline.md)); it has its own gates and is not part of the C#
 layering below.
@@ -59,14 +59,16 @@ The rules that follow from this:
   decoding, no stdin, no console window and tracing.
 - **Untrusted paths are hardened.** Any git call whose working directory is under the code root's `external/`
   or `other/` gets the hardened flags automatically. Callers cannot opt out.
-- **One code-root resolver.** `CODE_ROOT`, then the code-root marker, then `~/code`. Nothing else derives roots
-  from the assembly location.
+- **One code-root resolver.** `CODE_ROOT`, then the code-root marker, then the root the running rig checkout
+  implies (`<root>/personal/rig`), then `~/code`. `~/code` is a convention, not a requirement: only the layout
+  under the root is. Nothing else derives roots from the assembly location.
 - **Shared parsers, once each.** Repo slugs, branch refs, SVG paths and wikilinks each have exactly one parser.
 
 ## Layering
 
 References point down this stack and never up or sideways. They are project references, and
-`tests/Rig.Architecture.Tests` (NetArchTest) enforces the namespace rules inside a project:
+`tests/Rig.Architecture.Tests` enforces the namespace rules inside a project: NetArchTest for what a namespace may
+reference, ArchUnitNET for cycles:
 
 1. **Composition roots**: `src/Rig.Cli/Program.cs` for `rig`, and `Rig.Web.RigWebHost` for the web host (each route
    group is a static `Map` it calls). These are the
@@ -168,7 +170,7 @@ baseline file. Where existing code violates a rule, the cleanup lands first.
 | Rule | Check |
 |---|---|
 | Each primitive has one owning type: process starts → the process runner; env paths and roots → the code-root resolver; one parser per format | Roslyn `BannedApiAnalyzers` (`RS0030`, `BannedSymbols.txt`) with the owner exempted; no inline suppression |
-| No reference cycles between projects or namespaces | Project references (MSBuild rejects project cycles) and `Rig.Architecture.Tests` namespace rules |
+| No reference cycles between projects or namespaces | Project references (MSBuild rejects project cycles) and `Rig.Architecture.Tests` `CycleTests` (ArchUnitNET) |
 | References follow the layer order; features are independent; adapters never reference features | `Rig.Architecture.Tests` (NetArchTest) |
 | Callers use a type's public API, not its internals | `internal` plus `InternalsVisibleTo` only for the test project; analyzers as errors |
 | Nullable and analyzer warnings | `TreatWarningsAsErrors` and `dotnet format --verify-no-changes` |

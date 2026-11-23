@@ -1,5 +1,6 @@
 using Rig.Core.Desktop;
 using Rig.Core.Desktop.Windows;
+using Rig.Core.Screens;
 using Rig.Core.Tests.Desktop.Windows;
 
 namespace Rig.Core.Tests.Desktop;
@@ -25,7 +26,7 @@ public sealed class WorkspaceStatusTests
         var win32 = Machine();
         var inventory = new WindowInventory(win32, win32);
 
-        var status = WorkspaceStatus.Current(inventory, 2);
+        var status = WorkspaceStatus.Current(inventory.ReusableWindows(), 2);
 
         Assert.Equal(["Desktop 1", "Desktop 2"], status.Desktops.Select(desktop => desktop.Name));
         Assert.Equal(["Notes", "Terminal"], status.Desktops[0].CapturedWindows.Select(window => window.Title));
@@ -38,7 +39,7 @@ public sealed class WorkspaceStatusTests
         var win32 = Machine();
         var inventory = new WindowInventory(win32, win32);
 
-        var status = WorkspaceStatus.CurrentForDesktopIndexes(inventory, [2, 1]);
+        var status = WorkspaceStatus.CurrentForDesktopIndexes(inventory.ReusableWindows(), [2, 1]);
 
         Assert.Equal(["Desktop 2", "Desktop 1"], status.Desktops.Select(desktop => desktop.Name));
         Assert.Equal("Mail", status.Desktops[0].CapturedWindows[0].Title);
@@ -49,7 +50,7 @@ public sealed class WorkspaceStatusTests
     {
         var win32 = Machine();
 
-        Assert.Empty(WorkspaceStatus.CurrentForDesktopIndexes(new WindowInventory(win32, win32), []).Desktops);
+        Assert.Empty(WorkspaceStatus.CurrentForDesktopIndexes(new WindowInventory(win32, win32).ReusableWindows(), []).Desktops);
     }
 
     [Fact]
@@ -58,7 +59,7 @@ public sealed class WorkspaceStatusTests
         var win32 = Machine();
         var inventory = new WindowInventory(win32, win32);
 
-        var captured = WorkspaceStatus.Capture(inventory, 2, "/code");
+        var captured = WorkspaceStatus.Capture(inventory.ReusableWindows(), 2, "/code");
 
         var work = captured.Desktops[0];
         Assert.Equal("Desktop 1", work.Name);
@@ -76,7 +77,7 @@ public sealed class WorkspaceStatusTests
         var win32 = Machine();
         var inventory = new WindowInventory(win32, win32);
 
-        var captured = WorkspaceStatus.Capture(inventory, 1);
+        var captured = WorkspaceStatus.Capture(inventory.ReusableWindows(), 1);
 
         Assert.All(captured.Desktops[0].Launch, entry => Assert.Equal("app", entry.Type));
     }
@@ -103,7 +104,7 @@ public sealed class WorkspaceStatusTests
         var win32 = Machine();
         var inventory = new WindowInventory(win32, win32);
 
-        var captured = WorkspaceStatus.CurrentDesktop(inventory, "Work");
+        var captured = WorkspaceStatus.CurrentDesktop(inventory.CurrentDesktopWindows(), "Work");
 
         Assert.Equal("Work", captured.Name);
         Assert.NotEmpty(captured.CapturedWindows);

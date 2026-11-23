@@ -173,6 +173,22 @@ public sealed class WorkspaceOrcaCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Doctor_warns_when_a_local_base_branch_is_behind_its_remote()
+    {
+        var policy = _root.File("stale.json");
+        await File.WriteAllTextAsync(policy, """{"repos": {"app": {"base_ref": "origin/main"}}}""", Token);
+        _ = Repos("""{"result": {"repos": [{"path": "/elsewhere/app", "displayName": "app", "worktreeBaseRef": "origin/main"}]}}""");
+        _ = _proc
+            .AnswerIn("/elsewhere/app", new Ran(0, "main\torigin/main\t[ahead 0, behind 2]\n", string.Empty), "git", "for-each-ref");
+
+        var (code, output, _) = await RunAsync("workspace", "orca", "doctor", "--json", "--config", policy);
+
+        var row = Assert.Single(JsonNode.Parse(output)!.AsArray(), entry => (string?)entry!["check"] == "local base")!;
+        Assert.Equal(("repo app", "warn", "main is 2 commits behind origin/main"), ((string?)row["subject"], (string?)row["status"], (string?)row["detail"]));
+        Assert.Equal(0, code);
+    }
+
+    [Fact]
     public async Task An_explicit_policy_is_read_instead_of_the_checkouts()
     {
         var policy = _root.File("elsewhere.json");

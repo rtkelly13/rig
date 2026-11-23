@@ -49,7 +49,7 @@ public sealed class RemoteAgentFiles(IProc proc)
         var found = LegacyInstructionFiles.Where(present.Contains).ToList();
         foreach (var relative in BespokeAgentFiles.Defaults)
         {
-            if (relative.EndsWith('/'))
+            if (relative.EndsWith('/', StringComparison.Ordinal))
             {
                 var stripped = relative.TrimEnd('/');
                 if (present.Any(path => path.StartsWith(stripped + "/", StringComparison.Ordinal)))

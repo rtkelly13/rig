@@ -67,7 +67,7 @@ public sealed class Homebrew(IProc proc) : PackageManager(proc)
         }
 
         // A tapped formula (owner/tap/name) is listed by its last segment.
-        return _installed.Contains(id[(id.LastIndexOf('/') + 1)..].ToLowerInvariant());
+        return _installed.Contains(id[(id.LastIndexOf('/', StringComparison.Ordinal) + 1)..].ToLowerInvariant());
     }
 
     /// <inheritdoc />

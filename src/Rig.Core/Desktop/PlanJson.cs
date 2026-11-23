@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Rig.Core.Screens;
 using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
@@ -52,7 +53,8 @@ internal static class PlanJsonWriter
 /// </summary>
 internal static class PlanJsonReader
 {
-    public static readonly string[] RootFields = ["version", "workspace", "personal-workspace", "switch_delay_ms", "desktops", "notes", "aliases", "features", "bundle"];
+    public static readonly string[] RootFields = ["version", "workspace", "personal-workspace", "switch_delay_ms", "desktops", "background", "notes", "aliases", "features", "bundle"];
+    private static readonly string[] BackgroundFields = ["name", "window_process_name", "action", "window_wait_timeout_ms", "summary", "disabled"];
     public static readonly string[] DesktopFields = ["name", "launch", "captured_windows", "disabled", "feature"];
     private static readonly string[] LaunchFields =
     [
@@ -79,10 +81,30 @@ internal static class PlanJsonReader
         PersonalWorkspace = OptionalText(data, "personal-workspace"),
         SwitchDelayMs = Int(data, "switch_delay_ms", 650),
         Desktops = desktops,
+        Background = List(data, "background", BackgroundItem),
         Notes = List(data, "notes", Text),
         Aliases = TextMap(data, "aliases"),
         Features = FeatureMap(data),
     };
+
+    public static BackgroundApp BackgroundItem(JsonNode? node, string path)
+    {
+        var data = Object(node, path);
+        Only(data, BackgroundFields);
+        var action = OptionalText(data, "action") ?? BackgroundApp.Close;
+        if (!BackgroundApp.Actions.Contains(action))
+        {
+            throw JsonProblem.Expected(PathOf(data, "action"), $"one of {string.Join(", ", BackgroundApp.Actions)}", $"\"{action}\"");
+        }
+
+        return new(RequiredText(data, "name"), RequiredText(data, "window_process_name"))
+        {
+            Action = action,
+            WindowWaitTimeoutMs = OptionalInt(data, "window_wait_timeout_ms"),
+            Summary = OptionalText(data, "summary"),
+            Disabled = Bool(data, "disabled"),
+        };
+    }
 
     public static DesktopPlan DesktopPlan(JsonNode? node, string path)
     {

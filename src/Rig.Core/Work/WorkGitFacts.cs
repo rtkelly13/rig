@@ -1,9 +1,6 @@
-using System.Globalization;
-using System.Text.RegularExpressions;
-using Rig.Core.Estate;
-using Rig.Core.GitHub;
 using Rig.Core.Processes;
 using Rig.Core.Text;
+using Rig.Core.Worktrees;
 
 namespace Rig.Core.WorkItems;
 
@@ -12,16 +9,10 @@ namespace Rig.Core.WorkItems;
 /// <param name="DefaultBranch">The branch <c>origin/HEAD</c> names; empty when the clone has no such ref.</param>
 public sealed record RefScan(IReadOnlyList<BranchRef> Branches, string DefaultBranch);
 
-/// <summary>How a branch tracks its upstream.</summary>
-/// <param name="Ahead">Commits ahead; null when there is no upstream or it is gone.</param>
-/// <param name="Behind">Commits behind; null when there is no upstream or it is gone.</param>
-/// <param name="Gone">The tracked remote branch no longer exists.</param>
-public sealed record Track(int? Ahead, int? Behind, bool Gone);
-
 /// <summary>
 /// The pure parsers for the three git reads the work list makes,
 /// </summary>
-public static partial class WorkGitParsers
+public static class WorkGitParsers
 {
     /// <summary>A clone with no remote would otherwise list its whole history; the unpushed walk stops here.</summary>
     public const int UnpushedLimit = 5000;
@@ -35,43 +26,6 @@ public static partial class WorkGitParsers
     /// <summary>The <c>for-each-ref</c> format: refname, sha, committer date, upstream, track state and symref.</summary>
     public const string RefFormat =
         "%(refname)\t%(objectname)\t%(committerdate:iso-strict)\t%(upstream:short)\t%(upstream:track)\t%(symref)";
-
-    /// <summary>
-    /// <c>[ahead 2, behind 1]</c>, <c>[gone]</c> or empty. Without an upstream, ahead and behind are unknown, not zero.
-    /// </summary>
-    /// <param name="upstream">The branch's upstream, empty when it has none.</param>
-    /// <param name="track">The <c>%(upstream:track)</c> text.</param>
-    public static Track ParseTrack(string upstream, string track)
-    {
-        ArgumentNullException.ThrowIfNull(upstream);
-        ArgumentNullException.ThrowIfNull(track);
-        if (upstream.Length == 0)
-        {
-            return new Track(null, null, false);
-        }
-
-        if (track.Trim() == "[gone]")
-        {
-            return new Track(null, null, true);
-        }
-
-        var ahead = 0;
-        var behind = 0;
-        foreach (Match match in TrackPart().Matches(track))
-        {
-            var count = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            if (match.Groups[1].Value == "ahead")
-            {
-                ahead = count;
-            }
-            else
-            {
-                behind = count;
-            }
-        }
-
-        return new Track(ahead, behind, false);
-    }
 
     /// <summary>The tip sha of every complete line of <see cref="RefFormat"/> output.</summary>
     /// <param name="output">Raw <c>git for-each-ref</c> output.</param>
@@ -170,7 +124,7 @@ public static partial class WorkGitParsers
                 continue;
             }
 
-            var tracked = ParseTrack(upstream, track);
+            var tracked = Track.Parse(upstream, track);
             branches.Add(new BranchRef(
                 refname["refs/heads/".Length..],
                 IsoTime.Parse(date),
@@ -206,9 +160,6 @@ public static partial class WorkGitParsers
 
     private static string[] Lines(string output) =>
         output.ReplaceLineEndings("\n").Split('\n');
-
-    [GeneratedRegex(@"(ahead|behind) (\d+)")]
-    private static partial Regex TrackPart();
 }
 
 /// <summary>

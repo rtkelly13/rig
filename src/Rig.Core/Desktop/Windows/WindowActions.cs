@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using Rig.Core.Screens;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop.Windows;
 
@@ -41,6 +43,9 @@ public sealed class WindowActions(IWin32Actions win32, WindowInventory inventory
 
     /// <summary>Ask the window to close, as its close button would.</summary>
     public void RequestClose(long handle) => _ = win32.PostClose(handle);
+
+    /// <summary>Minimize the window; a failure is ignored.</summary>
+    public void Minimize(long handle) => _ = win32.Minimize(handle);
 
     /// <summary>Ask every user window on the current desktop, apart from <paramref name="preserved"/>, to close.</summary>
     /// <returns>How many were asked.</returns>

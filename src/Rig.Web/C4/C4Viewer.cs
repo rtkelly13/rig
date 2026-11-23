@@ -118,7 +118,7 @@ internal static partial class C4Viewer
         var found = new Dictionary<string, string>(StringComparer.Ordinal);
         if (!string.IsNullOrEmpty(overridePath))
         {
-            var path = overridePath.StartsWith('~') ? Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), overridePath[1..].TrimStart('/', '\\')) : overridePath;
+            var path = overridePath.StartsWith('~', StringComparison.Ordinal) ? Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), overridePath[1..].TrimStart('/', '\\')) : overridePath;
             found[Path.GetFileName(Path.TrimEndingDirectorySeparator(path))] = path;
         }
 

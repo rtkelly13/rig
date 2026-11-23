@@ -1,4 +1,5 @@
 using Rig.Core.Chrome;
+using Rig.Core.Screens;
 
 namespace Rig.Core.Tests.Chrome;
 

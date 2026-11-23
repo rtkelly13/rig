@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.Json;
-using Rig.Core.Vault;
+using Rig.Core.Text;
 
 namespace Rig.Core.Mail;
 

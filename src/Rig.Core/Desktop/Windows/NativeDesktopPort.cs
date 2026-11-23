@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Rig.Core.Screens;
+using Rig.Core.Windows;
 
 namespace Rig.Core.Desktop.Windows;
 
@@ -52,21 +54,21 @@ public sealed class NativeDesktopPort : IDesktopPort
             throw new DesktopException("Desktop count must be at least 1.");
         }
 
-        return WorkspaceStatus.Current(_inventory, count);
+        return WorkspaceStatus.Current(_inventory.ReusableWindows(), count);
     }
 
     /// <inheritdoc/>
     public WorkspacePlan CurrentWorkspaceStatus(IReadOnlyList<int> desktopIndexes)
     {
         EnsureAvailable();
-        return WorkspaceStatus.CurrentForDesktopIndexes(_inventory, desktopIndexes);
+        return WorkspaceStatus.CurrentForDesktopIndexes(_inventory.ReusableWindows(), desktopIndexes);
     }
 
     /// <inheritdoc/>
     public DesktopPlan CurrentDesktopStatus(string? desktopName = null)
     {
         EnsureAvailable();
-        return WorkspaceStatus.CurrentDesktop(_inventory, desktopName);
+        return WorkspaceStatus.CurrentDesktop(_inventory.CurrentDesktopWindows(), desktopName);
     }
 
     /// <inheritdoc/>
@@ -293,6 +295,19 @@ public sealed class NativeDesktopPort : IDesktopPort
         }
 
         return raised;
+    }
+
+    /// <inheritdoc/>
+    public void PutAwayWindow(long handle, string action)
+    {
+        if (action == BackgroundApp.Minimize)
+        {
+            _windowActions.Minimize(handle);
+        }
+        else
+        {
+            _windowActions.RequestClose(handle);
+        }
     }
 
     /// <inheritdoc/>

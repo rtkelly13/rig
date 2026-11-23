@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Rig.Core.GitHub;
 using Rig.Core.Governance;
 using Rig.Core.Orca;
 using Rig.Core.Processes;

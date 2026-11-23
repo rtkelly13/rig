@@ -120,7 +120,7 @@ public sealed class Downloads(IDiskUsage disk)
         List<string> children;
         try
         {
-            children = [.. Directory.EnumerateFileSystemEntries(folder).Where(child => !System.IO.Path.GetFileName(child).StartsWith('.'))];
+            children = [.. Directory.EnumerateFileSystemEntries(folder).Where(child => !System.IO.Path.GetFileName(child).StartsWith('.', StringComparison.Ordinal))];
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

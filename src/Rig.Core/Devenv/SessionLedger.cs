@@ -104,7 +104,7 @@ public static class SessionLedger
         }
 
         var script = NodeExecutables.Contains(BaseName(tokens[0]).ToLowerInvariant())
-            ? tokens.Skip(1).FirstOrDefault(t => !t.StartsWith('-')) ?? string.Empty
+            ? tokens.Skip(1).FirstOrDefault(t => !t.StartsWith('-', StringComparison.Ordinal)) ?? string.Empty
             : tokens[0];
         return BaseName(script) == Marker;
     }
@@ -170,7 +170,7 @@ public static class SessionLedger
             .Any(command => command is JsonValue value && value.GetValueKind() == JsonValueKind.String && RunsLedger(value.GetValue<string>()));
     }
 
-    private static string BaseName(string path) => path[(path.LastIndexOf('/') + 1)..];
+    private static string BaseName(string path) => path[(path.LastIndexOf('/', StringComparison.Ordinal) + 1)..];
 
     private static byte[] Canonical(byte[] data)
     {

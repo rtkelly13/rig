@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rig.Core.Connectivity;
 using Rig.Core.Processes;
+using Rig.Core.Tests.Fakes;
 
 namespace Rig.Core.Tests.Connectivity;
 
@@ -67,7 +68,10 @@ internal sealed class EstateFixture : IDisposable
         Projects(fixture["projects"]!.DeepClone().AsArray());
     }
 
-    public EstateGraph Graph(TimeProvider? time = null) => new(Git, time ?? TimeProvider.System, ListTimeout);
+    /// <summary>What every inventory reads Paket manifests with; empty until a test adds files.</summary>
+    public FakePaketManifests Paket { get; } = new();
+
+    public EstateGraph Graph(TimeProvider? time = null) => new(Git, time ?? TimeProvider.System, Paket, ListTimeout);
 
     public Task<ConnectivityGraph> BuildAsync() => Graph().BuildAsync(Registry, Personal, Token);
 

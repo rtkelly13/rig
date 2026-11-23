@@ -1,5 +1,5 @@
 using Rig.Core.Config;
-using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Core.Roots;
 

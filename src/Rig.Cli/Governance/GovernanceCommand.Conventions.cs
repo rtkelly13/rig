@@ -57,7 +57,7 @@ internal sealed partial class GovernanceCommand
 
     private async Task<int> StatusAsync(string? path, bool all, string? org, CancellationToken cancellationToken)
     {
-        await output.WriteAsync(Panel("Repository Conventions: STATUS / PLAN")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("Repository Conventions: STATUS / PLAN"), cancellationToken).ConfigureAwait(false);
         var (targets, conventions, _, _) = await ConventionTargetsAsync(path, all, org, cancellationToken).ConfigureAwait(false);
         var table = new TextTable(
             "Convention Status Overview",
@@ -82,10 +82,10 @@ internal sealed partial class GovernanceCommand
             _ = table.Add([.. report.StatusRow()]);
         }
 
-        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         foreach (var advisory in advisories)
         {
-            await output.WriteLineAsync($"· {advisory}").ConfigureAwait(false);
+            await output.WriteLineAsync($"· {advisory}", cancellationToken).ConfigureAwait(false);
         }
 
         return 0;
@@ -93,7 +93,7 @@ internal sealed partial class GovernanceCommand
 
     private async Task<int> AuditAsync(string? path, bool all, string? org, CancellationToken cancellationToken)
     {
-        await output.WriteAsync(Panel("Repository Conventions: AUDIT CHECK")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("Repository Conventions: AUDIT CHECK"), cancellationToken).ConfigureAwait(false);
         var (targets, conventions, _, _) = await ConventionTargetsAsync(path, all, org, cancellationToken).ConfigureAwait(false);
         var drifted = 0;
         foreach (var target in targets)
@@ -101,7 +101,7 @@ internal sealed partial class GovernanceCommand
             var existence = await conventions.ExistsAsync(target, cancellationToken).ConfigureAwait(false);
             if (!existence.Exists)
             {
-                await output.WriteLineAsync($"✗ {FolderName(target)}: Repo check failed ({existence.Status})").ConfigureAwait(false);
+                await output.WriteLineAsync($"✗ {FolderName(target)}: Repo check failed ({existence.Status})", cancellationToken).ConfigureAwait(false);
                 drifted++;
                 continue;
             }
@@ -110,32 +110,32 @@ internal sealed partial class GovernanceCommand
             drifted += report.AuditAligned ? 0 : 1;
             foreach (var line in report.AuditLines())
             {
-                await output.WriteLineAsync(line).ConfigureAwait(false);
+                await output.WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        await output.WriteLineAsync("\n" + new string('=', 50)).ConfigureAwait(false);
+        await output.WriteLineAsync("\n" + new string('=', 50), cancellationToken).ConfigureAwait(false);
         if (targets.Count == 0)
         {
             // `--org rtkelly-labs` once reported "All 0 repositories are fully compliant" with no clones present.
-            await output.WriteLineAsync("AUDIT FAILED: no repositories found to audit.").ConfigureAwait(false);
+            await output.WriteLineAsync("AUDIT FAILED: no repositories found to audit.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
         if (drifted == 0)
         {
-            await output.WriteLineAsync($"SUCCESS: All {targets.Count} repositories are fully compliant with conventions!").ConfigureAwait(false);
+            await output.WriteLineAsync($"SUCCESS: All {targets.Count} repositories are fully compliant with conventions!", cancellationToken).ConfigureAwait(false);
             return 0;
         }
 
-        await output.WriteLineAsync($"AUDIT FAILED: {drifted}/{targets.Count} repositories have configuration drift.").ConfigureAwait(false);
-        await output.WriteLineAsync("Run align-repo-conventions enforce to apply fixes.").ConfigureAwait(false);
+        await output.WriteLineAsync($"AUDIT FAILED: {drifted}/{targets.Count} repositories have configuration drift.", cancellationToken).ConfigureAwait(false);
+        await output.WriteLineAsync("Run align-repo-conventions enforce to apply fixes.", cancellationToken).ConfigureAwait(false);
         return 1;
     }
 
     private async Task<int> EnforceAsync(string? path, bool all, string? org, bool dryRun, CancellationToken cancellationToken)
     {
-        await output.WriteAsync(Panel("Repository Conventions: ENFORCE")).ConfigureAwait(false);
+        await output.WriteAsync(Panel("Repository Conventions: ENFORCE"), cancellationToken).ConfigureAwait(false);
         var (targets, conventions, gitignores, policies) = await ConventionTargetsAsync(path, all, org, cancellationToken).ConfigureAwait(false);
         var table = new TextTable(
             "Enforcement Execution",
@@ -157,7 +157,7 @@ internal sealed partial class GovernanceCommand
             var owner = RepoOwners.Inspect(policies, slug);
             if (!owner.IsAligned)
             {
-                await output.WriteLineAsync($"✗ {slug}: refusing to enforce conventions — owner governance failure: {owner.Message}").ConfigureAwait(false);
+                await output.WriteLineAsync($"✗ {slug}: refusing to enforce conventions — owner governance failure: {owner.Message}", cancellationToken).ConfigureAwait(false);
                 _ = table.Add([name, slug, "blocked_owner_governance", .. SkippedCells[1..]]);
                 continue;
             }
@@ -187,17 +187,17 @@ internal sealed partial class GovernanceCommand
                 RepoHygiene.AlignLsLint(target, policies, key, dryRun).Status);
         }
 
-        await output.WriteAsync(table.Render()).ConfigureAwait(false);
+        await output.WriteAsync(table.Render(), cancellationToken).ConfigureAwait(false);
         foreach (var (slug, drift) in rulesetDrift)
         {
-            await output.WriteLineAsync($"\nRuleset drift on {slug} (dry run — would update):").ConfigureAwait(false);
+            await output.WriteLineAsync($"\nRuleset drift on {slug} (dry run — would update):", cancellationToken).ConfigureAwait(false);
             foreach (var line in drift)
             {
-                await output.WriteLineAsync($"   - {line}").ConfigureAwait(false);
+                await output.WriteLineAsync($"   - {line}", cancellationToken).ConfigureAwait(false);
             }
         }
 
-        await output.WriteLineAsync("\n✓ Conventions Enforcement Complete!").ConfigureAwait(false);
+        await output.WriteLineAsync("\n✓ Conventions Enforcement Complete!", cancellationToken).ConfigureAwait(false);
         return 0;
     }
 
@@ -209,16 +209,16 @@ internal sealed partial class GovernanceCommand
         var names = CheckNames.Inspect(target, slug, policies);
         if (names.Registered && names.Status == "no_pr_workflows")
         {
-            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Required)} — no pull_request workflow exists to report them")
+            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Required)} — no pull_request workflow exists to report them", cancellationToken)
                 .ConfigureAwait(false);
             return new("blocked_no_pr_workflows", []);
         }
 
         if (names.Registered && names.Missing.Count > 0)
         {
-            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Missing)} — no pull_request job declares them").ConfigureAwait(false);
+            await output.WriteLineAsync($"✗ {slug}: refusing to set required checks {QuotedText.List(names.Missing)} — no pull_request job declares them", cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync(
-                $"   declared: {QuotedText.List(names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' and fix the map or the job name")
+                $"   declared: {QuotedText.List(names.Declared.Keys.Order(StringComparer.Ordinal))} — run 'repo-governance check-names' and fix the map or the job name", cancellationToken)
                 .ConfigureAwait(false);
             return new("blocked_stale_check_names", []);
         }
