@@ -171,7 +171,7 @@ baseline file. Where existing code violates a rule, the cleanup lands first.
 |---|---|
 | Each primitive has one owning type: process starts → the process runner; env paths and roots → the code-root resolver; one parser per format | Roslyn `BannedApiAnalyzers` (`RS0030`, `BannedSymbols.txt`) with the owner exempted; no inline suppression |
 | No reference cycles between projects or namespaces | Project references (MSBuild rejects project cycles) and `Rig.Architecture.Tests` `CycleTests` (ArchUnitNET) |
-| References follow the layer order; features are independent; adapters never reference features | `Rig.Architecture.Tests` (NetArchTest) |
+| Every namespace has a role; references follow the layer order; features are independent; adapters never reference features | `Rig.Architecture.Tests` `StructureTests` (ArchUnitNET) over the role map in `Graph/Roles.cs`; today's violations are its listed exceptions |
 | Callers use a type's public API, not its internals | `internal` plus `InternalsVisibleTo` only for the test project; analyzers as errors |
 | Nullable and analyzer warnings | `TreatWarningsAsErrors` and `dotnet format --verify-no-changes` |
 | Code is covered | The 95% line and branch floor ([testing.md](testing.md#the-c-coverage-floor)) |
