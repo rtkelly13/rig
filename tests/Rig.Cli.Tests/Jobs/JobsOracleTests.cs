@@ -299,7 +299,8 @@ public sealed class JobsOracleTests : IDisposable
             [.. env.GetProperty("work_roots").EnumerateArray().Select(root => root.GetString()!)],
             Text("decisions_feed"),
             Text("orca_user_data"),
-            OperatingSystem.IsWindows());
+            // The oracle is the Windows registry the Python scheduler composed, so it is replayed as Windows everywhere.
+            Windows: true);
     }
 
     private static JsonObject Record(Job job) => new()

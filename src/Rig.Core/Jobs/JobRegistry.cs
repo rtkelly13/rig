@@ -90,7 +90,10 @@ public static class JobRegistry
             ? Path.Join(appData, "workspace-manager", "windows-workspace.json")
             : Path.Join(home, ".config", "workspace-manager", "windows-workspace.json");
 
-    /// <summary>Every job for <paramref name="env"/>, in run order; the workspace ones only when it names a workspace repo.</summary>
+    /// <summary>
+    /// Every job for <paramref name="env"/>, in run order: the workspace ones only when it names a workspace repo, and
+    /// the Windows desktop ones only on Windows.
+    /// </summary>
     public static IReadOnlyList<Job> Default(JobsEnvironment env)
     {
         ArgumentNullException.ThrowIfNull(env);
@@ -102,6 +105,7 @@ public static class JobRegistry
             new("restore", "Open and place every window in the workspace plan.",
                 [rig, "desktop", "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
             {
+                WindowsOnly = true,
                 Requires = [plan],
                 RetryExitCodes = new HashSet<int> { RestoreDeferred },
             },
@@ -111,6 +115,7 @@ public static class JobRegistry
             new("align", "Put open plan windows back on their desktop and slot, launching nothing.",
                 [rig, "desktop", "workspace", "align", "--config", plan], Tick, JobCadence.EveryRun, 5)
             {
+                WindowsOnly = true,
                 Requires = [plan],
                 IdleMinutes = AlignIdleMinutes,
             },
@@ -157,6 +162,6 @@ public static class JobRegistry
             });
         }
 
-        return jobs;
+        return [.. jobs.Where(job => env.Windows || !job.WindowsOnly)];
     }
 }
