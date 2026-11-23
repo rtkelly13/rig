@@ -256,14 +256,16 @@
       "repo": "git@github.com:rtkelly13/MySQLEFConcurrencyBug.git",
       "description": "Reproduction repository for a MySQL EF concurrency issue.",
       "domain": "Bug Reproduction & Reference",
-      "stack": ".NET / C#"
+      "stack": ".NET / C#",
+      "orca": { "group": "personal/reference" }
     },
     {
       "name": "AWSBatch-MapReduce",
       "repo": "git@github.com:rtkelly13/AWSBatch-MapReduce.git",
       "description": "AWS Batch-based map reduce experimentation repository.",
       "domain": "Cloud Infrastructure & Distributed Computing",
-      "stack": "AWS Batch / Python"
+      "stack": "AWS Batch / Python",
+      "orca": { "group": "personal/reference" }
     },
     {
       "name": "Lake.NET",
