@@ -113,6 +113,21 @@
       "color": "#7c3aed",
       "icon": "emoji:🧠"
     },
+    "hearth": {
+      "path": "~/code/personal/hearth",
+      "color": "#ef4444",
+      "icon": "emoji:🔥"
+    },
+    "MySQLEFConcurrencyBug": {
+      "path": "~/code/personal/MySQLEFConcurrencyBug",
+      "color": "#8b5cf6",
+      "icon": "Database"
+    },
+    "AWSBatch-MapReduce": {
+      "path": "~/code/personal/AWSBatch-MapReduce",
+      "color": "#22c55e",
+      "icon": "Server"
+    },
     "Arrow.SourceGenerator": {
       "path": "~/code/rtkelly-labs/Arrow.SourceGenerator",
       "color": "#d946ef",
@@ -135,7 +150,7 @@
     },
     "oxbow": {
       "path": "~/code/rtkelly-labs/oxbow",
-      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md",
+      "setup": "set -e\nmkdir -p temp\n[ -e TODO.md ] || printf '# TODO: %s\\n\\n- [ ] Local tasks and notes (gitignored)\\n' \"$(git branch --show-current)\" > TODO.md\ndotnet tool restore\ndotnet restore Oxbow.slnx",
       "external_worktree_visibility": "show",
       "base_ref": "main",
       "worktree_base_path": "temp",
