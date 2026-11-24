@@ -187,6 +187,7 @@
     {
       "name": "Union.Assertions",
       "repo": "git@github.com:Resultful/Union.Assertions.git",
+      "formerly": ["Resultful/FluentAssertions.Resultful", "Resultful/Resultful.Assertions"],
       "description": "Assertion packages for OneOf and other union types across assertion libraries.",
       "domain": "Functional Architecture & .NET",
       "stack": ".NET 10 / C#",
@@ -240,6 +241,7 @@
     {
       "name": "docs",
       "repo": "git@github.com:rtkelly-labs/docs.git",
+      "formerly": ["rtkelly13/docs"],
       "description": "Multi-project Parquet documentation portal and API reference catalog.",
       "domain": "Documentation Portals",
       "stack": "Docusaurus / Node",
@@ -268,6 +270,7 @@
     {
       "name": "Lake.NET",
       "repo": "git@github.com:rtkelly-labs/Lake.NET.git",
+      "formerly": ["rtkelly-labs/Iceberg.NET"],
       "description": "Native .NET implementation of Apache Iceberg: tables, catalogs (Glue, REST, JDBC), writes, reads and maintenance.",
       "domain": "Data Engineering & .NET",
       "stack": ".NET 10 / C#",
@@ -447,9 +450,10 @@
       }
     },
     {
-      "name": "parquet-dotnet",
-      "repo": "git@github.com:rtkelly-labs/parquet-dotnet.git",
-      "description": "Fork of aloneguid/parquet-dotnet, published as Lake.Parquet: upstream plus only the improvements evaluated against it. A managed fork (docs/forks.md).",
+      "name": "Lake.Parquet",
+      "repo": "git@github.com:rtkelly-labs/Lake.Parquet.git",
+      "formerly": ["rtkelly-labs/parquet-dotnet"],
+      "description": "Fork of the retired aloneguid/parquet-dotnet (Parquet.Net), published as Lake.Parquet: its last upstream commit plus a recorded stack of changes. A managed fork (docs/forks.md).",
       "domain": "Data Engineering & .NET",
       "stack": ".NET 10 / C#",
       "packages": [

@@ -316,7 +316,7 @@
         "lake-ci"
       ],
       "repos": [
-        "parquet-dotnet"
+        "Lake.Parquet"
       ]
     }
   },
@@ -439,7 +439,7 @@
         "pr-checks"
       ]
     },
-    "parquet-dotnet": {
+    "Lake.Parquet": {
       "expected_base_branch": "master",
       "fork": {
         "upstream": "aloneguid/parquet-dotnet",

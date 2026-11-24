@@ -14,7 +14,7 @@ frequency, native identities, credentials or the allowed issue-write destination
 - `rtkelly-labs/Parquet.SourceGenerator`
 - `rtkelly-labs/Lake.NET`
 - `rtkelly-labs/Parquet.TypeProvider`
-- `rtkelly-labs/parquet-dotnet`
+- `rtkelly-labs/Lake.Parquet`
 - `rtkelly-labs/Arrow.SourceGenerator`
 
 ## Focus
@@ -37,6 +37,6 @@ Import relevant prior evidence once, preserving source refs and assessment dates
 [Parquet #13](https://github.com/rtkelly13/rig/issues/13),
 [Arrow #14](https://github.com/rtkelly13/rig/issues/14),
 [Iceberg #17](https://github.com/rtkelly13/rig/issues/17),
-[parquet-dotnet #19](https://github.com/rtkelly13/rig/issues/19), and
+[Lake.Parquet #19](https://github.com/rtkelly13/rig/issues/19), and
 [TypeProvider #20](https://github.com/rtkelly13/rig/issues/20).
 These are read sources; new scheduled reports go only to #22.

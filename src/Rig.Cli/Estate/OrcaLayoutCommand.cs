@@ -54,7 +54,9 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             + "projects and deletes empty groups through the running Orca app, and removes estate repos (and the groups they "
             + "leave empty) from the work profile; what is left afterwards needs a config change or a clone. Projects in this "
             + "machine's `tools.estate.skip_repos` (`~/.workspace/config.json`) are never registered; one already in Orca is "
-            + "reported as `skipped`, not removed.")
+            + "reported as `skipped`, not removed. A project still cloned or registered under a name it went by (its "
+            + "`formerly` list, or a rename GitHub reports) is `renamed`: --apply moves the clone beside the old one under "
+            + "its new name, points origin at it and registers it again, unless a process works in it or it has linked worktrees.")
         {
             config, codeRoot, userData, workData, apply, repos, json,
         };
@@ -94,9 +96,9 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         Func<string, bool> isEstateOwner;
         try
         {
-            var declared = OrcaLayout.LoadDeclared(string.IsNullOrEmpty(args.Config) ? host.ManagedProjectsFile : PathResolution.Resolve(host.ExpandHome(args.Config)));
+            var listed = OrcaLayout.LoadDeclared(string.IsNullOrEmpty(args.Config) ? host.ManagedProjectsFile : PathResolution.Resolve(host.ExpandHome(args.Config)));
             IReadOnlySet<string>? only = args.Repos.Length > 0 ? args.Repos.ToHashSet(StringComparer.Ordinal) : null;
-            if (only is not null && only.Except(declared.Select(d => d.Name), StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } unknown)
+            if (only is not null && only.Except(listed.Select(d => d.Name), StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } unknown)
             {
                 await error.WriteLineAsync($"not a managed project: {string.Join(", ", unknown)}".AsMemory(), cancellationToken).ConfigureAwait(false);
                 return 2;
@@ -105,16 +107,19 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
             isEstateOwner = EstateOwners(host.ScopesFile);
             var skipped = MachineConfig.SkipRepos(host.MachineConfigFile);
             var runtime = OrcaRuntime.FromMetadata(orca.Locations.RuntimeMetadata(estateDir), orca.Exchange);
-            var archived = await ArchivedAsync(declared, await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false), isEstateOwner, cancellationToken).ConfigureAwait(false);
+            var repos = await GitHubReposAsync(listed, await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false), isEstateOwner, cancellationToken).ConfigureAwait(false);
+            var archived = repos.Archived;
+            var declared = OrcaLayout.WithFormerNames(listed, repos.Renamed);
             IReadOnlyList<LayoutFinding> carried = [];
             if (args.Apply)
             {
                 carried = await OrcaLayout.ApplyAsync(
-                    runtime, declared, root, isEstateOwner, InUse(cancellationToken), log, archived: archived, skipped: skipped, only: only, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    runtime, declared, root, isEstateOwner, InUse(cancellationToken), log, archived: archived, skipped: skipped, only: only, mover: new GitCloneMover(new Git(proc, root)), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             var state = await LayoutSnapshot.ReadAsync(runtime, cancellationToken).ConfigureAwait(false);
             findings = [.. OrcaLayout.Audit(declared, state, root, isEstateOwner, archived: archived, skipped: skipped)];
+            findings.AddRange(OrcaLayout.RenamedOnGitHubFindings(declared, repos.Renamed));
             findings.AddRange(carried.Where(c => !findings.Contains(c)).ToList());
             if (only is not null)
             {
@@ -172,16 +177,16 @@ internal sealed class OrcaLayoutCommand(EstateHost host, OrcaHost orca, IProc pr
         };
     }
 
-    // Which declared or registered estate repos GitHub reports archived; warns when it cannot be asked.
-    private async Task<IReadOnlySet<string>> ArchivedAsync(
+    // Which declared or registered estate repos GitHub reports archived or renamed; warns when it cannot be asked.
+    private async Task<GitHubRepos> GitHubReposAsync(
         IReadOnlyList<DeclaredProject> declared, LayoutSnapshot state, Func<string, bool> isEstateOwner, CancellationToken cancellationToken)
     {
         var registered = state.Registrations.Select(r => r.Slug).OfType<string>().Where(slug => slug.Length > 0 && isEstateOwner(slug.Split('/')[0]));
-        var found = await GitHubArchived.SlugsAsync(github, declared.Select(p => p.Slug).Concat(registered), cancellationToken).ConfigureAwait(false);
+        var found = await GitHubArchived.ReposAsync(github, declared.Select(p => p.Slug).Concat(registered), cancellationToken).ConfigureAwait(false);
         if (found is null)
         {
-            await error.WriteLineAsync("GitHub could not be asked which repos are archived; only archived-projects.json counts".AsMemory(), cancellationToken).ConfigureAwait(false);
-            return new HashSet<string>(StringComparer.Ordinal);
+            await error.WriteLineAsync("GitHub could not be asked which repos are archived or renamed; only the config files count".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return new(new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, string>(StringComparer.Ordinal));
         }
 
         return found;

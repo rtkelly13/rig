@@ -20,7 +20,30 @@ public sealed record LayoutFinding(string Kind, string Repo, string Path, string
 /// <param name="Slug"><c>owner/name</c> as written in the repo URL.</param>
 /// <param name="Group">A <c>/</c>-joined group path, empty for the top level, null for not in Orca.</param>
 /// <param name="Archived">Listed in <c>archived-projects.json</c>; GitHub's own archive flag is checked separately.</param>
-public sealed record DeclaredProject(string Name, string Repo, string Slug, string? Group, bool Archived = false);
+/// <param name="Formerly">The lowercase <c>owner/name</c> slugs it went by before a rename or a move between owners.</param>
+public sealed record DeclaredProject(string Name, string Repo, string Slug, string? Group, bool Archived = false, IReadOnlyList<string>? Formerly = null)
+{
+    /// <summary>Its former slugs; empty when it was never renamed.</summary>
+    public IReadOnlyList<string> FormerSlugs => Formerly ?? [];
+}
+
+/// <summary>Where a renamed project still sits under an old name.</summary>
+/// <param name="Was">The old slug it matched, or the old folder name when only the folder matched.</param>
+/// <param name="Path">The old clone.</param>
+/// <param name="Registration">Its Orca registration, or null for a clone Orca does not know.</param>
+public sealed record FormerPlace(string Was, string Path, Registration? Registration);
+
+/// <summary>Moves a renamed project's clone to its new folder and points its <c>origin</c> at the new name.</summary>
+public interface ICloneMover
+{
+    /// <summary>
+    /// Moves the clone at <paramref name="source"/> to <paramref name="destination"/> (nothing moves when they are the same) and sets
+    /// <c>origin</c> to <paramref name="repo"/>. Refuses, changing nothing, unless <c>origin</c> is one of
+    /// <paramref name="accepted"/>.
+    /// </summary>
+    /// <returns>Null when done, else why nothing was changed.</returns>
+    Task<string?> MoveAsync(string source, string destination, string repo, IReadOnlySet<string> accepted, CancellationToken cancellationToken = default);
+}
 
 /// <summary>A repo registered in Orca.</summary>
 /// <param name="Id">Orca's id for it.</param>
@@ -167,6 +190,9 @@ public static class OrcaLayout
     /// <summary>In Orca, but its folder is gone.</summary>
     public const string Stale = "stale";
 
+    /// <summary>A second registration of a declared project, by its name or a former one, whose folder still exists.</summary>
+    public const string Duplicate = "duplicate";
+
     /// <summary>Declared, but neither in Orca nor cloned where its group expects.</summary>
     public const string NoClone = "no-clone";
 
@@ -188,6 +214,12 @@ public static class OrcaLayout
     /// <summary>A work-profile group that only held estate repos: <c>--apply</c> deletes it once they are gone.</summary>
     public const string WorkEmptyGroup = "work-empty-group";
 
+    /// <summary>Cloned or registered under a name it no longer has: <c>--apply</c> moves the clone and registers it again.</summary>
+    public const string Renamed = "renamed";
+
+    /// <summary>GitHub serves a declared repo under another name: a config fix.</summary>
+    public const string RenamedOnGitHub = "renamed-on-github";
+
     /// <summary>The archive of retired projects, beside <c>managed-projects.json</c>.</summary>
     public const string ArchivedProjectsFile = "archived-projects.json";
 
@@ -196,7 +228,7 @@ public static class OrcaLayout
     /// <summary>The kinds <c>--apply</c> can close by itself.</summary>
     public static readonly IReadOnlySet<string> Appliable = new HashSet<string>(StringComparer.Ordinal)
     {
-        Unregistered, WrongGroup, MissingGroup, Archived, EmptyGroup, InWorkProfile, WorkEmptyGroup,
+        Unregistered, WrongGroup, MissingGroup, Archived, EmptyGroup, InWorkProfile, WorkEmptyGroup, Renamed,
     };
 
     /// <summary>
@@ -225,7 +257,7 @@ public static class OrcaLayout
                         : string.Empty;
             if (enabled && RepoSlug.FromRemote(repo) is { } slug)
             {
-                declared.Add(new(name, repo, slug.FullName, group));
+                declared.Add(new(name, repo, slug.FullName, group, Formerly: FormerSlugs(entry, name, config)));
             }
         }
 
@@ -244,6 +276,55 @@ public static class OrcaLayout
         }
 
         return declared;
+    }
+
+    /// <summary>
+    /// <paramref name="declared"/> with each name GitHub has moved on from added to the project now holding it:
+    /// <paramref name="renamed"/> maps an old lowercase slug to the name GitHub serves it under now.
+    /// </summary>
+    public static IReadOnlyList<DeclaredProject> WithFormerNames(IReadOnlyList<DeclaredProject> declared, IReadOnlyDictionary<string, string> renamed)
+    {
+        ArgumentNullException.ThrowIfNull(declared);
+        ArgumentNullException.ThrowIfNull(renamed);
+        return [.. declared.Select(project =>
+        {
+            var slug = project.Slug.ToLowerInvariant();
+            var learned = renamed.Where(pair => pair.Value.Equals(slug, StringComparison.OrdinalIgnoreCase) && pair.Key != slug).Select(pair => pair.Key);
+            var formerly = project.FormerSlugs.Concat(learned).Distinct(StringComparer.Ordinal).ToList();
+            return formerly.Count == project.FormerSlugs.Count ? project : project with { Formerly = formerly };
+        })];
+    }
+
+    /// <summary>A <c>renamed-on-github</c> finding for each live declared project GitHub now serves under another name.</summary>
+    public static IReadOnlyList<LayoutFinding> RenamedOnGitHubFindings(IReadOnlyList<DeclaredProject> declared, IReadOnlyDictionary<string, string> renamed)
+    {
+        ArgumentNullException.ThrowIfNull(declared);
+        ArgumentNullException.ThrowIfNull(renamed);
+        return [.. declared
+            .Where(p => !p.Archived && renamed.ContainsKey(p.Slug.ToLowerInvariant()))
+            .Select(p => (Project: p, Now: renamed[p.Slug.ToLowerInvariant()]))
+            .Select(pair => new LayoutFinding(
+                RenamedOnGitHub,
+                pair.Project.Name,
+                pair.Project.Slug,
+                $"GitHub serves {pair.Project.Slug} as {pair.Now} now",
+                $"in managed-projects.json, set its repo to git@github.com:{pair.Now}.git and add \"formerly\": [\"{pair.Project.Slug}\"]",
+                string.Empty))];
+    }
+
+    /// <summary>
+    /// Where a renamed project's clone goes: beside the old one when only the name changed, else where its group expects.
+    /// </summary>
+    public static string RenamedClone(DeclaredProject project, FormerPlace former, GroupTree groups, string codeRoot)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(former);
+        var was = RepoSlug.FromPath(former.Was);
+        var now = RepoSlug.FromPath(project.Slug);
+        var sameOwner = was is null || now is null || was.Owner.Equals(now.Owner, StringComparison.OrdinalIgnoreCase);
+        return sameOwner && Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(former.Path)) is { Length: > 0 } parent && now is not null
+            ? Path.Join(parent, now.Name)
+            : ExpectedClone(project, groups, codeRoot);
     }
 
     /// <summary>Where a declared project's clone belongs: its top group's folder, then its repo name.</summary>
@@ -340,11 +421,16 @@ public static class OrcaLayout
             }
             else
             {
-                run.Declared(project, found);
+                var former = Former(lookup, project, found, run.Exists);
+                run.Declared(project, former is null ? found : null, former);
+                foreach (var extra in lookup.Others(project, found, former?.Registration))
+                {
+                    run.Extra(project, extra, kept: former?.Registration ?? found);
+                }
             }
         }
 
-        foreach (var (slug, found) in bySlug.Where(pair => !lookup.MatchedByPath(pair.Value)).OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        foreach (var (slug, found) in bySlug.Where(pair => !lookup.Claimed(pair.Value)).OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
             if (!known.Contains(slug) && archived.Contains(slug))
             {
@@ -407,6 +493,7 @@ public static class OrcaLayout
         IReadOnlySet<string>? archived = null,
         IReadOnlySet<string>? skipped = null,
         IReadOnlySet<string>? only = null,
+        ICloneMover? mover = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(declared);
@@ -439,6 +526,10 @@ public static class OrcaLayout
                 log(added.Slug is { } remote && expected is not null && remote != expected
                     ? $"registered {finding.Repo} (Orca knows it as {remote}, so it is matched by path)"
                     : $"registered {finding.Repo}");
+            }
+            else if (finding.Kind == Renamed && declared.FirstOrDefault(p => p.Name == finding.Repo) is { } renamed)
+            {
+                await MoveRenamedAsync(runtime, renamed, state, byPath, finding, codeRoot, exists, inUse, mover, log, cancellationToken).ConfigureAwait(false);
             }
             else if (finding.Kind == Archived && byPath.GetValueOrDefault(finding.Path) is { } found)
             {
@@ -506,6 +597,98 @@ public static class OrcaLayout
         }
 
         return carried;
+    }
+
+    // Moves a renamed project's clone into place, points origin at the new name, and registers it again at the new path.
+    private static async Task MoveRenamedAsync(
+        OrcaRuntime runtime,
+        DeclaredProject project,
+        LayoutSnapshot state,
+        Dictionary<string, Registration> byPath,
+        LayoutFinding finding,
+        string codeRoot,
+        Func<string, bool> exists,
+        Func<string, Task<bool?>> inUse,
+        ICloneMover? mover,
+        Action<string> log,
+        CancellationToken cancellationToken)
+    {
+        var registration = byPath.GetValueOrDefault(finding.Path);
+        var was = FormerSlugAt(project, registration, finding.Path, registration is null) ?? registration?.Slug ?? FileName(finding.Path);
+        var target = RenamedClone(project, new FormerPlace(was, finding.Path, registration), state.Groups, codeRoot);
+        if (mover is null)
+        {
+            log($"left {finding.Repo} at {finding.Path}: no way to move a clone was given");
+            return;
+        }
+
+        var moving = !PathComparer.Equals(Posix(target), finding.Path);
+        if (moving && exists(target))
+        {
+            log($"left {finding.Repo} at {finding.Path}: {Posix(target)} already exists, so keep one clone by hand");
+            return;
+        }
+
+        switch (await inUse(finding.Path).ConfigureAwait(false))
+        {
+            case null:
+                log($"left {finding.Repo} at {finding.Path}: could not check whether a process is working in it");
+                return;
+            case true:
+                log($"left {finding.Repo} at {finding.Path}: a process is working in it");
+                return;
+        }
+
+        var accepted = project.FormerSlugs.Append(project.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+        if (await mover.MoveAsync(Native(finding.Path), Native(target), project.Repo, accepted, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            log($"left {finding.Repo} at {finding.Path}: {refused}");
+            return;
+        }
+
+        if (registration is not null)
+        {
+            await runtime.RemoveProjectAsync(registration.Id, cancellationToken).ConfigureAwait(false);
+        }
+
+        _ = await runtime.AddProjectAsync(Native(target), cancellationToken).ConfigureAwait(false);
+        log(moving
+            ? $"moved {finding.Repo} from {finding.Path} to {Posix(target)}, pointed origin at {project.Slug} and registered it again"
+            : $"pointed {finding.Repo}'s origin at {project.Slug} and registered it again");
+    }
+
+    // A live project's old place: its own registration when that still carries an old remote, else whatever its old names find.
+    private static FormerPlace? Former(Lookup lookup, DeclaredProject project, Registration? found, Func<string, bool> exists)
+    {
+        if (project.FormerSlugs.Count == 0)
+        {
+            return null;
+        }
+
+        if (found is not null)
+        {
+            return FormerSlugAt(project, found, found.Path, sameName: false) is { } was ? new(was, Posix(found.Path), found) : null;
+        }
+
+        return lookup.FindFormer(project, exists);
+    }
+
+    // The former slug a clone answers to: its registration's old remote, else the first former name its folder has.
+    // Audit and apply both ask this, so the destination apply moves to is the one the audit suggested. A registered
+    // clone already in a folder of its current name is not renamed again (sameName false); an unregistered one was
+    // found by its old name, and after a move between owners that name can be the current one (sameName true).
+    private static string? FormerSlugAt(DeclaredProject project, Registration? registration, string path, bool sameName)
+    {
+        if (registration?.Slug is { } slug && project.FormerSlugs.Contains(slug))
+        {
+            return slug;
+        }
+
+        var folder = FileName(path);
+        var name = project.Slug.Split('/', 2)[^1];
+        return !sameName && folder.Equals(name, StringComparison.Ordinal)
+            ? null
+            : project.FormerSlugs.FirstOrDefault(was => was.Split('/', 2)[^1].Equals(folder, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Estate repos in the work Orca profile, and the groups that would be left empty without them.</summary>
@@ -589,11 +772,11 @@ public static class OrcaLayout
 
     /// <summary>
     /// A declared project's registration: by its remote, else by its expected clone. A fork's canonical remote is its
-    /// upstream (<c>aloneguid/parquet-dotnet</c> for <c>rtkelly-labs/parquet-dotnet</c>), so only its path matches.
+    /// upstream (<c>aloneguid/parquet-dotnet</c> for <c>rtkelly-labs/Lake.Parquet</c>), so only its path matches.
     /// </summary>
     private sealed class Lookup(LayoutSnapshot state, IEnumerable<DeclaredProject> declared, string codeRoot)
     {
-        private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        private readonly HashSet<string> _claimed = new(StringComparer.Ordinal);
 
         private readonly HashSet<string> _declaredSlugs = declared.Select(p => p.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
 
@@ -601,18 +784,77 @@ public static class OrcaLayout
 
         public Dictionary<string, Registration> BySlug { get; } = OrcaLayout.BySlug(state);
 
-        /// <summary>Whether a registration was matched by path, so its own slug says nothing about the estate.</summary>
-        public bool MatchedByPath(Registration registration) => _byPathIds.Contains(registration.Id);
+        /// <summary>Whether a registration was matched by path or by an old name, so its own slug says nothing about the estate.</summary>
+        public bool Claimed(Registration registration) => _byPathIds.Contains(registration.Id) || _claimed.Contains(registration.Id);
+
+        /// <summary>
+        /// Where a project not found under its current name still sits under an old one: a registration with an old remote,
+        /// then one whose folder has an old name, then an unregistered clone with an old name in a code-root folder.
+        /// </summary>
+        public FormerPlace? FindFormer(DeclaredProject project, Func<string, bool> exists)
+        {
+            foreach (var was in project.FormerSlugs)
+            {
+                if (BySlug.GetValueOrDefault(was) is { } registered && Claim(registered))
+                {
+                    return new(was, Posix(registered.Path), registered);
+                }
+            }
+
+            var names = project.FormerSlugs.Select(was => was.Split('/', 2)[^1]).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var byFolder = state.Registrations.FirstOrDefault(r =>
+                names.Contains(FileName(r.Path)) && !_claimed.Contains(r.Id) && !(r.Slug is not null && _declaredSlugs.Contains(r.Slug)));
+            if (byFolder is not null && Claim(byFolder))
+            {
+                return new(byFolder.Slug ?? FileName(byFolder.Path), Posix(byFolder.Path), byFolder);
+            }
+
+            var taken = state.Registrations.Select(r => Posix(r.Path)).ToHashSet(PathComparer);
+            // Former slugs are lowercase, so a folder is matched by name whatever its case.
+            var folders = Directory.Exists(codeRoot) ? Directory.EnumerateDirectories(codeRoot).Prepend(codeRoot).Order(PathOrder.Instance).ToList() : [];
+            foreach (var was in project.FormerSlugs)
+            {
+                var name = was.Split('/', 2)[^1];
+                foreach (var folder in folders)
+                {
+                    var clone = Directory.EnumerateDirectories(folder)
+                        .Where(child => FileName(child).Equals(name, StringComparison.OrdinalIgnoreCase))
+                        .Order(PathOrder.Instance)
+                        .FirstOrDefault(child => exists(child) && !taken.Contains(Posix(child)));
+                    if (clone is not null)
+                    {
+                        return new(was, Posix(clone), null);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Every other registration answering to the project's name or a former one: a clone registered twice, or a
+        /// registration left behind by a rename whose slug the live one shadows. Each is claimed, so none reads as unmanaged.
+        /// </summary>
+        public IReadOnlyList<Registration> Others(DeclaredProject project, Registration? found, Registration? former)
+        {
+            var slugs = project.FormerSlugs.Append(project.Slug.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+            return [.. state.Registrations
+                .Where(r => r.Slug is not null && slugs.Contains(r.Slug) && r.Id != found?.Id && r.Id != former?.Id)
+                .Where(Claim)];
+        }
+
+        private bool Claim(Registration registration) => !_byPathIds.Contains(registration.Id) && _claimed.Add(registration.Id);
 
         public Registration? Find(DeclaredProject project)
         {
+            // Registered twice under one remote, the one in the expected clone is the project; Others reports the rest.
+            var clone = Posix(ExpectedClone(project, state.Groups, codeRoot));
             if (BySlug.GetValueOrDefault(project.Slug.ToLowerInvariant()) is { } found)
             {
-                return found;
+                return state.Registrations.FirstOrDefault(r => r.Slug == found.Slug && PathComparer.Equals(Posix(r.Path), clone)) ?? found;
             }
 
             // Never take a registration another declared project owns by remote.
-            var clone = Posix(ExpectedClone(project, state.Groups, codeRoot));
             var byPath = state.Registrations.FirstOrDefault(r =>
                 PathComparer.Equals(Posix(r.Path), clone) && !(r.Slug is not null && _declaredSlugs.Contains(r.Slug)));
             if (byPath is not null)
@@ -623,6 +865,8 @@ public static class OrcaLayout
             return byPath;
         }
     }
+
+    private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     private static List<DeclaredProject> Unskipped(IEnumerable<DeclaredProject> projects, IReadOnlySet<string> skipped) =>
         [.. projects.Where(p => !skipped.Contains(p.Name))];
@@ -703,6 +947,20 @@ public static class OrcaLayout
             : throw new InvalidDataException($"{path}: projects: expected a list of objects");
     }
 
+    // The optional "formerly": ["owner/name", ...] of an entry, lowercase.
+    private static List<string>? FormerSlugs(JsonObject entry, string name, string file)
+    {
+        if (JsonShape.Field(entry, "formerly") is not { } raw)
+        {
+            return null;
+        }
+
+        var list = JsonShape.AsArray(raw) ?? throw new InvalidDataException($"{file}: {name}.formerly: expected a list of owner/name strings");
+        return [.. list.Select(item => JsonShape.AsText(item) is { } text && RepoSlug.FromPath(text) is { } slug
+            ? slug.Key
+            : throw new InvalidDataException($"{file}: {name}.formerly: {item?.ToJsonString() ?? "null"} is not owner/name"))];
+    }
+
     private static string Text(JsonObject entry, string key, string file) =>
         entry.ContainsKey(key)
             ? Text(entry, key, file, JsonShape.Field(entry, key))
@@ -753,16 +1011,16 @@ public static class OrcaLayout
             }
         }
 
-        public void Declared(DeclaredProject project, Registration? found)
+        public void Declared(DeclaredProject project, Registration? found, FormerPlace? former = null)
         {
             if (project.Group is not { } group)
             {
-                if (found is not null)
+                if ((found ?? former?.Registration) is { } registered)
                 {
                     Add(
                         Undeclared,
                         project.Name,
-                        Posix(found.Path),
+                        Posix(registered.Path),
                         "in Orca, but managed-projects.json gives it no orca.group",
                         "add \"orca\": {\"group\": ...} to its managed-projects.json entry");
                 }
@@ -774,6 +1032,12 @@ public static class OrcaLayout
             if (group.Length > 0 && !groups.Has(group) && _missing.Add(group))
             {
                 Add(MissingGroup, group, group, $"Orca has no group {group}", "create it", ApplyCommand);
+            }
+
+            if (former is not null)
+            {
+                RenamedAt(project, former);
+                return;
             }
 
             if (found is null)
@@ -807,6 +1071,42 @@ public static class OrcaLayout
             if (actual != group)
             {
                 Add(WrongGroup, project.Name, Posix(found.Path), $"under {(actual.Length > 0 ? actual : "no group")}, declared {where}", $"move it to {where}", ApplyCommand);
+            }
+        }
+
+        // Another registration of a declared project, beside the one the audit kept.
+        public void Extra(DeclaredProject project, Registration extra, Registration? kept)
+        {
+            var also = string.Equals(extra.Slug, project.Slug, StringComparison.OrdinalIgnoreCase) ? "registered in Orca again" : $"registered in Orca as {extra.Slug}, which is now {project.Slug}";
+            if (!exists(extra.Path))
+            {
+                Add(Stale, project.Name, Posix(extra.Path), $"{also}, but the folder is gone", "remove it from Orca");
+            }
+            else
+            {
+                var beside = kept is null ? string.Empty : $" beside {Posix(kept.Path)}";
+                Add(Duplicate, project.Name, Posix(extra.Path), $"{also}{beside}", "keep one clone by hand and remove the other from Orca");
+            }
+        }
+
+        // A project still cloned or registered under an old name.
+        private void RenamedAt(DeclaredProject project, FormerPlace former)
+        {
+            var target = Posix(RenamedClone(project, former, groups, codeRoot));
+            var place = former.Registration is null ? "cloned" : "in Orca";
+            var reason = $"{place} as {former.Was}, which is now {project.Slug}";
+            if (former.Registration is not null && !exists(former.Path))
+            {
+                Add(Stale, project.Name, former.Path, $"{reason}, but the folder is gone", "remove it from Orca, or clone it back");
+            }
+            else if (!PathComparer.Equals(target, former.Path) && exists(target))
+            {
+                Add(Renamed, project.Name, former.Path, $"{reason}, and {target} exists too", "keep one clone by hand, then run estate orca --apply");
+            }
+            else
+            {
+                var move = PathComparer.Equals(target, former.Path) ? string.Empty : $"move it to {target}, ";
+                Add(Renamed, project.Name, former.Path, reason, $"{move}point origin at {project.Slug} and register it again", ApplyCommand);
             }
         }
     }

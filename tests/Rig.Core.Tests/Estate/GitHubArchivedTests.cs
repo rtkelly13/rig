@@ -43,6 +43,21 @@ public sealed class GitHubArchivedTests
     }
 
     [Fact]
+    public async Task A_repo_github_answers_under_another_name_is_reported_renamed()
+    {
+        var github = new Answering(new Ran(0, """
+            {"data": {
+              "r0": {"nameWithOwner": "Resultful/Union.Assertions", "isArchived": false},
+              "r1": {"nameWithOwner": "rtkelly13/Blog", "isArchived": false}}}
+            """, string.Empty));
+
+        var repos = await GitHubArchived.ReposAsync(github, ["Resultful/FluentAssertions.Resultful", "rtkelly13/blog"], Token);
+
+        Assert.Equal(new Dictionary<string, string> { ["resultful/fluentassertions.resultful"] = "Resultful/Union.Assertions" }, repos!.Renamed);
+        Assert.Empty(repos.Archived);
+    }
+
+    [Fact]
     public async Task No_answer_from_github_is_null_not_an_empty_set()
     {
         var offline = new FakeGitHub();

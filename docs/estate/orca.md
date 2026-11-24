@@ -28,7 +28,8 @@ disabled entries).
 | `missing-group` | a declared group Orca does not have | creates it, parents first |
 | `undeclared` | in Orca, but its entry has no `orca.group` | nothing: add one |
 | `unmanaged` | an estate repo in Orca that managed-projects.json does not list | nothing: add it, or remove it from Orca |
-| `stale` | registered, but the folder is gone | nothing |
+| `stale` | registered, but the folder is gone; also a second registration of a declared project, by its name or a former one | nothing: remove it from Orca |
+| `duplicate` | a second registration of a declared project, by its name or a former one, whose folder still exists | nothing: keep one clone, remove the other from Orca |
 | `no-clone` | declared, but not cloned where its top group's folder says | nothing: `git clone`, then run again |
 | `archived` | in Orca, but its repo is archived | removes it from Orca, unless a process is working in it |
 | `archived-clone` | an archived repo is still cloned locally | nothing: delete the clone once nothing exists only there |
@@ -36,6 +37,8 @@ disabled entries).
 | `in-work-profile` | an estate repo in the work Orca profile (Windows) | removes it from the work profile |
 | `work-empty-group` | a work-profile group that holds only estate repos | deletes it once they are removed |
 | `skipped` | in Orca, but this machine's `tools.estate.skip_repos` lists it | nothing: remove it from Orca by hand |
+| `renamed` | cloned or in Orca under a name the project went by | moves the clone to its new name, points `origin` at it and registers it again |
+| `renamed-on-github` | GitHub serves a declared repo under another name | nothing: update `repo` and add `formerly` |
 
 **Archived repos never belong in Orca.** Each run asks GitHub, in one GraphQL
 query, which of the listed and registered estate repos are archived. Retired
@@ -52,6 +55,36 @@ human, because it can hold the only copy of uncommitted work or commits no
 remote has; `estate risk` shows what. A **deleted** repo (GitHub returns nothing)
 is not archived, and its clone may be the only copy anywhere, so nothing here
 touches it.
+
+**Renamed and moved projects are found under their old names.** A project
+renamed on GitHub, or moved to another owner, keeps its old slugs in
+`formerly`:
+
+```json
+{ "name": "Union.Assertions", "repo": "git@github.com:Resultful/Union.Assertions.git",
+  "formerly": ["Resultful/FluentAssertions.Resultful"], "orca": { "group": "Resultful" } }
+```
+
+A registration whose remote is an old slug, a registration whose folder has an
+old name, or an unregistered clone with an old name is reported as `renamed`,
+not as an `unmanaged` repo plus a `no-clone`. The GitHub query that finds
+archived repos also returns each repo's current `nameWithOwner`. GitHub follows
+the redirect, so a rename nobody has recorded yet is learnt from it too: an old
+slug still in Orca counts as a former name of the project that now holds it, and
+a declared `repo` GitHub serves under another name is reported as
+`renamed-on-github`.
+
+`--apply` moves the clone beside the old one under its new name, or into the
+new owner's group folder after a move between owners. It sets `origin` to
+`repo`, then unregisters the old path and registers the new one; the group move
+follows as usual. Colour, icon and base ref come back on the next `workspace
+orca sync`. A move loses nothing, since uncommitted work, stashes and local
+branches travel with the folder. Nothing is changed when:
+
+- a process is working in the clone;
+- `origin` is not one of the project's names;
+- the clone has linked worktrees, which would still name the old path;
+- a folder already exists at the new path. Two clones are for a human to merge.
 
 **A machine can skip managed repos.** `~/.workspace/config.json` (or
 `config.json` in `WORKSPACE_HOME`) is per machine. Managed-project names listed
