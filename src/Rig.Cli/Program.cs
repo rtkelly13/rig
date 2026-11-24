@@ -8,6 +8,7 @@ using Rig.Cli.Desktop;
 using Rig.Cli.Devenv;
 using Rig.Cli.Estate;
 using Rig.Cli.Flags;
+using Rig.Cli.Forks;
 using Rig.Cli.Forwarding;
 using Rig.Cli.Governance;
 using Rig.Cli.Image;
@@ -33,6 +34,7 @@ using Rig.Core.Chrome.Extension;
 using Rig.Core.Devenv;
 using Rig.Core.Estate;
 using Rig.Core.Flags;
+using Rig.Core.Forks;
 using Rig.Core.Jobs;
 using Rig.Core.Layout;
 using Rig.Core.Orca;
@@ -296,6 +298,7 @@ internal static class Program
                         Task.Delay),
                     Console.Out,
                     Console.Error).Build,
+                new ForkCommand(git, Path.Join(checkout, "config", ForkAssessmentConfig.FileName), Environment.CurrentDirectory, Console.Out, Console.Error).Build,
                 new StatusCommand(proc, git, Environment.CurrentDirectory, RigConsole.Create(Console.Out)).Build,
                 new TracesCommand(
                     Path.Join(checkout, "temp", "traces", "sdk"),

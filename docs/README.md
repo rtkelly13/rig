@@ -37,7 +37,7 @@ and findings are in each CLI's `--help`; these guides hold what `--help` can't.
 | [observability.md](observability.md) | Adding or reading traces from the CLI tools |
 | [otel-stack.md](otel-stack.md) | The always-on local OTLP collector on 4317/4318: install, startup job, 7-day files, forwarding |
 | [mail.md](mail.md) | Gmail triage: where the untracked rules, their Drive backup and the Apps Script live; recovery |
-| [forks.md](forks.md) | Managed forks: a repo tracking an upstream we don't own, with our changes on top |
+| [forks.md](forks.md) | Managed forks: a repo tracking an upstream we don't own, with our changes on top; `rig fork assess` before forking |
 | [triage.md](triage.md) | `rig triage`: the estate-wide PR and issue queue and its `rig web` page |
 | [web-ops.md](web-ops.md) | The Operations pages under `/ops` in `rig web` |
 | [orca.md](orca.md) | `workspace orca doctor/sync/lost-tabs`: agent launch flags, worktree folders and per-repo setup |

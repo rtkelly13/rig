@@ -12,9 +12,34 @@ rebaselines the stack onto newer upstreams, keeps the change records, stages a c
 promotes it once CI passes. Until Oxbow's first milestone lands, parquet-dotnet runs the same model
 with `eng/lake/Lake.Stack`, the tool Oxbow is being extracted from.
 
-Rig governs only the repository around the fork: who owns it, which policy files it carries, its
-settings and its ruleset. It has no sync, record or stack commands. Those belong to Oxbow, and
+Rig governs the repository around the fork: who owns it, which policy files it carries, its settings
+and its ruleset. It also assesses a project before anyone forks it (below). It has no sync, record or
+stack commands. Those belong to Oxbow, and
 checking them twice would let the two disagree.
+
+## Before forking: `rig fork assess`
+
+`rig fork assess [path]` reads one revision of a clone and reports what forking it asks of you: its
+licence and obligations, copyright holders, files under other licences, vendored code, the package
+names and brand assets you must not reuse, upstream's contribution policies (AI use, CLA, DCO), who
+wrote it and how concentrated that is, and refs holding work the revision does not. Each finding
+carries a severity and the responsibility it puts on you. It exits 1 when a finding blocks the fork
+(no licence, an unrecognised one, a shallow clone) and 2 on an error.
+
+```bash
+git clone --no-single-branch https://github.com/owner/project.git && cd project
+rig fork assess --rev "$(git rev-parse HEAD)" > assessment.txt      # the report
+rig fork assess --rev <sha> --json --blame --mailmap merged.mailmap   # plus line ownership, as JSON
+```
+
+The report is deterministic: it reads files from the revision, never the working tree, takes "now"
+from the revision's commit date, and sorts everything ordinally. Only `--refs` (default: every branch;
+use `refs/remotes/upstream` when the clone is already a fork) reads live state, so pin it to keep two
+runs identical. What it looks for and what each finding asks live in
+[`config/fork-assessment.json`](../config/fork-assessment.json); the code holds no policy.
+
+It reads facts; it does not judge trademarks, private agreements or anything outside the repository.
+Keep the report with the fork's first change record, then hand over to `oxbow init`.
 
 ## Configuration
 
