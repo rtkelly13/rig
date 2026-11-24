@@ -143,11 +143,11 @@
       ]
     }
   ],
-  "licence_files": "^(LICEN[CS]E|COPYING|UNLICENSE)([.-][A-Za-z0-9.-]+)?$",
-  "notice_files": "^NOTICE(\\.(md|txt))?$",
-  "trademark_files": "(^|/)TRADEMARKS?(\\.(md|txt))?$",
-  "policy_files": "^(README|CONTRIBUTING|AI_POLICY|CODE_OF_CONDUCT|GOVERNANCE|SUPPORT)(\\.[a-z]+)?$|^(docs|\\.github)/(README|CONTRIBUTING|AI_POLICY)(\\.[a-z]+)?$|^\\.github/(ISSUE_TEMPLATE/[^/]+|PULL_REQUEST_TEMPLATE(\\.md)?|pull_request_template\\.md)$",
-  "readme_files": "^(docs/)?README(\\.[a-z]+)?$",
+  "licence_files": "(?i)^(LICEN[CS]E|COPYING|UNLICENSE)([.-][A-Za-z0-9.-]+)?$",
+  "notice_files": "(?i)^NOTICE(\\.(md|txt))?$",
+  "trademark_files": "(?i)(^|/)TRADEMARKS?(\\.(md|txt))?$",
+  "policy_files": "(?i)^(README|CONTRIBUTING|AI_POLICY|CODE_OF_CONDUCT|GOVERNANCE|SUPPORT)(\\.[a-z]+)?$|^(docs|\\.github)/(README|CONTRIBUTING|AI_POLICY)(\\.[a-z]+)?$|^\\.github/(ISSUE_TEMPLATE/[^/]+|PULL_REQUEST_TEMPLATE(\\.md)?|pull_request_template\\.md)$",
+  "readme_files": "(?i)^(docs/)?README(\\.[a-z]+)?$",
   "brand_assets": "(^|/)(icon|logo)[^/]*\\.(png|svg|ico|jpe?g|webp)$",
   "vendored_directories": "(^|/)(vendor|third_party|third-party|thirdparty|extern)/",
   "ignored_paths": "(^|/)(node_modules|bin|obj)/",

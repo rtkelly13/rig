@@ -94,6 +94,18 @@ public sealed class ForkAssessmentTests
         Assert.Equal("licence.missing", assessment.Findings[0].Id);
     }
 
+    [Theory]
+    [InlineData("License.txt")]
+    [InlineData("license.md")]
+    [InlineData("Licence.txt")]
+    public void A_licence_file_is_found_whatever_its_case(string path)
+    {
+        var assessment = ForkAssessment.Assess(Shipped, Facts(texts: new Dictionary<string, string> { [path] = Mit }));
+
+        Assert.False(assessment.Blocked);
+        Assert.Equal((path, "MIT"), (Assert.Single(assessment.Licences).Path, assessment.Licences[0].Spdx));
+    }
+
     [Fact]
     public void A_licence_no_rule_recognises_is_blocked()
     {
