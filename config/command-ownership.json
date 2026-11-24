@@ -329,8 +329,6 @@
     {"Id": "executable-project:src/Rig.Paket/Rig.Paket.csproj:Exe","Capability": "surface:executable-project:src/Rig.Paket/Rig.Paket.csproj:Exe","Owner": "executable-project:src/Rig.Paket/Rig.Paket.csproj:Exe","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Capability": "surface:executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Owner": "executable-project:tools/command-ownership/CommandOwnership.csproj:Exe","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "executable-project:tools/loc-report/LocReport.csproj:Exe","Capability": "surface:executable-project:tools/loc-report/LocReport.csproj:Exe","Owner": "executable-project:tools/loc-report/LocReport.csproj:Exe","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "file-app:scripts/coverage-floor.cs","Capability": "surface:file-app:scripts/coverage-floor.cs","Owner": "file-app:scripts/coverage-floor.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
-    {"Id": "file-app:scripts/require-jobs-succeeded.cs","Capability": "surface:file-app:scripts/require-jobs-succeeded.cs","Owner": "file-app:scripts/require-jobs-succeeded.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "file-app:src/Rig.Paket/Program.cs","Capability": "surface:file-app:src/Rig.Paket/Program.cs","Owner": "file-app:src/Rig.Paket/Program.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "file-app:tools/command-ownership/Program.cs","Capability": "surface:file-app:tools/command-ownership/Program.cs","Owner": "file-app:tools/command-ownership/Program.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "file-app:tools/loc-report/Program.cs","Capability": "surface:file-app:tools/loc-report/Program.cs","Owner": "file-app:tools/loc-report/Program.cs","Platforms": ["linux","macos","windows"],"AliasTo": null},
@@ -523,9 +521,13 @@
     "python-job:otel-collector=/scripts/rig otel-stack collector ensure",
     "python-job:restore=/scripts/rig desktop workspace restore --config /plan",
     "python-job:workspace-maintain=/workspace/.venv/Scripts/python.exe -m workspace_cli.maintain run --due",
-    "python-job:worktree-reclaim=/workspace/.venv/Scripts/python.exe -m workspace_cli.main worktree reclaim --all-repos --apply"
+    "python-job:worktree-reclaim=/workspace/.venv/Scripts/python.exe -m workspace_cli.main worktree reclaim --all-repos --apply",
+    "file-app:scripts/coverage-floor.cs",
+    "file-app:scripts/require-jobs-succeeded.cs"
   ],
   "RetiredFiles": [
+    "scripts/coverage-floor.cs",
+    "scripts/require-jobs-succeeded.cs",
     ".github/scripts/require_jobs_succeeded.py",
     "src/rig/repo_governance/coverage_floor.py",
     "tests/test_coverage_floor.py",

@@ -437,6 +437,13 @@ public sealed class RuntimeManager(IProc proc, string root, TimeProvider clock)
         if (File.Exists(Path.Join(copy, ".config", "dotnet-tools.json")))
         {
             _ = Must(["dotnet", "tool", "restore"], copy);
+
+            // Directory.Build.props imports the shared build files Paket fetches into paket-files/, so they must exist
+            // before MSBuild evaluates a project.
+            if (File.Exists(Path.Join(copy, "paket.dependencies")))
+            {
+                _ = Must(["dotnet", "paket", "restore"], copy);
+            }
         }
 
         foreach (var project in PublishedProjects)

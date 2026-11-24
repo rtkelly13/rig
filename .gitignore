@@ -81,3 +81,6 @@ TestResults/
 
 # Reqnroll's generated code-behind files (issue #237); the .feature files are the source.
 *.feature.cs
+
+# Paket github files (rtkelly-labs/foundations), restored by `dotnet paket restore`
+paket-files/

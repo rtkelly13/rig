@@ -64,7 +64,7 @@ Each measure answers a different question. None of them is a target on its own.
 
 | Measure | Answers | Command |
 |:--------|:--------|:--------|
-| Line + branch coverage | What code runs at all? | `scripts/coverage-floor.cs` over coverlet reports ([below](#the-c-coverage-floor)) |
+| Line + branch coverage | What code runs at all? | `coverage-floor.cs` (foundations) over coverlet reports ([below](#the-c-coverage-floor)) |
 | Mutation score | Would the tests notice if this code were wrong? | Not wired up for C#; run a mutation tool locally before deleting a test that adds no unique coverage |
 
 Coverage says code was *executed*. Mutation testing says it was *checked*: a suite can run nearly every line of a
@@ -72,8 +72,9 @@ module and assert on little of it.
 
 ### The C# coverage floor
 
-`RigCoverageFloor`, `RigCoverageTarget` and `RigCoverageSlack` in `Directory.Build.props` set the rules, and
-`scripts/coverage-floor.cs` applies them. The floor starts at the 95% target: there is no backlog to ratchet
+`CoverageFloor`, `CoverageTarget` and `CoverageSlack` in `Directory.Build.props` set the rules, and
+`coverage-floor.cs` from [rtkelly-labs/foundations](https://github.com/rtkelly-labs/foundations), which Paket's
+`Build` group restores into `paket-files/`, applies them. The floor starts at the 95% target: there is no backlog to ratchet
 through, so each command ported to C# arrives with its tests. CI fails a build below the floor, and fails one
 more than the slack above it so that the floor is raised in the same PR as the tests that earn it.
 
@@ -86,7 +87,7 @@ dotnet build rig.slnx -m:2
 dotnet test --solution rig.slnx --no-build --coverlet --coverlet-output-format json \
   --coverlet-exclude-by-file "**/Microsoft.Interop.ComInterfaceGenerator/**" \
   --coverlet-exclude-by-file "**/Microsoft.Windows.CsWin32/**"
-dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json
+dotnet run paket-files/build/rtkelly-labs/foundations/dotnet/scripts/coverage-floor.cs -- TestResults/coverage.*.json
 ```
 
 Win32 and UI Automation adapters cannot run on the Linux job, so keep logic out of them. Code that can be tested

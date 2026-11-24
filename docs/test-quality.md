@@ -66,7 +66,7 @@ their execution traces.
 
 | Measure | Tool | Where |
 |:--|:--|:--|
-| Line and branch coverage, floor 95% | `scripts/coverage-floor.cs` over coverlet reports | Every CI run ([testing.md](testing.md#the-c-coverage-floor)) |
+| Line and branch coverage, floor 95% | `coverage-floor.cs` (foundations) over coverlet reports | Every CI run ([testing.md](testing.md#the-c-coverage-floor)) |
 
 The per-test footprint, size probe and mutation tooling were Python-only (pytest-cov contexts, an audit hook,
 mutmut) and went with the Python suite in #285. The 2026-11 baseline they produced is in git history. A C# mutation

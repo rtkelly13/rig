@@ -71,7 +71,9 @@ ______________________________________________________________________
 
 ### 1. Banned API Analyzers (`Microsoft.CodeAnalysis.BannedApiAnalyzers`)
 
-Rig integrates `Microsoft.CodeAnalysis.BannedApiAnalyzers` centrally in `Directory.Build.props` reading `BannedSymbols.txt`.
+Rig integrates `Microsoft.CodeAnalysis.BannedApiAnalyzers` centrally: `Directory.Build.props` imports `Common.props` from
+[rtkelly-labs/foundations](https://github.com/rtkelly-labs/foundations), which reads the shared `BannedSymbols.txt` and a
+root `BannedSymbols.txt` when the repo adds one of its own.
 
 - **Rules**:
   - Legacy non-generic collections (`ArrayList`, `Hashtable`) are banned in favor of generic and frozen collections.

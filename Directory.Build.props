@@ -1,54 +1,20 @@
 <Project>
-  <!-- Every C# project in rig. ADR 0022 sets the bar: nullable on, warnings are errors, all analyzers. -->
-  <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AnalysisLevel>latest-all</AnalysisLevel>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- ICU, not invariant mode: the vault text rules need string.Normalize for non-ASCII (NFKD, NFKC). -->
-    <InvariantGlobalization>false</InvariantGlobalization>
-    <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-    <IsPackable>false</IsPackable>
-    <AnalysisModePerformance>AllEnabled</AnalysisModePerformance>
-    <!-- Paket lists every package in paket.lock as a direct PackageReference, including ones the net11.0 shared framework
-         already provides. NuGet's package pruning then warns (NU1510) that it will not prune them; the warning is noise here. -->
-    <NoWarn>$(NoWarn);NU1510</NoWarn>
-  </PropertyGroup>
+  <!-- Every C# project in rig. ADR 0022 sets the bar: nullable on, warnings are errors, all analyzers. The shared
+       settings (and the banned APIs every repo shares) come from rtkelly-labs/foundations through Paket's Build group, so
+       run `dotnet tool restore && dotnet paket restore` before the first build. Rig's own additions follow the import. -->
+  <Import Project="$(MSBuildThisFileDirectory)paket-files/build/rtkelly-labs/foundations/dotnet/Common.props" />
 
-  <!-- Nothing from a checkout above this one. A worktree lives inside another rig checkout (temp/, .worktrees/), and
-       the SDK looks upward for both files: a second .globalconfig makes Roslyn unset the keys they share, so the
-       banned-API analyzer flags generated code, and an older checkout's Directory.Packages.props duplicates the
-       versions Paket already pins (NU1506). Only this repo's .globalconfig is read, and Paket owns package versions. -->
-  <PropertyGroup>
-    <DiscoverGlobalAnalyzerConfigFiles>false</DiscoverGlobalAnalyzerConfigFiles>
-    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
-  </PropertyGroup>
-  <ItemGroup>
-    <EditorConfigFiles Include="$(MSBuildThisFileDirectory).globalconfig" Condition="Exists('$(MSBuildThisFileDirectory).globalconfig')" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Link="BannedSymbols.txt" Condition="Exists('$(MSBuildThisFileDirectory)BannedSymbols.txt')" />
-  </ItemGroup>
-
-  <!-- The C# coverage ratchet (scripts/coverage-floor.cs): line and branch coverage together.
+  <!-- The C# coverage ratchet (coverage-floor.cs from foundations): line and branch coverage together.
        The floor never falls, and must rise once coverage passes it by more than the slack. -->
   <PropertyGroup>
-    <RigCoverageFloor>95</RigCoverageFloor>
-    <RigCoverageTarget>95</RigCoverageTarget>
-    <RigCoverageSlack>2</RigCoverageSlack>
+    <CoverageFloor>95</CoverageFloor>
+    <CoverageTarget>95</CoverageTarget>
+    <CoverageSlack>2</CoverageSlack>
   </PropertyGroup>
 
   <PropertyGroup>
     <Authors>Ryan Kelly</Authors>
     <Copyright>Copyright (c) 2026 Ryan Kelly</Copyright>
     <RepositoryUrl>https://github.com/rtkelly13/rig.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <DebugType>embedded</DebugType>
   </PropertyGroup>
 </Project>
