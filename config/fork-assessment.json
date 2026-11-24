@@ -171,7 +171,8 @@
     "recent_window_days": 365,
     "bus_factor_coverage": 0.5,
     "frequent_contributors": 10,
-    "evidence_limit": 8
+    "evidence_limit": 8,
+    "stale_after_days": 365
   },
   "findings": {
     "history.shallow": {
@@ -245,6 +246,10 @@
     "activity.ended": {
       "severity": "risk",
       "responsibility": "Upstream says it is ended or deprecated. Present the fork as a fork, never as the official successor, and be explicit about how much maintenance you commit to."
+    },
+    "activity.stale": {
+      "severity": "risk",
+      "responsibility": "Nobody has committed for a long time. Look for an announcement, a successor or a living fork before starting another, and expect to carry security fixes and support yourself. Present the fork as a fork, never as the successor."
     },
     "history.unmerged-refs": {
       "severity": "risk",

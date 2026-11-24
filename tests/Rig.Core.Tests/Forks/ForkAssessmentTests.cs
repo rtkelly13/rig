@@ -238,6 +238,24 @@ public sealed class ForkAssessmentTests
     }
 
     [Fact]
+    public void A_project_untouched_for_longer_than_the_threshold_before_as_of_is_stale()
+    {
+        Assert.Null(Find(ForkAssessment.Assess(Shipped, Facts()), "activity.stale"));
+        Assert.Null(Find(ForkAssessment.Assess(Shipped, Facts(), Day.AddDays(365)), "activity.stale"));
+
+        var stale = ForkAssessment.Assess(Shipped, Facts(), Day.AddDays(366));
+
+        Assert.Equal("No commits in the 366 days from 2026-10-01 to 2027-10-02", Find(stale, "activity.stale")!.Title);
+        Assert.Equal(Day.AddDays(366), stale.AsOf);
+    }
+
+    [Fact]
+    public void An_as_of_date_before_the_revision_is_rejected()
+    {
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => ForkAssessment.Assess(Shipped, Facts(), Day.AddDays(-1)));
+    }
+
+    [Fact]
     public void The_report_does_not_depend_on_the_order_facts_arrive_in()
     {
         CommitFact[] commits =

@@ -75,6 +75,7 @@ public sealed record OwnershipSummary(int Lines, IReadOnlyList<LineShare> Leader
 /// <summary>The report <c>rig fork assess</c> prints: the facts summarised, then the findings.</summary>
 /// <param name="Revision">The assessed commit.</param>
 /// <param name="RevisionDate">Its commit date.</param>
+/// <param name="AsOf">The date staleness was measured to, when one was given.</param>
 /// <param name="Licences">The project's licence files.</param>
 /// <param name="People">Who wrote the history.</param>
 /// <param name="Ownership">Whose lines the revision holds, when blamed.</param>
@@ -82,6 +83,7 @@ public sealed record OwnershipSummary(int Lines, IReadOnlyList<LineShare> Leader
 public sealed record ForkAssessment(
     string Revision,
     DateOnly RevisionDate,
+    DateOnly? AsOf,
     IReadOnlyList<LicenceFile> Licences,
     PeopleSummary People,
     OwnershipSummary? Ownership,
@@ -95,12 +97,18 @@ public sealed record ForkAssessment(
 
     /// <summary>
     /// Assesses <paramref name="facts"/> against <paramref name="config"/>. Pure: the same facts and configuration always
-    /// give the same report, in the same order.
+    /// give the same report, in the same order. <paramref name="asOf"/> is the only date not read from the revision:
+    /// it is passed in, never read from the clock, so the report stays reproducible.
     /// </summary>
-    public static ForkAssessment Assess(ForkAssessmentConfig config, ForkFacts facts)
+    public static ForkAssessment Assess(ForkAssessmentConfig config, ForkFacts facts, DateOnly? asOf = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(facts);
+        if (asOf < facts.RevisionDate)
+        {
+            throw new ArgumentOutOfRangeException(nameof(asOf), $"--as-of {asOf:yyyy-MM-dd} is before the revision's date, {facts.RevisionDate:yyyy-MM-dd}");
+        }
+
         var limit = config.Thresholds.EvidenceLimit;
         List<Finding> findings = [];
         void Add(string id, string title, IEnumerable<string> evidence)
@@ -122,6 +130,11 @@ public sealed record ForkAssessment(
         var identities = Identities.Build(config, facts);
         var people = SummarisePeople(config, facts, identities);
         PeopleFindings(config, facts, people, Add);
+
+        if (asOf is { } today && today.DayNumber - facts.RevisionDate.DayNumber > config.Thresholds.StaleAfterDays)
+        {
+            Add("activity.stale", $"No commits in the {today.DayNumber - facts.RevisionDate.DayNumber} days from {facts.RevisionDate:yyyy-MM-dd} to {today:yyyy-MM-dd}", []);
+        }
 
         var unmerged = facts.Refs.OrderByDescending(r => r.UniqueCommits).ThenBy(r => r.Name, StringComparer.Ordinal).ToList();
         if (unmerged.Count > 0)
@@ -148,7 +161,7 @@ public sealed record ForkAssessment(
             .ThenBy(pair => pair.index)
             .Select(pair => pair.finding)
             .ToList();
-        return new ForkAssessment(facts.Revision, facts.RevisionDate, licences, people, ownership, ordered);
+        return new ForkAssessment(facts.Revision, facts.RevisionDate, asOf, licences, people, ownership, ordered);
     }
 
     /// <summary>A share as a whole-number percentage, culture-invariant.</summary>

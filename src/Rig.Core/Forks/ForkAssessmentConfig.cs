@@ -55,7 +55,8 @@ public sealed record IdentityConfig(IReadOnlyList<string> IgnoredNames);
 /// <param name="BusFactorCoverage">The share of commits the bus factor's identities must cover together.</param>
 /// <param name="FrequentContributors">How many contributors the report lists.</param>
 /// <param name="EvidenceLimit">How many paths or lines a finding quotes.</param>
-public sealed record AssessmentThresholds(double SingleMaintainerShare, int RecentWindowDays, double BusFactorCoverage, int FrequentContributors, int EvidenceLimit);
+/// <param name="StaleAfterDays">How long after the assessed revision, measured to <c>--as-of</c>, a project counts as stale.</param>
+public sealed record AssessmentThresholds(double SingleMaintainerShare, int RecentWindowDays, double BusFactorCoverage, int FrequentContributors, int EvidenceLimit, int StaleAfterDays);
 
 /// <summary>What a finding asks, as configured.</summary>
 /// <param name="Severity">How much it asks.</param>
@@ -106,7 +107,7 @@ public sealed record ForkAssessmentConfig(
         "history.shallow", "licence.missing", "licence.unrecognised", "licence.terms", "licence.copyright", "notice.carry",
         "third-party.licences", "third-party.vendored", "names.packages", "names.brand-assets", "names.trademark",
         "contribution.ai-policy", "contribution.cla", "contribution.dco", "people.single-maintainer",
-        "people.recent-single-maintainer", "people.personal-data", "activity.ended", "history.unmerged-refs",
+        "people.recent-single-maintainer", "people.personal-data", "activity.ended", "activity.stale", "history.unmerged-refs",
         "ownership.concentration",
     ];
 
@@ -148,7 +149,7 @@ public sealed record ForkAssessmentConfig(
             errors.Add("shares must lie in (0, 1]");
         }
 
-        if (Thresholds.RecentWindowDays <= 0 || Thresholds.FrequentContributors <= 0 || Thresholds.EvidenceLimit <= 0)
+        if (Thresholds.RecentWindowDays <= 0 || Thresholds.FrequentContributors <= 0 || Thresholds.EvidenceLimit <= 0 || Thresholds.StaleAfterDays <= 0)
         {
             errors.Add("day and count thresholds must be positive");
         }

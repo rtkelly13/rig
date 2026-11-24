@@ -49,7 +49,8 @@ internal sealed class ForkCommand(Git git, string configPath, string workingDire
     private static IEnumerable<TextTable> Tables(ForkAssessment assessment)
     {
         var people = assessment.People;
-        var summary = new TextTable($"Fork assessment of {assessment.Revision[..Math.Min(12, assessment.Revision.Length)]} ({assessment.RevisionDate:yyyy-MM-dd})", [("fact", false), ("value", false)])
+        var asOf = assessment.AsOf is { } date ? $", as of {date:yyyy-MM-dd}" : string.Empty;
+        var summary = new TextTable($"Fork assessment of {assessment.Revision[..Math.Min(12, assessment.Revision.Length)]} ({assessment.RevisionDate:yyyy-MM-dd}{asOf})", [("fact", false), ("value", false)])
             .Add("licence", assessment.Licences.Count == 0 ? "none" : string.Join(", ", assessment.Licences.Select(l => $"{l.Path}: {l.Spdx ?? "unrecognised"}")))
             .Add("commits", $"{people.Commits} (+{people.Merges} merges), {people.Tags} tags, since {people.FirstCommit:yyyy-MM-dd}")
             .Add("contributors", $"{people.Contributors} people from {people.Identities} identities, bus factor {people.BusFactor}")
@@ -116,6 +117,10 @@ internal sealed class ForkCommand(Git git, string configPath, string workingDire
         [CliOption(Name = "--rev", Required = false, Description = "The revision to assess (default: HEAD). Pin it to make the report reproducible.")]
         public string Revision { get; set; } = "HEAD";
 
+        /// <summary>The date staleness is measured to.</summary>
+        [CliOption(Name = "--as-of", Required = false, Description = "Measure staleness to this date (yyyy-MM-dd), usually today. Passed in, never read from the clock, so the report stays reproducible.")]
+        public string? AsOf { get; set; }
+
         /// <summary>Attribute every line too.</summary>
         [CliOption(Name = "--blame", Description = "Also attribute every line at the revision (slow on large repositories).")]
         public bool Blame { get; set; }
@@ -140,12 +145,24 @@ internal sealed class ForkCommand(Git git, string configPath, string workingDire
         public async Task<int> RunAsync(CliContext context)
         {
             var repo = System.IO.Path.GetFullPath(Path ?? workingDirectory, workingDirectory);
+            DateOnly? asOf = null;
+            if (AsOf is not null)
+            {
+                if (!DateOnly.TryParseExact(AsOf, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                {
+                    await error.WriteLineAsync($"rig fork assess: --as-of '{AsOf}' is not a yyyy-MM-dd date").ConfigureAwait(false);
+                    return (int)ExitCode.Error;
+                }
+
+                asOf = parsed;
+            }
+
             try
             {
                 var config = ForkAssessmentConfig.Load(Config is null ? configPath : System.IO.Path.GetFullPath(Config, workingDirectory));
                 var mailmap = Mailmap is null ? null : System.IO.Path.GetFullPath(Mailmap, workingDirectory);
                 var facts = await new ForkFactsReader(git).ReadAsync(repo, Revision, config, mailmap, Blame, Refs, context.CancellationToken).ConfigureAwait(false);
-                var assessment = ForkAssessment.Assess(config, facts);
+                var assessment = ForkAssessment.Assess(config, facts, asOf);
                 if (Json)
                 {
                     await output.WriteAsync(assessment.ToJson() + "\n").ConfigureAwait(false);
@@ -165,7 +182,7 @@ internal sealed class ForkCommand(Git git, string configPath, string workingDire
 
                 return (int)(assessment.Blocked ? ExitCode.Drift : ExitCode.Clean);
             }
-            catch (Exception e) when (e is ConfigLoadException or ProcException)
+            catch (Exception e) when (e is ConfigLoadException or ProcException or ArgumentOutOfRangeException)
             {
                 await error.WriteLineAsync($"rig fork assess: {e.Message}").ConfigureAwait(false);
                 return (int)ExitCode.Error;
