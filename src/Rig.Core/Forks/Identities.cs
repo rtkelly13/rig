@@ -2,22 +2,26 @@ namespace Rig.Core.Forks;
 
 /// <summary>
 /// Merges the names and emails people committed under into one identity each: two identities are one person when they
-/// share an email, or a name that is not configured as ignored. Deterministic: each person's key is the ordinally
+/// share an email, or a name committed under no more than the configured number of emails. Deterministic: each person's key is the ordinally
 /// smallest email or name they used.
 /// </summary>
 internal sealed class Identities
 {
     private readonly Dictionary<string, string> parent = new(StringComparer.Ordinal);
-    private readonly HashSet<string> ignored;
+    private readonly HashSet<string> shared;
 
-    private Identities(IEnumerable<string> ignoredNames) =>
-        ignored = [.. ignoredNames.Select(NormaliseName)];
+    private Identities(HashSet<string> sharedNames) => shared = sharedNames;
 
     /// <summary>Merges every identity in the commits and the blame.</summary>
     public static Identities Build(ForkAssessmentConfig config, ForkFacts facts)
     {
-        var identities = new Identities(config.Identity.IgnoredNames);
-        foreach (var (name, email) in facts.Commits.Select(c => (c.Name, c.Email)).Concat((facts.Blame ?? []).Select(b => (b.Name, b.Email))).Distinct().Order())
+        var pairs = facts.Commits.Select(c => (c.Name, c.Email)).Concat((facts.Blame ?? []).Select(b => (b.Name, b.Email))).Distinct().Order().ToList();
+        var shared = pairs.GroupBy(p => NormaliseName(p.Name), StringComparer.Ordinal)
+            .Where(g => g.Select(p => EmailNode(p.Email)).Distinct(StringComparer.Ordinal).Count() > config.Identity.MaxEmailsPerName)
+            .Select(g => g.Key)
+            .ToHashSet(StringComparer.Ordinal);
+        var identities = new Identities(shared);
+        foreach (var (name, email) in pairs)
         {
             identities.Add(name, email);
         }
@@ -56,7 +60,7 @@ internal sealed class Identities
         var emailNode = EmailNode(email);
         _ = Find(emailNode);
         var normalised = NormaliseName(name);
-        if (normalised.Length > 0 && !ignored.Contains(normalised))
+        if (normalised.Length > 0 && !shared.Contains(normalised))
         {
             Union(emailNode, "n:" + normalised);
         }

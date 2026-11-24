@@ -163,7 +163,7 @@
     "unmaintained": ["no longer maintained", "not maintained", "unmaintained", "this project is archived", "this repository is archived", "is deprecated", "end of life"]
   },
   "identity": {
-    "ignored_names": ["root", "unknown", "your name", "github", "github action", "github actions", "github-actions[bot]", "dependabot[bot]", "renovate[bot]", "copilot", "claude"]
+    "max_emails_per_name": 10
   },
   "blame_paths": "\\.(cs|fs|vb|ts|tsx|js|py|rs|go|java|kt|swift|c|cc|cpp|h|hpp|rb|php|scala|tt)$",
   "thresholds": {

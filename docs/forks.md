@@ -57,7 +57,7 @@ The report states facts a repository holds. These it cannot see, or sees only ap
 | **Upstream's responsiveness.** Commit counts say who wrote the code, not whether a maintainer reviews outside pull requests or welcomes the change you have in mind. | Read recent pull requests from outsiders before choosing between contributing and forking. |
 | **Licences it has no fingerprint for**: new commercial licences, dual licences, and licence files that only point elsewhere ("licensed under Apache 2.0: <url>") are reported unrecognised. | Read them; when they permit forking, add a fingerprint to the configuration. |
 | **Files named like licences.** Any root file matching `licence_files`, in any case, is read as one. | Check the evidence paths of `licence.unrecognised`. |
-| **Identity merging** is by shared email or normalised name. Two people with the same name merge; one person with unrelated names and emails does not. | Pass `--mailmap` with the merges you know. |
+| **Identity merging** is by shared email, or by a normalised name committed under no more than `identity.max_emails_per_name` emails. The tool lists no names: a placeholder, bot or agent name used under more emails merges nothing, but under fewer it merges the people behind it, and two people who share a name merge too. An agent identity (such as a coding agent committing for several people) counts as one contributor. | Pass `--mailmap` with the merges you know, and read the top contributors list. |
 | **Whether the work you plan is worth it.** It does not measure a technical gap, such as how far a library is from Native AOT. | Measure that separately, by building with the relevant analyzers. |
 
 ## Configuration

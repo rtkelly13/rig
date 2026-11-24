@@ -46,8 +46,11 @@ public sealed record PackageManifestRule(string Kind, string Path, string Name);
 public sealed record MarkerConfig(IReadOnlyList<string> AiPolicy, IReadOnlyList<string> Cla, IReadOnlyList<string> Unmaintained);
 
 /// <summary>How author identities are merged.</summary>
-/// <param name="IgnoredNames">Names that never merge two identities, because many people or bots share them.</param>
-public sealed record IdentityConfig(IReadOnlyList<string> IgnoredNames);
+/// <param name="MaxEmailsPerName">
+/// The most emails one name may be committed under and still merge them. A name used under more is shared (a placeholder,
+/// a bot, an agent), so it merges nothing; the tool never lists names.
+/// </param>
+public sealed record IdentityConfig(int MaxEmailsPerName);
 
 /// <summary>The numbers findings are judged against.</summary>
 /// <param name="SingleMaintainerShare">The share of commits above which one identity is a single maintainer.</param>
@@ -149,7 +152,7 @@ public sealed record ForkAssessmentConfig(
             errors.Add("shares must lie in (0, 1]");
         }
 
-        if (Thresholds.RecentWindowDays <= 0 || Thresholds.FrequentContributors <= 0 || Thresholds.EvidenceLimit <= 0 || Thresholds.StaleAfterDays <= 0)
+        if (Thresholds.RecentWindowDays <= 0 || Thresholds.FrequentContributors <= 0 || Thresholds.EvidenceLimit <= 0 || Thresholds.StaleAfterDays <= 0 || Identity.MaxEmailsPerName <= 0)
         {
             errors.Add("day and count thresholds must be positive");
         }

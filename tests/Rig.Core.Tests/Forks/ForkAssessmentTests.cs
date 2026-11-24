@@ -165,21 +165,21 @@ public sealed class ForkAssessmentTests
     }
 
     [Fact]
-    public void Identities_merge_on_a_shared_email_or_name_but_never_on_an_ignored_name()
+    public void Identities_merge_on_a_shared_email_or_name_but_never_on_a_name_used_under_more_emails_than_the_limit()
     {
+        var limit = Shipped.Identity.MaxEmailsPerName;
         CommitFact[] commits =
         [
             new("Jo Upstream", "jo@home.invalid", Day, false),
             new("Jo Upstream", "jo@work.invalid", Day, false),
             new("jo", "jo@work.invalid", Day, false),
-            new("dependabot[bot]", "a@bots.invalid", Day, false),
-            new("dependabot[bot]", "b@bots.invalid", Day, false),
+            .. Enumerable.Range(0, limit + 1).Select(i => new CommitFact("Placeholder", $"p{i}@example.invalid", Day, false)),
         ];
 
         var people = ForkAssessment.Assess(Shipped, Facts(commits: commits)).People;
 
-        Assert.Equal(5, people.Identities);
-        Assert.Equal(3, people.Contributors);
+        Assert.Equal(3 + limit + 1, people.Identities);
+        Assert.Equal(1 + limit + 1, people.Contributors);
         var jo = people.Frequent[0];
         Assert.Equal("Jo Upstream", jo.Name);
         Assert.Equal(["jo"], jo.Aliases);
