@@ -256,6 +256,16 @@ public sealed class ForkAssessmentTests
     }
 
     [Fact]
+    public void Line_owners_are_named_as_in_the_history_whatever_name_blame_saw()
+    {
+        CommitFact[] commits = [new("Jo Upstream", "jo@example.invalid", Day, false), new("Jo Upstream", "jo@example.invalid", Day, false), new("JU", "jo@example.invalid", Day, false)];
+
+        var ownership = ForkAssessment.Assess(Shipped, Facts(commits: commits, blame: [new BlameFact("JU", "jo@example.invalid", 90), new BlameFact("Jo Upstream", "jo@example.invalid", 5)])).Ownership!;
+
+        Assert.Equal(("Jo Upstream", 95), (ownership.Leaders[0].Name, ownership.Leaders[0].Lines));
+    }
+
+    [Fact]
     public void The_report_does_not_depend_on_the_order_facts_arrive_in()
     {
         CommitFact[] commits =

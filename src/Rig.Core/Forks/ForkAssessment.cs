@@ -429,10 +429,12 @@ public sealed record ForkAssessment(
             return null;
         }
 
+        // A person is named as in the history summary, so blame's spelling of them never disagrees with it.
+        var names = facts.Commits.GroupBy(identities.Of, StringComparer.Ordinal).ToDictionary(g => g.Key, Identities.Name, StringComparer.Ordinal);
         var total = facts.Blame.Sum(b => b.Lines);
         var leaders = facts.Blame
             .GroupBy(b => identities.Of(new CommitFact(b.Name, b.Email, default, false)))
-            .Select(g => (Name: g.OrderByDescending(b => b.Lines).ThenBy(b => b.Name, StringComparer.Ordinal).First().Name, Lines: g.Sum(b => b.Lines)))
+            .Select(g => (Name: names.GetValueOrDefault(g.Key) ?? g.OrderByDescending(b => b.Lines).ThenBy(b => b.Name, StringComparer.Ordinal).First().Name, Lines: g.Sum(b => b.Lines)))
             .OrderByDescending(p => p.Lines)
             .ThenBy(p => p.Name, StringComparer.Ordinal)
             .Select(p => new LineShare(p.Name, p.Lines, total == 0 ? 0 : (double)p.Lines / total))
