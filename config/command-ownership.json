@@ -188,6 +188,7 @@
     {"Id": "cs:mail sweep","Capability": "mail sweep","Owner": "cs:mail sweep","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:md-lint","Capability": "md-lint","Owner": "cs:md-lint","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:models","Capability": "models","Owner": "cs:models","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:open","Capability": "open","Owner": "cs:open","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:otel-stack","Capability": "otel-stack","Owner": "cs:otel-stack","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:otel-stack clickhouse","Capability": "otel-stack clickhouse","Owner": "cs:otel-stack clickhouse","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:otel-stack clickhouse backfill","Capability": "otel-stack clickhouse backfill","Owner": "cs:otel-stack clickhouse backfill","Platforms": ["linux","macos","windows"],"AliasTo": null},

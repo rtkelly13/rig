@@ -154,6 +154,13 @@ internal static class Program
         var runtimeCheckout = Rig.Cli.Runtime.RuntimeCommand.FindCheckout(AppContext.BaseDirectory)
             ?? Rig.Cli.Runtime.RuntimeCommand.FindCheckout(Environment.CurrentDirectory)
             ?? checkout;
+        var links = new RigLinks(
+            () => RigLinks.ForThisMachine(
+                [Rig.Core.Desktop.PlanLoading.DefaultPath(Environment.GetEnvironmentVariable, home, OperatingSystem.IsWindows()), Path.Join(checkout, "desktop-manager", "workspace-plan.bundle.json")],
+                Path.Join(home, ".workspace", "config.json"),
+                Environment.GetEnvironmentVariable),
+            OpenBrowser,
+            Console.Error);
         var app = new RigApp(
             github,
             origin,
@@ -225,6 +232,7 @@ internal static class Program
                             ExtensionPlaces.SocketFolder(Environment.GetEnvironmentVariable, home),
                             Console.Out).Build
                         : null).Build,
+                new OpenCommand(links, Console.Out, Console.Error).Build,
                 new FlagsCommand(new FlagStore(Path.Join(AppData.Current(), "rig.db")), Console.Out, Console.Error).Build,
                 new C4Command(
                     new C4Host(Path.Join(checkout, "experiments", "c4-okf", "rig"), (directory, arguments) => git.OutAsync(directory, [.. arguments])),
@@ -368,7 +376,8 @@ internal static class Program
                     Console.Out,
                     Console.Error,
                     RigOps.For(layout),
-                    tools.BuildWebAliases()).Build,
+                    tools.BuildWebAliases(),
+                    links.Open).Build,
             ],
             new AgentLauncher(
                 proc,

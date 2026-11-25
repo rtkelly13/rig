@@ -51,12 +51,14 @@ public sealed class RigWebHost : IAsyncDisposable
     /// <param name="settings">The host's address, preview flag and paths.</param>
     /// <param name="mcp">The MCP tools; null builds the real ones for this checkout.</param>
     /// <param name="routes">The ops routes; null builds the real ones for this machine.</param>
+    /// <param name="openLink">Opens a dashboard link in the Rig links Chrome window; null answers 501 so the page opens it.</param>
     /// <param name="cancellationToken">Cancels building the real ops routes, including their git origin lookup.</param>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000", Justification = "The default RigOps is registered in the service collection, which owns and disposes it.")]
     public static async Task<RigWebHost> CreateAsync(
         WebHostSettings settings,
         RigOps? mcp = null,
         OpsRoutes? routes = null,
+        Func<Uri, Rig.Core.Chrome.LinkOutcome>? openLink = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -92,6 +94,7 @@ public sealed class RigWebHost : IAsyncDisposable
         ConnectivityRoutes.Map(app, settings, new EstateGraph(git, TimeProvider.System, new PaketSidecar(proc)), Rig.Core.Roots.CodeRoot.Personal(codeRoot));
         JobsRoutes.Map(app, ops);
         C4Routes.Map(app, settings);
+        LinkRoutes.Map(app, openLink);
         return host;
     }
 

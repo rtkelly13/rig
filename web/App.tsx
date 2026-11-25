@@ -13,6 +13,7 @@ import { OpsJobs, OpsRuns } from './OpsJobs';
 import { OpsTelemetry } from './OpsTelemetry';
 import { isOpsPage, navigate, OPS_TITLES, queueUrl, useRoute } from './router';
 import { useQueue } from './useQueue';
+import { routeExternalLinks } from './rigLinks';
 
 let legacyLoaded: Promise<void> | undefined;
 function loadLegacy() {
@@ -421,4 +422,7 @@ function App() {
   );
 }
 const root = document.getElementById('rig-app');
-if (root) createRoot(root).render(<App />);
+if (root) {
+  routeExternalLinks();
+  createRoot(root).render(<App />);
+}

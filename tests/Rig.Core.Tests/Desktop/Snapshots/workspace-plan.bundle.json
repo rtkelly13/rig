@@ -110,17 +110,41 @@
           "delay_ms": 2200,
           "command": "rig tools ensure web \u0026\u0026 \u0022{chrome-path}\u0022 --user-data-dir=\u0022{chrome-user-data}\u0022 --profile-directory=\u0022{chrome-profile-work}\u0022 --new-window http://127.0.0.1:8090/triage/inbox",
           "cwd": "{rig-root}",
-          "summary": "The rig triage queue (\u0060rig triage\u0060) in an ordinary Chrome window on the work profile, full screen 3, a screen of its own: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard. \u0060--new-window\u0060 makes Chrome open a window even though the Admin desktop\u0027s work-profile window already exists, and \u0060window_title\u0060 matches every dashboard page (\u0060Rig / Triage\u0060, \u0060Rig / Estate\u0060) as well as the title it loads with (\u0060Rig // Estate Management\u0060), so a later restore finds the window again.",
+          "summary": "The rig triage queue (\u0060rig triage\u0060) in an ordinary Chrome window on the work profile, the left half of screen 3, beside the Rig links window: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard. \u0060--new-window\u0060 makes Chrome open a window even though the Admin desktop\u0027s work-profile window already exists, and \u0060window_title\u0060 matches every dashboard page (\u0060Rig / Triage\u0060, \u0060Rig / Estate\u0060) as well as the title it loads with (\u0060Rig // Estate Management\u0060), so a later restore finds the window again.",
           "placement": {
             "screen": 3,
             "layout": {
-              "mode": "full",
-              "slot": 1
+              "mode": "halves",
+              "slot": 1,
+              "orientation": "vertical"
             }
           },
           "window_title": "Rig /",
           "window_process_name": "chrome.exe",
           "window_wait_timeout_ms": 45000
+        },
+        {
+          "name": "Rig Links",
+          "type": "app",
+          "delay_ms": 1400,
+          "path": "{chrome-path}",
+          "args": [
+            "--user-data-dir={chrome-user-data}",
+            "--profile-directory={chrome-profile-personal}",
+            "--new-window",
+            "--window-name=Rig links"
+          ],
+          "summary": "The Rig links Chrome window, the right half of screen 3: links clicked in the dashboard and pages \u0060rig open URL\u0060 opens land here, so they stay beside the dashboard instead of in whichever Chrome window was used last. Chrome\u0027s --window-name sets its title, which is how the link router and this entry find it.",
+          "placement": {
+            "screen": 3,
+            "layout": {
+              "mode": "halves",
+              "slot": 2,
+              "orientation": "vertical"
+            }
+          },
+          "window_title": "Rig links",
+          "window_process_name": "chrome.exe"
         }
       ]
     },
@@ -324,7 +348,7 @@
     "A desktop ref can carry a \u0060feature\u0060 too. A desktop behind a switched-off feature is not created at all and the desktops after it move up, so \u0060personal-desktop: false\u0060 means three desktops, not four with an empty one.",
     "Switching a desktop\u0027s feature off also retires it: restore removes a leftover virtual desktop past the planned count that carries that desktop\u0027s name, moving its windows to the last kept desktop. Other extra desktops are left alone. \u0060--enable personal-desktop\u0060 brings it back.",
     "\u0060experimental-desktop\u0060 adds a trailing Lab desktop for evaluating new tooling (currently T3 Code) without disturbing the daily desktops. It is off by default; try it for one run with \u0060workspace restore --enable experimental-desktop\u0060.",
-    "\u0060orca-sessions\u0060 puts Orca on the Work desktop\u0027s screen 1: one profile holding the work repos and rig. Screen 2 holds a work Chrome window and screen 3 the rig dashboard.",
+    "\u0060orca-sessions\u0060 puts Orca on the Work desktop\u0027s screen 1: one profile holding the work repos and rig. Screen 2 holds a work Chrome window, and screen 3 the rig dashboard beside the Rig links window, where dashboard links and \u0060rig open URL\u0060 pages land.",
     "The plan is laid out for three screens. With fewer connected, the missing screens fold into the last connected one as columns (see docs/desktop-manager/plan-files.md), so a laptop on its own still opens every window.",
     "Desktop names (IDE, Work, Admin, Personal, Lab) are re-applied on every restore; \u0060workspace name-desktops\u0060 re-applies them (and retires switched-off desktops) on demand.",
     "Aliases here are defaults. \u0060{localappdata}\u0060, \u0060{appdata}\u0060, \u0060{userprofile}\u0060 and \u0060{programfiles}\u0060 come from the environment, and \u0060tools.desktop.aliases\u0060 in \u0060~/.workspace/config.json\u0060 overrides or adds any alias on one machine (\u0060chrome-profile-work\u0060, \u0060workspace-root\u0060, an app path).",
