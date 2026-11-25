@@ -1,7 +1,7 @@
 # Managed Forks
 
 A managed fork is a repo that tracks an upstream we do not own, carries our changes on top, and may
-publish them under its own name. The first is `rtkelly-labs/parquet-dotnet`, a fork of
+publish them under its own name. The first is `rtkelly-labs/Lake.Parquet`, a fork of
 `aloneguid/parquet-dotnet` published to NuGet as `Lake.Parquet`.
 
 ## Who owns what
@@ -9,7 +9,7 @@ publish them under its own name. The first is `rtkelly-labs/parquet-dotnet`, a f
 The fork itself is run by **[Oxbow](https://github.com/rtkelly-labs/oxbow)**. It keeps the fork as
 upstream's history, untouched, plus a linear stack of recorded changes, one commit per change. It
 rebaselines the stack onto newer upstreams, keeps the change records, stages a candidate for CI and
-promotes it once CI passes. Until Oxbow's first milestone lands, parquet-dotnet runs the same model
+promotes it once CI passes. Until Oxbow's first milestone lands, Lake.Parquet runs the same model
 with `eng/lake/Lake.Stack`, the tool Oxbow is being extracted from.
 
 Rig governs only the repository around the fork: who owns it, which policy files it carries, its
@@ -24,8 +24,7 @@ Forks are skipped by governance unless a profile names them (`repo_selection.man
 entry:
 
 ```json
-"parquet-dotnet": {
-  "expected_base_branch": "master",
+"Lake.Parquet": {
   "fork": {
     "upstream": "aloneguid/parquet-dotnet",
     "upstream_branch": "master"
@@ -33,16 +32,17 @@ entry:
 }
 ```
 
-`expected_base_branch` keeps upstream's default branch, so a rebaseline never fights over a rename.
+The fork's own branch is `main`, the default `expected_base_branch`, as in Oxbow's ref layout; `upstream_branch`
+names upstream's, which keeps upstream's name. The key is the repo's name on GitHub, from origin's URL.
 
 ## The rules rig enforces
 
 | Rule | Why |
 |---|---|
-| **The ruleset protects the fork's own default branch** (`refs/heads/master`), with deletion protection, linear history and the fork's required checks. | The published branch is upstream plus the stack, never a merge, so linear history holds as everywhere else. |
+| **The ruleset protects the fork's own default branch** (`refs/heads/main`), with deletion protection, linear history and the fork's required checks. | The published branch is upstream plus the stack, never a merge, so linear history holds as everywhere else. |
 | **It allows non-fast-forward pushes and requires no pull request there.** | The stack tool rebuilds that branch on every rebaseline and pushes it only after the required check (`lake-ci`) passed on the candidate. Those two rules would block exactly that push. |
 | **Policies only add files.** The fork profile has no `license`, `pinned_action_shas` or `community_templates`. | Each of those rewrites a file upstream owns, which would conflict on every rebaseline. Our own workflows are pinned by hand instead. |
-| **The fork has its own CI workflow and aggregate check** (`lake-ci` for parquet-dotnet). | Upstream's workflow is upstream's to change, and parquet-dotnet's skips docs-only PRs, which would leave a records-only change with no required check to report. |
+| **The fork has its own CI workflow and aggregate check** (`lake-ci` for Lake.Parquet). | Upstream's workflow is upstream's to change, and Lake.Parquet's upstream workflow skips docs-only PRs, which would leave a records-only change with no required check to report. |
 | **Governance describes origin, never the `upstream` remote.** | `gh repo view` with no argument prefers a remote named `upstream`, so in a fork clone it reports the upstream project. Rig passes origin's URL explicitly. |
 
 The README's credit to upstream, an unchanged upstream `LICENSE` and a record for every change are
