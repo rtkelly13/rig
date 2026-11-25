@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Rig.Core.GitHub;
 using Rig.Core.Text;
 using Rig.Core.Workspace;
 
@@ -138,14 +139,6 @@ public static partial class TabGrouping
     private static readonly string[] CallHosts = ["meet.google.com", "zoom.us", "teams.microsoft.com", "teams.live.com", "whereby.com", "meet.jit.si"];
 
     /// <summary>First path segments of github.com pages that are not <c>owner/repo</c>.</summary>
-    private static readonly HashSet<string> GitHubNonOwners = new(
-        [
-            "orgs", "users", "search", "settings", "notifications", "pulls", "issues", "marketplace", "sponsors", "topics",
-            "login", "new", "organizations", "apps", "features", "explore", "codespaces", "collections", "trending", "about",
-            "enterprise", "dashboard", "account",
-        ],
-        StringComparer.Ordinal);
-
     private static readonly IReadOnlyDictionary<string, string> NoHosts = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
@@ -213,10 +206,7 @@ public static partial class TabGrouping
 
         if (url.Host.ToLowerInvariant() is "github.com" or "www.github.com")
         {
-            var segments = url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            return segments.Length >= 2 && !GitHubNonOwners.Contains(segments[0].ToLowerInvariant())
-                ? new RepoSlug(segments[0], segments[1])
-                : null;
+            return GitHubPage.Parse(url)?.Repo;
         }
 
         return (owners ?? UrlOwners.None).SlugFor(url) is { } slug ? RepoSlug.FromPath(slug) : null;

@@ -345,15 +345,6 @@ public sealed class PrPruneTests
         Assert.Equal([(1, ReportKind.Protected), (2, ReportKind.Protected), (3, ReportKind.Protected), (4, ReportKind.Protected)], Reports(plan).Order());
     }
 
-    [Theory]
-    [InlineData("https://github.com/Acme-Corp/data-platform/pull/12", 12)]
-    [InlineData("https://github.com/acme-corp/data-platform/pull/12/files?w=1#diff", 12)]
-    [InlineData("https://github.com/acme-corp/data-platform/issues/12", null)]
-    [InlineData("https://github.com/acme-corp/data-platform/pull/new", null)]
-    [InlineData("https://gist.github.com/acme-corp/data-platform/pull/12", null)]
-    public void Ref_from_url_reads_only_pr_pages(string address, int? number) =>
-        Assert.Equal(number is { } n ? Ref(n) : null, PrPrune.RefFromUrl(new Uri(address)));
-
     [Fact]
     public void Non_pr_tabs_are_ignored()
     {

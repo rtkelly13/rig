@@ -248,25 +248,6 @@ public static partial class PrPrune
         }
     }
 
-    /// <summary>
-    /// <c>owner/repo#n</c> from a GitHub PR page address (any subpage), or null for any other address.
-    /// </summary>
-    public static PrRef? RefFromUrl(Uri url)
-    {
-        ArgumentNullException.ThrowIfNull(url);
-        if (!url.IsAbsoluteUri || !string.Equals(url.Host, "github.com", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        var parts = url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 4
-            && parts[2] == "pull"
-            && int.TryParse(parts[3], NumberStyles.None, CultureInfo.InvariantCulture, out var number)
-            ? new PrRef(parts[0], parts[1], number)
-            : null;
-    }
-
     // Placeholder flags (no native evidence) give way for a merged or closed PR whose page the tab's address shows, as
     // long as it is not the tab the user is looking at in its window. Duplicates and chain closes stay protected.
     private static bool FinishedUnknown(PlannedClose close)
@@ -275,8 +256,8 @@ public static partial class PrPrune
         return tab.EvidenceUnknown
             && !tab.Selected
             && close.Kind is CloseKind.Merged or CloseKind.Closed
-            && tab.Url is { } url
-            && RefFromUrl(url) == close.Item.Pr;
+            && GitHubPage.Parse(tab.Url) is PullRequestPage page
+            && page.Pr == close.Item.Pr;
     }
 
     [GeneratedRegex(@"· Pull Request #(?<number>\d+) · (?<owner>[\w.-]+)/(?<repo>[\w.-]+)(?=\s|$)")]

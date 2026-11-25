@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Rig.Core.GitHub;
 using Rig.Core.Text;
 
 namespace Rig.Core.Chrome.MacOS;
@@ -21,7 +22,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     public const string NoAxWindows = "accessibility sees none of Chrome's windows (another Space or a full-screen app is in front)";
 
     private static bool UnknownPrPage(ChromeTab tab) =>
-        !tab.Selected && tab.Url is { } url && PrPrune.RefFromUrl(url) is { } pr && PrPrune.RefFromTitle(tab.Title) == pr;
+        !tab.Selected && GitHubPage.Parse(tab.Url) is PullRequestPage page && PrPrune.RefFromTitle(tab.Title) == page.Pr;
 
     /// <summary>Reads of one window before the accessibility evidence is dropped.</summary>
     public const int ReadAttempts = 4;
