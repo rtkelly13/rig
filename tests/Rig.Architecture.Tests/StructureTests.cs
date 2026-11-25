@@ -29,6 +29,8 @@ public sealed class StructureTests
         "Rig.Core.Chrome.Windows -> Rig.Core.Desktop",
         "Rig.Core.Chrome.Windows -> Rig.Core.Desktop.Windows",
         "Rig.Core.Connectivity -> Rig.Core.Workspace",
+        "Rig.Core.Layout -> Rig.Core.Jobs",
+        "Rig.Core.Layout -> Rig.Core.Runtime",
         "Rig.Core.Otel -> Rig.Core.Vault",
         "Rig.Core.ReviewQueue -> Rig.Core.Workspace",
         "Rig.Core.Tools -> Rig.Core.Jobs",

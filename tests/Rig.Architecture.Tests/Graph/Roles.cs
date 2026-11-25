@@ -15,6 +15,7 @@ internal static class Roles
         ["Config"] = Role.Leaf,
         ["Files"] = Role.Leaf,
         ["Flags"] = Role.Leaf,
+        ["Layout"] = Role.Leaf,
         ["Markup"] = Role.Leaf,
         ["Roots"] = Role.Leaf,
         ["Storage"] = Role.Leaf,
