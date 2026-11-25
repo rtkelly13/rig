@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -27,6 +28,12 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <summary>Reads of one window before the accessibility evidence is dropped.</summary>
     public const int ReadAttempts = 4;
 
+    /// <summary>
+    /// Tabs one close script handles. Chrome takes a fraction of a second a tab, so this keeps a script well inside
+    /// <see cref="ChromeJxa.Timeout"/> however many tabs a window closes.
+    /// </summary>
+    public const int CloseBatch = 20;
+
     /// <summary>The pause between looks while Chrome settles.</summary>
     public static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(50);
 
@@ -37,6 +44,8 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     public static readonly TimeSpan ForegroundTimeout = TimeSpan.FromSeconds(2);
 
     private const string Failed = "Timed out waiting for Chrome UI confirmation";
+
+    private static readonly ActivitySource Source = new("Rig.Chrome");
 
     private static readonly string[] FlatGroupNames = ["Add Tab to New Group", "Add tab to new group"];
     private static readonly string[] GroupNames = ["Add Tab to Group", "Add tab to group"];
@@ -87,70 +96,162 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     }
 
     /// <inheritdoc/>
-    public CloseOutcome CloseTab(ChromeTab tab)
+    /// <remarks>
+    /// One read checks every tab, one script (per <see cref="CloseBatch"/> tabs) closes the ones that pass, and one poll
+    /// waits for them to leave, so a window's closes cost about what one did. The script checks each tab's title and URL again as it closes it. Each
+    /// outcome's time is its share of the whole batch.
+    /// </remarks>
+    public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs)
     {
-        ArgumentNullException.ThrowIfNull(tab);
+        ArgumentNullException.ThrowIfNull(tabs);
+        if (tabs.Count == 0)
+        {
+            return [];
+        }
+
         var started = _time.GetTimestamp();
-        CloseOutcome Outcome(bool closed, string detail) => new(closed, detail, _time.GetElapsedTime(started));
+        var results = Close(tabs);
+        var share = _time.GetElapsedTime(started) / tabs.Count;
+        return [.. results.Select(result => new CloseOutcome(result.Closed, result.Detail, share))];
+    }
+
+    private List<(bool Closed, string Detail)> Close(IReadOnlyList<ChromeTab> tabs)
+    {
+        var invalid = tabs.Select(Invalid).ToList();
+        if (invalid.TrueForAll(refusal => refusal is not null))
+        {
+            return [.. invalid.Select(refusal => (false, refusal!))];
+        }
+
+        IReadOnlyList<ChromeWindow> windows;
         try
         {
-            _ = ActionIds.Of(tab);
-            if (tab.Url is null)
-            {
-                return Outcome(false, "URL unavailable; refusing close");
-            }
-
-            var matches = ListWindows()
-                .Where(window => window.Handle == tab.WindowHandle)
-                .SelectMany(window => window.Tabs)
-                .Where(current => current.RuntimeId.Equals(tab.RuntimeId))
-                .ToList();
-            if (matches.Count != 1)
-            {
-                return Outcome(false, "tab no longer present");
-            }
-
-            var current = matches[0];
-            if (current.Title != tab.Title)
-            {
-                return Outcome(false, $"title changed to {QuotedText.Str(current.Title)}");
-            }
-
-            if (current.Url?.OriginalString != tab.Url.OriginalString)
-            {
-                return Outcome(false, "URL changed; refusing close");
-            }
-
-            // Without native evidence the pinned and audible flags are placeholders. Only a PR page the planner can
-            // vouch for (its address and title name the same PR) that is not in front in its window may close then.
-            // Only a tab planned without evidence was planned as a merged or closed PR, the one close that does not
-            // need it; a tab whose evidence was lost after planning keeps the protection it was planned under.
-            if (current.EvidenceUnknown && !(tab.EvidenceUnknown && UnknownPrPage(current)))
-            {
-                return Outcome(false, $"{MacRead.MetadataUnavailable}; refusing close");
-            }
-
-            if (!current.EvidenceUnknown && (current.Pinned || current.Audible))
-            {
-                return Outcome(false, "tab is pinned or audible; refusing close");
-            }
-
-            var reply = _jxa.Act(JxaScripts.TabAction(tab, JxaScripts.CloseAction(tab.Title, tab.Url.OriginalString)));
-            if (reply != "invoked")
-            {
-                return Outcome(false, $"close refused: {reply}");
-            }
-
-            var gone = TryPoll(
-                () => _jxa.Snapshot().Windows.SelectMany(window => window.Tabs).Any(raw => raw.Id == tab.RuntimeId.Parts[0]) ? null : "gone",
-                StepTimeout,
-                out _);
-            return Outcome(gone, gone ? "closed" : "invoked close but the tab is still present; a prompt may be open");
+            windows = ListWindows();
         }
         catch (ChromeMacException error)
         {
-            return Outcome(false, $"close failed: {error.Message}");
+            return [.. invalid.Select(refusal => (false, refusal ?? $"close failed: {error.Message}"))];
         }
+
+        var refusals = tabs.Select((tab, index) => invalid[index] ?? Changed(tab, windows)).ToList();
+        var eligible = tabs.Where((_, index) => refusals[index] is null).ToList();
+        IReadOnlyList<string> statuses;
+        string? failure = null;
+        try
+        {
+            statuses = [.. eligible.Chunk(CloseBatch).SelectMany(Statuses)];
+        }
+        catch (ChromeMacException error)
+        {
+            // Some tabs may have closed before the script failed: what is gone afterwards counts as closed.
+            failure = $"close failed: {error.Message}";
+            statuses = [.. eligible.Select(_ => "invoked")];
+        }
+
+        var invoked = eligible.Where((_, index) => statuses[index] == "invoked").Select(Id).ToHashSet();
+        var (present, unconfirmed) = Remaining(invoked, failure is null ? StepTimeout : TimeSpan.Zero);
+        var replies = new Queue<string>(statuses);
+        return [.. tabs.Select((tab, index) => refusals[index] is { } refusal
+            ? (false, refusal)
+            : Result(replies.Dequeue(), present.Contains(Id(tab)), failure, unconfirmed))];
+    }
+
+    private IReadOnlyList<string> Statuses(ChromeTab[] tabs)
+    {
+        var statuses = _jxa.Close(JxaScripts.Close(tabs));
+        return statuses.Count == tabs.Length ? statuses : throw new ChromeMacException("Chrome replied for a different number of tabs");
+    }
+
+    // A script failure decides every tab that did not go; a failed look afterwards only those it invoked.
+    private static (bool Closed, string Detail) Result(string status, bool present, string? failure, string? unconfirmed) =>
+        (status, present, failure) switch
+        {
+            ("invoked", false, _) => (true, "closed"),
+            (_, _, { } failed) => (false, failed),
+            ("invoked", true, _) => (false, unconfirmed ?? "invoked close but the tab is still present; a prompt may be open"),
+            _ => (false, $"close refused: {status}"),
+        };
+
+    private static long Id(ChromeTab tab) => tab.RuntimeId.Parts[0];
+
+    // The tabs of <paramref name="ids"/> still in Chrome once they have all gone or <paramref name="timeout"/> passed.
+    // When Chrome cannot be read, all of them, with why.
+    private (HashSet<long> Present, string? Problem) Remaining(HashSet<long> ids, TimeSpan timeout)
+    {
+        if (ids.Count == 0)
+        {
+            return (ids, null);
+        }
+
+        HashSet<long> present = ids;
+        try
+        {
+            _ = TryPoll(
+                () =>
+                {
+                    present = [.. _jxa.Snapshot().Windows.SelectMany(window => window.Tabs).Select(raw => raw.Id).Where(ids.Contains)];
+                    return present.Count == 0 ? "gone" : null;
+                },
+                timeout,
+                out _);
+        }
+        catch (ChromeMacException error)
+        {
+            return (ids, $"close failed: invoked close but could not confirm it: {error.Message}");
+        }
+
+        return (present, null);
+    }
+
+    // Why <paramref name="tab"/> can never close as given, before Chrome is asked anything; null when it might.
+    private static string? Invalid(ChromeTab tab)
+    {
+        try
+        {
+            _ = ActionIds.Of(tab);
+        }
+        catch (ChromeMacException error)
+        {
+            return $"close failed: {error.Message}";
+        }
+
+        return tab.Url is null ? "URL unavailable; refusing close" : null;
+    }
+
+    // Why <paramref name="tab"/> must not close, judged against a fresh read; null when it may.
+    private static string? Changed(ChromeTab tab, IReadOnlyList<ChromeWindow> windows)
+    {
+        var matches = windows
+            .Where(window => window.Handle == tab.WindowHandle)
+            .SelectMany(window => window.Tabs)
+            .Where(current => current.RuntimeId.Equals(tab.RuntimeId))
+            .ToList();
+        if (matches.Count != 1)
+        {
+            return "tab no longer present";
+        }
+
+        var current = matches[0];
+        if (current.Title != tab.Title)
+        {
+            return $"title changed to {QuotedText.Str(current.Title)}";
+        }
+
+        if (current.Url?.OriginalString != tab.Url?.OriginalString)
+        {
+            return "URL changed; refusing close";
+        }
+
+        // Without native evidence the pinned and audible flags are placeholders. Only a PR page the planner can
+        // vouch for (its address and title name the same PR) that is not in front in its window may close then.
+        // Only a tab planned without evidence was planned as a merged or closed PR, the one close that does not
+        // need it; a tab whose evidence was lost after planning keeps the protection it was planned under.
+        if (current.EvidenceUnknown && !(tab.EvidenceUnknown && UnknownPrPage(current)))
+        {
+            return $"{MacRead.MetadataUnavailable}; refusing close";
+        }
+
+        return !current.EvidenceUnknown && (current.Pinned || current.Audible) ? "tab is pinned or audible; refusing close" : null;
     }
 
     /// <inheritdoc/>
@@ -598,13 +699,18 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             }
 
             IReadOnlyList<AxNode> axWindows;
-            try
+            using (var activity = Source.StartActivity("chrome_mac.ax_read"))
             {
-                axWindows = new AxReader(_api()).Windows(current.Pid);
-            }
-            catch (AccessibilityUnavailableException error)
-            {
-                return (current, [], error.Message);
+                try
+                {
+                    axWindows = new AxReader(_api()).Windows(current.Pid);
+                    activity?.SetTag("ax.windows", axWindows.Count);
+                }
+                catch (AccessibilityUnavailableException error)
+                {
+                    activity?.SetStatus(ActivityStatusCode.Error, error.Message);
+                    return (current, [], error.Message);
+                }
             }
 
             var after = _jxa.Snapshot();

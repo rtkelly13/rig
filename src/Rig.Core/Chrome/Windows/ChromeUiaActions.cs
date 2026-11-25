@@ -75,7 +75,7 @@ public sealed partial class ChromeUiaActions(
     }
 
     /// <inheritdoc/>
-    CloseOutcome IChromeTabActions.CloseTab(ChromeTab tab) => CloseTab(tab);
+    IReadOnlyList<CloseOutcome> IChromeTabActions.CloseTabs(IReadOnlyList<ChromeTab> tabs) => [.. tabs.Select(tab => CloseTab(tab))];
 
     /// <summary>
     /// Selects the tab, presses its close button and waits for it to leave the strip. Refuses, touching nothing, when

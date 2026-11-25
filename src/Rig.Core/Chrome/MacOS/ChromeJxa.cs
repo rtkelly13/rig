@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Rig.Core.Processes;
 
@@ -18,15 +19,21 @@ public sealed class ChromeJxa(IProc proc) : IChromeJxa
 
     private const string Failed = "Chrome automation failed; check macOS Automation permission and retry";
 
+    private static readonly ActivitySource Source = new("Rig.Chrome");
+
     /// <summary>
     /// Runs <paramref name="script"/> and parses its JSON reply, still to be decoded. A failed, timed-out or non-JSON
-    /// run throws <see cref="ChromeMacException"/>.
+    /// run throws <see cref="ChromeMacException"/>. Each run is a <c>chrome_mac.osascript</c> span tagged with
+    /// <paramref name="name"/>, so a trace shows where Chrome's time went.
     /// </summary>
-    public JsonElement Run(string script)
+    public JsonElement Run(string script, string name = "script")
     {
+        using var activity = Source.StartActivity("chrome_mac.osascript");
+        activity?.SetTag("jxa.script", name);
         var ran = proc.Run(new ProcRequest(Osascript) { StdinText = script, Timeout = Timeout });
         if (!ran.Ok)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, ran.Code == Ran.TimedOut ? "timed out" : $"exit {ran.Code}");
             throw new ChromeMacException(Failed, new ProcException(Osascript, ran));
         }
 
@@ -42,13 +49,16 @@ public sealed class ChromeJxa(IProc proc) : IChromeJxa
     }
 
     /// <inheritdoc/>
-    public JxaSnapshot Snapshot() => JxaDecode.Snapshot(Run(JxaScripts.Snapshot));
+    public JxaSnapshot Snapshot() => JxaDecode.Snapshot(Run(JxaScripts.Snapshot, "snapshot"));
 
     /// <inheritdoc/>
-    public int? FrontmostPid() => JxaDecode.FrontmostPid(Run(JxaScripts.Frontmost));
+    public int? FrontmostPid() => JxaDecode.FrontmostPid(Run(JxaScripts.Frontmost, "frontmost"));
 
     /// <inheritdoc/>
-    public string Act(string script) => JxaDecode.Status(Run(script));
+    public string Act(string script) => JxaDecode.Status(Run(script, "act"));
+
+    /// <inheritdoc/>
+    public IReadOnlyList<string> Close(string script) => JxaDecode.Statuses(Run(script, "close"));
 }
 
 /// <summary>Chrome's scripting dictionary, as the macOS driver uses it. Every call throws <see cref="ChromeMacException"/> on failure.</summary>
@@ -62,6 +72,9 @@ public interface IChromeJxa
 
     /// <summary>Runs an action script and returns the status it replied with.</summary>
     string Act(string script);
+
+    /// <summary>Runs a <see cref="JxaScripts.Close"/> script and returns its statuses, one per tab in order.</summary>
+    IReadOnlyList<string> Close(string script);
 }
 
 /// <summary>Chrome's profiles on macOS, from its <c>Local State</c> file.</summary>

@@ -274,7 +274,7 @@ public sealed class DedupeTests
     }
 
     [Fact]
-    public void Each_close_is_its_own_span_inside_its_window()
+    public void Each_close_is_an_event_on_its_window_span()
     {
         var browser = new TabBrowser();
         browser.Window(
@@ -286,10 +286,28 @@ public sealed class DedupeTests
         ClosePlans.Apply([Dedupe.Plan(browser.Windows)], browser.Windows, new FakeChromeTabActions());
 
         var window = Assert.Single(spans.Stopped, span => span.OperationName == "chrome_tabs.close_window");
-        var closes = spans.Stopped.Where(span => span.OperationName == "chrome_tabs.close_tab").ToList();
+        var closes = window.Events.Where(item => item.Name == "chrome_tabs.close_tab").ToList();
         Assert.Equal(2, closes.Count);
-        Assert.All(closes, span => Assert.Equal(window.SpanId, span.ParentSpanId));
-        Assert.All(closes, span => Assert.Equal("title:Merge Queue Handbook", span.GetTagItem("tab.label")));
-        Assert.All(closes, span => Assert.Equal(true, span.GetTagItem("close.closed")));
+        Assert.All(closes, item => Assert.Contains(new KeyValuePair<string, object?>("tab.label", "title:Merge Queue Handbook"), item.Tags));
+        Assert.All(closes, item => Assert.Contains(new KeyValuePair<string, object?>("close.closed", true), item.Tags));
+    }
+
+    [Fact]
+    public void A_driver_that_answers_for_the_wrong_number_of_tabs_is_a_bug()
+    {
+        var browser = new TabBrowser();
+        browser.Window(new TabSpec("Merge Queue Handbook"), new TabSpec("Merge Queue Handbook", Selected: true));
+
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ClosePlans.Apply([Dedupe.Plan(browser.Windows)], browser.Windows, new SilentActions()));
+        Assert.Equal("The driver answered 0 of 1 closes.", error.Message);
+    }
+
+    private sealed class SilentActions : IChromeTabActions
+    {
+        public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs) => [];
+
+        public IReadOnlyDictionary<long, ChromeTab?> RestoreSelection(IEnumerable<ChromeWindow> before, IReadOnlyDictionary<long, ChromeTab>? fallbacks = null) =>
+            new Dictionary<long, ChromeTab?>();
     }
 }
