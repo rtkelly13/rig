@@ -227,11 +227,16 @@ public static partial class MacRead
 
     /// <summary>
     /// Chrome's windows from a settled read: the scripting <paramref name="snapshot"/>, the accessibility windows read
-    /// while it held (none when accessibility was unavailable), and the profiles from <c>Local State</c>. A window whose
+    /// while it held (none when accessibility was unavailable, with <paramref name="axProblem"/> saying why), and the
+    /// profiles from <c>Local State</c>. A window whose
     /// profile is unclear, or which is not a normal window, gets a scope of its own. A duplicate id or an active tab
     /// past the strip throws <see cref="ChromeMacException"/>. The pure half of listing the windows.
     /// </summary>
-    public static IReadOnlyList<ChromeWindow> Windows(JxaSnapshot snapshot, IReadOnlyList<AxNode> axWindows, IReadOnlyDictionary<string, ProfileInfo> profiles)
+    public static IReadOnlyList<ChromeWindow> Windows(
+        JxaSnapshot snapshot,
+        IReadOnlyList<AxNode> axWindows,
+        IReadOnlyDictionary<string, ProfileInfo> profiles,
+        string? axProblem = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var windows = new List<ChromeWindow>();
@@ -261,7 +266,7 @@ public static partial class MacRead
                     throw new ChromeMacException("Duplicate Chrome tab ID");
                 }
 
-                tabs.Add(Tab(raw.Tabs[index], index, raw, slots?[index]));
+                tabs.Add(Tab(raw.Tabs[index], index, raw, slots?[index], axProblem));
             }
 
             var profile = ProfileOf(node, profiles);
@@ -296,9 +301,9 @@ public static partial class MacRead
     /// <see cref="MetadataUnavailable"/>, so nothing acts on it. <see cref="ChromeTab.Url"/> is set only when the
     /// address parses as an absolute URI; its <see cref="Uri.OriginalString"/> is then the exact text Chrome reported.
     /// A tab id past <see cref="int.MaxValue"/> does not fit a <see cref="RuntimeId"/> and throws
-    /// <see cref="ChromeMacException"/>.
+    /// <see cref="ChromeMacException"/>. <paramref name="axProblem"/>, when given, follows that alert to say why.
     /// </summary>
-    public static ChromeTab Tab(JxaTab raw, int index, JxaWindow window, TabSlot? slot)
+    public static ChromeTab Tab(JxaTab raw, int index, JxaWindow window, TabSlot? slot, string? axProblem = null)
     {
         ArgumentNullException.ThrowIfNull(raw);
         ArgumentNullException.ThrowIfNull(window);
@@ -314,7 +319,7 @@ public static partial class MacRead
         // Chrome labels pinned tabs "– Pinned". Inactive tabs hide their close control, so its absence is normal;
         // PinnedLabelsConsistent rejects labels that contradict the pinned-first order.
         var groupKnown = node is not null && (group is not null || !GroupSuffix().IsMatch(node.Name));
-        var known = parsed is not null && parsed.Title == raw.Title && groupKnown;
+        var known = parsed is not null && SameTitle(parsed.Title, raw) && groupKnown;
         return new ChromeTab(
             new RuntimeId([(int)raw.Id]),
             window.Id,
@@ -326,7 +331,7 @@ public static partial class MacRead
             parsed?.Loaded ?? false,
             !known || parsed!.Audible)
         {
-            Alerts = known ? parsed!.Alerts : [MetadataUnavailable],
+            Alerts = known ? parsed!.Alerts : axProblem is null ? [MetadataUnavailable] : [MetadataUnavailable, axProblem],
             MemoryMb = parsed?.MemoryMb,
             Group = group,
             Url = Uri.TryCreate(raw.Address, UriKind.Absolute, out var url) ? url : null,
@@ -410,8 +415,29 @@ public static partial class MacRead
     private static bool Agrees(IReadOnlyList<TabSlot> slots, JxaWindow raw) =>
         slots.Count == raw.Tabs.Count
         && slots.Select((slot, index) => (slot, index)).All(pair =>
-            TabNames.Parse(pair.slot.Node.Name).Title == raw.Tabs[pair.index].Title
+            SameTitle(TabNames.Parse(pair.slot.Node.Name).Title, raw.Tabs[pair.index])
             && pair.slot.Node.Selected == (pair.index + 1 == raw.Active));
+
+    // Scripting gives a discarded or untitled tab an empty title, while its strip label is the address Chrome
+    // displays: no http(s) scheme, and no trailing slash. Without this, one such tab drops every tab's evidence.
+    private static bool SameTitle(string native, JxaTab raw)
+    {
+        if (native == raw.Title)
+        {
+            return true;
+        }
+
+        if (raw.Title.Length > 0 || native.Length == 0)
+        {
+            return false;
+        }
+
+        var shown = ShownScheme().Replace(raw.Address, string.Empty);
+        return native == raw.Address || native == shown || native == shown.TrimEnd('/');
+    }
+
+    [GeneratedRegex("^https?://", RegexOptions.IgnoreCase)]
+    private static partial Regex ShownScheme();
 
     [GeneratedRegex(@" – (\d+) [Tt]abs?\b")]
     private static partial Regex GroupCount();

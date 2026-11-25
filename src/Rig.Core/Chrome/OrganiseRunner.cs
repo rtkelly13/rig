@@ -202,6 +202,11 @@ public sealed class OrganiseRunner(
             say("Then grouping:");
             var after = PlanGrouping(Without(ordered, closing), current, options, "dry_run");
             SayAll(TabPlanText.Groups(after));
+            if (Unattended.Unreadable(windows) is { } unreadableNow)
+            {
+                say($"Grouping skipped: {unreadableNow}");
+            }
+
             say(string.Create(CultureInfo.InvariantCulture, $"Dry run: nothing changed. planned in {Seconds(started)}s"));
             run?.SetTag("run.outcome", "dry_run");
             run?.SetTag("group.outcome", "dry_run");
@@ -220,6 +225,14 @@ public sealed class OrganiseRunner(
         var regrouped = ReadOrdered(options.Profile, current, "regroup");
         var plan = PlanGrouping(regrouped, current, options, "plan");
         SayAll(TabPlanText.Groups(plan));
+        var unreadable = Unattended.Unreadable(regrouped);
+        if (unreadable is not null)
+        {
+            // Closing ran on scripting facts; grouping needs the strip itself, so say why it has nothing to do.
+            say($"Grouping skipped: {unreadable}");
+            run?.SetTag("group.skipped", unreadable);
+        }
+
         string? deferred = null;
         GroupingWait? wait = null;
         var grouped = new GroupingResult(plan.Moves.Count);
@@ -277,7 +290,7 @@ public sealed class OrganiseRunner(
 
         var outcome = failed ? "failed" : failures.Count > 0 ? "partial" : "ok";
         run?.SetTag("run.outcome", outcome);
-        run?.SetTag("group.outcome", grouped.Outcome(deferred));
+        run?.SetTag("group.outcome", unreadable is not null && plan.Moves.Count == 0 ? "skipped_unreadable" : grouped.Outcome(deferred));
         run?.SetTag("group.planned", grouped.Planned);
         run?.SetTag("group.moved", grouped.Moved);
         run?.SetTag("group.retries", grouped.Retries);

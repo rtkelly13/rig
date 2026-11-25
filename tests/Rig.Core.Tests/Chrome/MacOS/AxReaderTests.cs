@@ -57,7 +57,7 @@ public sealed class AxReaderTests
     {
         _api.IsTrusted = false;
         var error = Assert.Throws<AccessibilityUnavailableException>(() => Reader().Windows(Pid));
-        Assert.Equal("Grant Accessibility access to the terminal running chrome-tabs", error.Message);
+        Assert.Contains("lacks Accessibility access", error.Message, StringComparison.Ordinal);
         Assert.Empty(_api.Reads);
     }
 

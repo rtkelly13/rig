@@ -134,12 +134,16 @@ With `--unattended`, which is what the scheduled task runs:
   or sharing a tab or the desktop, when a call site's tab is audible, or when
   Windows' privacy settings show Chrome using the microphone or camera right
   now. That last signal catches a muted call and a Meet app window, which
-  has no tab strip to read;
+  has no tab strip to read. A tab whose audio and alerts are unknown (macOS
+  without Accessibility evidence) never counts: a meeting page keeps its
+  address after the call ends. An open meeting page of that kind holds back
+  grouping only, and closing goes ahead;
 - pruning holds back the selected tab of every window and every tab in the
   foreground window, as `prune --unattended` does;
 - grouping starts only when the keyboard and mouse have been idle for
   `--idle-minutes` (default 5), and never while a call is live. Otherwise it
-  is deferred to the next run;
+  is deferred to the next run. When no tab carries Accessibility evidence,
+  grouping is skipped and the run says why (`Grouping skipped: …`);
 - grouping stops at the first key press or mouse move after one of its own
   steps. It then opens a Notepad note, `chrome-tidy-paused.txt`, asking you to
   leave the machine alone. Once the keyboard and mouse have been idle for 30
@@ -343,7 +347,12 @@ building.
 | Unknown state (resolver error) | report only; never closed, even as a duplicate | |
 
 Pinned and audible tabs are never closed. They appear under the report heading
-together with the rule that would have closed them. If a repo's open-PR list
+together with the rule that would have closed them. One exception: on macOS,
+when Accessibility cannot read the tab strip (no permission, or Chrome on
+another Space), every tab carries placeholder pinned and audible flags. A tab
+of a merged or closed PR still closes then, if its address is that PR's page
+and it is not its window's active tab. A tab that really is pinned can
+therefore close while the strip is unreadable. If a repo's open-PR list
 fails to load, the chain rules are skipped for that repo.
 
 ## Site rules

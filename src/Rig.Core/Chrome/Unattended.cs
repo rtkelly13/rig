@@ -29,19 +29,38 @@ public static class Unattended
             return new Block($"the machine was used {ago}s ago (waits for {minutes} min idle)", needed - idle);
         }
 
-        return LiveCall(presence, readWindows()) is { } live ? new Block(live) : null;
+        var windows = readWindows().ToList();
+        return (LiveCall(presence, windows) ?? MeetingOpen(windows)) is { } reason ? new Block(reason) : null;
     }
 
     /// <summary>
-    /// Why the user looks to be on a call or sharing their screen; null when they do not. A tab recording or sharing,
-    /// or an audible call site, gives it away; failing that, Chrome holding the microphone or camera does (a muted
-    /// call, a Meet app window). A device check that fails says nothing.
+    /// Why the tab strip cannot be read, from the read's own diagnosis; null when at least one tab carries native
+    /// evidence. Closing still runs on scripting facts; grouping, which needs the strip, cannot.
+    /// </summary>
+    public static string? Unreadable(IReadOnlyCollection<ChromeWindow> windows)
+    {
+        ArgumentNullException.ThrowIfNull(windows);
+        var tabs = windows.SelectMany(window => window.Tabs).ToList();
+        if (tabs.Count == 0 || !tabs.All(tab => tab.EvidenceUnknown))
+        {
+            return null;
+        }
+
+        var why = tabs.Select(tab => tab.EvidenceProblem).FirstOrDefault(problem => problem is not null) ?? "accessibility could not pair Chrome's tab strips";
+        return $"Chrome's tab strip is unreadable ({why})";
+    }
+
+    /// <summary>
+    /// Why the user is on a call or sharing their screen; null when nothing native says so. A tab recording or
+    /// sharing, or an audible call site, gives it away; failing that, Chrome holding the microphone or camera does (a
+    /// muted call, a Meet app window). A tab without native evidence never counts: its audio flag is a placeholder, and
+    /// a meeting page stays on its address after the call ends. A device check that fails says nothing.
     /// </summary>
     public static string? LiveCall(IPresence presence, IEnumerable<ChromeWindow> windows)
     {
         ArgumentNullException.ThrowIfNull(presence);
         ArgumentNullException.ThrowIfNull(windows);
-        foreach (var tab in windows.SelectMany(window => window.Tabs))
+        foreach (var tab in windows.SelectMany(window => window.Tabs).Where(tab => !tab.EvidenceUnknown))
         {
             if (tab.Alerts.FirstOrDefault(TabNames.LiveAlerts.Contains) is { } alert)
             {
@@ -68,6 +87,20 @@ public static class Unattended
 
         return devices.Count > 0 ? $"a call is live: Chrome is using the {string.Join(" and ", devices)}" : null;
     }
+
+    /// <summary>
+    /// A meeting page whose audio is unknown; null when there is none. It may be a call or one already left, so it
+    /// holds grouping back (which takes the mouse) but never stops closing.
+    /// </summary>
+    public static string? MeetingOpen(IEnumerable<ChromeWindow> windows)
+    {
+        ArgumentNullException.ThrowIfNull(windows);
+        var tab = windows.SelectMany(window => window.Tabs).FirstOrDefault(tab => tab.EvidenceUnknown && InCallRoom(tab));
+        return tab is null ? null : $"a meeting page is open ({TabPlanText.Clip(tab.Title)})";
+    }
+
+    // Without an address the title is all there is, so a call site's title still counts.
+    private static bool InCallRoom(ChromeTab tab) => tab.Url is { } url ? SiteRules.IsCallRoom(url) : SiteRules.IsCall(tab.Title);
 }
 
 /// <summary>

@@ -146,6 +146,68 @@ public sealed class PresenceTests
         Assert.Contains(says, live, StringComparison.Ordinal);
     }
 
+    // A tab macOS scripting saw but accessibility could not: placeholder pinned and audible flags.
+    private static ChromeTab Unknown(string title, string url, int index = 0) =>
+        new(new RuntimeId([42, 1, index]), 1, index, title, title, false, true, false, true)
+        {
+            Alerts = [Rig.Core.Chrome.MacOS.MacRead.MetadataUnavailable],
+            Url = new Uri(url),
+        };
+
+    private static ChromeWindow WindowOf(params ChromeTab[] tabs) => new(1, "w", null, null, 1, false, null, tabs);
+
+    [Fact]
+    public void A_call_sites_home_page_with_unknown_audio_is_not_live() =>
+        Assert.Null(Unattended.LiveCall(new FakePresence(), [WindowOf(Unknown("Google Meet", "https://meet.google.com/home?authuser=0"))]));
+
+    [Fact]
+    public void A_meeting_room_with_unknown_audio_is_not_a_live_call() =>
+        Assert.Null(Unattended.LiveCall(new FakePresence(), [WindowOf(Unknown("Meet – Standup", "https://meet.google.com/abc-defg-hij?authuser=0"))]));
+
+    [Fact]
+    public void A_meeting_room_with_unknown_audio_holds_back_grouping() =>
+        Assert.Equal(
+            "a meeting page is open (Meet – Standup)",
+            Unattended.MeetingOpen([WindowOf(Unknown("Meet – Standup", "https://meet.google.com/abc-defg-hij?authuser=0"))]));
+
+    [Fact]
+    public void A_call_sites_home_page_with_unknown_audio_does_not_hold_back_grouping() =>
+        Assert.Null(Unattended.MeetingOpen([WindowOf(Unknown("Google Meet", "https://meet.google.com/home?authuser=0"))]));
+
+    [Theory]
+    [InlineData("https://meet.google.com/abc-defg-hij", true)]
+    [InlineData("https://meet.google.com/home", false)]
+    [InlineData("https://meet.google.com/landing", false)]
+    [InlineData("https://us02web.zoom.us/wc/123456789/join", true)]
+    [InlineData("https://zoom.us/j/123456789", true)]
+    [InlineData("https://zoom.us/profile", false)]
+    [InlineData("https://teams.microsoft.com/l/meetup-join/19%3ameeting", true)]
+    [InlineData("https://teams.microsoft.com/v2/", false)]
+    [InlineData("https://app.slack.com/huddle/T01/C02", true)]
+    [InlineData("https://app.slack.com/client/T01/C02", false)]
+    [InlineData("https://meet.jit.si/standup", true)]
+    [InlineData("https://meet.jit.si/", false)]
+    [InlineData("https://github.com/abc-defg-hij", false)]
+    public void Only_a_meeting_address_is_a_call_room(string address, bool room) =>
+        Assert.Equal(room, SiteRules.IsCallRoom(new Uri(address)));
+
+    [Fact]
+    public void A_strip_with_no_native_evidence_is_unreadable_for_the_reason_the_read_gave()
+    {
+        var denied = Unknown("Inbox", "https://mail.google.com/") with { Alerts = [Rig.Core.Chrome.MacOS.MacRead.MetadataUnavailable, "rig lacks Accessibility access"] };
+        Assert.Equal(
+            "Chrome's tab strip is unreadable (rig lacks Accessibility access)",
+            Unattended.Unreadable([WindowOf(denied, Unknown("Docs", "https://docs.example/", 1))]));
+    }
+
+    [Fact]
+    public void One_tab_with_native_evidence_makes_the_strip_readable() =>
+        Assert.Null(Unattended.Unreadable([WindowOf(Unknown("Inbox", "https://mail.google.com/")), Window("Docs")]));
+
+    [Fact]
+    public void No_windows_are_not_unreadable() =>
+        Assert.Null(Unattended.Unreadable([]));
+
     [Fact]
     public void Quiet_tabs_and_idle_devices_are_not_live() =>
         Assert.Null(Unattended.LiveCall(new FakePresence(), [Window("Meet – abc-defg-hij", "Lo-fi beats - YouTube - Audio playing")]));

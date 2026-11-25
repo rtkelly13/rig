@@ -107,7 +107,8 @@ public class AxReader
     {
         if (!Api.Trusted())
         {
-            throw new AccessibilityUnavailableException("Grant Accessibility access to the terminal running chrome-tabs");
+            throw new AccessibilityUnavailableException(
+                $"{Environment.ProcessPath ?? "this process"} lacks Accessibility access (System Settings > Privacy & Security > Accessibility)");
         }
 
         var application = Api.Application(pid);

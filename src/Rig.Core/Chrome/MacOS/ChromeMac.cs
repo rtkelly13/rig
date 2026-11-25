@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Rig.Core.GitHub;
 using Rig.Core.Text;
 
 namespace Rig.Core.Chrome.MacOS;
@@ -17,6 +18,12 @@ namespace Rig.Core.Chrome.MacOS;
 /// </remarks>
 public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, IChromeGroupActions, IChromeSavedGroupActions
 {
+    /// <summary>Why a trusted read found nothing: macOS accessibility lists only the current Space's windows.</summary>
+    public const string NoAxWindows = "accessibility sees none of Chrome's windows (another Space or a full-screen app is in front)";
+
+    private static bool UnknownPrPage(ChromeTab tab) =>
+        !tab.Selected && GitHubPage.Parse(tab.Url) is PullRequestPage page && PrPrune.RefFromTitle(tab.Title) == page.Pr;
+
     /// <summary>Reads of one window before the accessibility evidence is dropped.</summary>
     public const int ReadAttempts = 4;
 
@@ -62,8 +69,8 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <summary>Chrome's windows and tabs on every Space; empty when Chrome is not running.</summary>
     public IReadOnlyList<ChromeWindow> ListWindows()
     {
-        var (snapshot, axWindows) = BracketedRead();
-        return snapshot.Windows.Count == 0 ? [] : MacRead.Windows(snapshot, axWindows, _profiles());
+        var (snapshot, axWindows, problem) = BracketedRead();
+        return snapshot.Windows.Count == 0 ? [] : MacRead.Windows(snapshot, axWindows, _profiles(), problem);
     }
 
     /// <summary>Chrome's front window when Chrome is the active application, else 0; failures propagate.</summary>
@@ -114,12 +121,16 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                 return Outcome(false, "URL changed; refusing close");
             }
 
-            if (current.Alerts.Contains(MacRead.MetadataUnavailable))
+            // Without native evidence the pinned and audible flags are placeholders. Only a PR page the planner can
+            // vouch for (its address and title name the same PR) that is not in front in its window may close then.
+            // Only a tab planned without evidence was planned as a merged or closed PR, the one close that does not
+            // need it; a tab whose evidence was lost after planning keeps the protection it was planned under.
+            if (current.EvidenceUnknown && !(tab.EvidenceUnknown && UnknownPrPage(current)))
             {
                 return Outcome(false, $"{MacRead.MetadataUnavailable}; refusing close");
             }
 
-            if (current.Pinned || current.Audible)
+            if (!current.EvidenceUnknown && (current.Pinned || current.Audible))
             {
                 return Outcome(false, "tab is pinned or audible; refusing close");
             }
@@ -575,14 +586,15 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     // A snapshot and the AX windows read while it held. A second snapshot brackets the AX read: stable ids and
     // ordering let identical titles map positionally without confusing two tabs. A live page can retitle mid-read, so
     // an unsettled read is retried a few times before the AX evidence is dropped and every tab is left protected.
-    private (JxaSnapshot Snapshot, IReadOnlyList<AxNode> AxWindows) BracketedRead()
+    // Without AX windows, the third value says why.
+    private (JxaSnapshot Snapshot, IReadOnlyList<AxNode> AxWindows, string? Problem) BracketedRead()
     {
         var current = _jxa.Snapshot();
         for (var attempt = 0; attempt < ReadAttempts; attempt++)
         {
             if (current.Windows.Count == 0)
             {
-                return (current, []);
+                return (current, [], null);
             }
 
             IReadOnlyList<AxNode> axWindows;
@@ -590,22 +602,22 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
             {
                 axWindows = new AxReader(_api()).Windows(current.Pid);
             }
-            catch (AccessibilityUnavailableException)
+            catch (AccessibilityUnavailableException error)
             {
-                return (current, []);
+                return (current, [], error.Message);
             }
 
             var after = _jxa.Snapshot();
             if (SnapshotsEqual(after, current))
             {
-                return (current, axWindows);
+                return (current, axWindows, axWindows.Count == 0 ? NoAxWindows : null);
             }
 
             current = after;
             _sleep(PollInterval);
         }
 
-        return (current, []);
+        return (current, [], "Chrome's tabs kept changing during the read");
     }
 
     private Live ReadLive(MacUi ui, ChromeTab expected)
