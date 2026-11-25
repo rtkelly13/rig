@@ -405,6 +405,20 @@ public sealed class OrganiseRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_strip_without_evidence_traces_grouping_as_skipped_unreadable()
+    {
+        using var spans = new RecordedSpans("Rig.Chrome");
+        var window = Window(W1, Profile, 1, Tab("Notes", selected: true), Tab("Docs"));
+        _windows = [window with { Tabs = [.. window.Tabs.Select(tab => tab with { Pinned = true, Audible = true, Alerts = [Rig.Core.Chrome.MacOS.MacRead.MetadataUnavailable] })] }];
+
+        var result = await Runner().RunAsync(Options(), TestContext.Current.CancellationToken);
+
+        Assert.False(result.Failed);
+        Assert.Equal("skipped_unreadable", Root(spans.Stopped).GetTagItem("group.outcome"));
+        Assert.Contains(_said, line => line.StartsWith("Grouping skipped: Chrome's tab strip is unreadable", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Chrome_that_will_not_read_is_a_skip_unattended_and_a_failure_attended()
     {
         _read = () => throw new ChromeReadException("Chrome's tab strip kept changing during the read");

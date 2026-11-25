@@ -360,6 +360,18 @@ public sealed class ChromeMacTests
     }
 
     [Fact]
+    public void Close_tab_refuses_a_pr_page_planned_with_evidence_that_has_since_lost_it()
+    {
+        _api.IsTrusted = false;
+        var jxa = new ScriptedJxa { FallbackSnapshot = WithPrBeside() };
+
+        var outcome = Over(jxa).CloseTab(PrTab() with { Pinned = false, Audible = false, Alerts = [] });
+
+        Assert.Equal((false, $"{MacRead.MetadataUnavailable}; refusing close"), (outcome.Closed, outcome.Detail));
+        Assert.Empty(jxa.Scripts);
+    }
+
+    [Fact]
     public void Close_tab_refuses_a_page_without_accessibility_evidence_that_is_not_a_pr()
     {
         _api.IsTrusted = false;

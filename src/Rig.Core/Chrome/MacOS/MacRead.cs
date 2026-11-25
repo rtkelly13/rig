@@ -319,7 +319,7 @@ public static partial class MacRead
         // Chrome labels pinned tabs "– Pinned". Inactive tabs hide their close control, so its absence is normal;
         // PinnedLabelsConsistent rejects labels that contradict the pinned-first order.
         var groupKnown = node is not null && (group is not null || !GroupSuffix().IsMatch(node.Name));
-        var known = parsed is not null && parsed.Title == raw.Title && groupKnown;
+        var known = parsed is not null && SameTitle(parsed.Title, raw) && groupKnown;
         return new ChromeTab(
             new RuntimeId([(int)raw.Id]),
             window.Id,

@@ -241,6 +241,17 @@ public sealed class MacReadTests
     }
 
     [Fact]
+    public void An_untitled_tab_keeps_the_evidence_its_strip_gives()
+    {
+        var raw = Raw() with { Tabs = [new JxaTab(701, "", "https://example.com/")] };
+
+        var tab = MacRead.Tab(raw.Tabs[0], 0, raw, new TabSlot(TabNode() with { Title = "example.com" }, null));
+
+        Assert.False(tab.EvidenceUnknown);
+        Assert.False(tab.Pinned);
+    }
+
+    [Fact]
     public void An_untitled_tab_does_not_pair_with_another_address()
     {
         var raw = Raw() with { Tabs = [new JxaTab(701, "", "https://x.com/someone/status/1")] };

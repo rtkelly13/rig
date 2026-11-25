@@ -123,7 +123,9 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
 
             // Without native evidence the pinned and audible flags are placeholders. Only a PR page the planner can
             // vouch for (its address and title name the same PR) that is not in front in its window may close then.
-            if (current.EvidenceUnknown && !UnknownPrPage(current))
+            // Only a tab planned without evidence was planned as a merged or closed PR, the one close that does not
+            // need it; a tab whose evidence was lost after planning keeps the protection it was planned under.
+            if (current.EvidenceUnknown && !(tab.EvidenceUnknown && UnknownPrPage(current)))
             {
                 return Outcome(false, $"{MacRead.MetadataUnavailable}; refusing close");
             }
