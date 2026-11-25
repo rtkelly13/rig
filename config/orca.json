@@ -111,12 +111,6 @@
       "color": "#f43f5e",
       "icon": "Box"
     },
-    "ynab-budget-companion": {
-      "path": "~/code/personal/ynab-budget-companion",
-      "base_ref": "origin/main",
-      "color": "#84cc16",
-      "icon": "Gauge"
-    },
     "obsidian-vault": {
       "path": "~/code/personal/obsidian-vault",
       "base_ref": "origin/main",

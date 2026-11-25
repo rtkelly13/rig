@@ -12,7 +12,6 @@ frequency, native identities, credentials or the allowed issue-write destination
 ## Repository allowlist
 
 - `rtkelly13/blog`
-- `rtkelly13/ynab-budget-companion`
 - `rtkelly13/docs`
 - `rtkelly13/ProceduralGeneration3DMazes`
 - `rtkelly13/hearth`

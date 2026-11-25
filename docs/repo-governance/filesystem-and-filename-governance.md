@@ -70,7 +70,7 @@ Beyond banning `.sh` and `.ps1` scripts, `ls-lint` serves multiple high-value go
 ### A. Script Language Containment (`scripts/`)
 Automated scripts must adhere to the host repository's primary language stack:
 - **C# / .NET Repos** (`blobflags`, `ProceduralGeneration3DMazes`): Only `.cs` (executed via `dotnet run <script>.cs`) is permitted. Out-of-ecosystem `.py`, `.ts`, `.sh`, `.ps1` scripts are strictly rejected.
-- **TypeScript / Node Repos** (`blog`, `docs`, `ynab-budget-companion`): Only `.ts`, `.js`, `.mjs`, `.cjs` (executed via `pnpm`, `node`, or `tsx`) are permitted.
+- **TypeScript / Node Repos** (`blog`, `docs`): Only `.ts`, `.js`, `.mjs`, `.cjs` (executed via `pnpm`, `node`, or `tsx`) are permitted.
 - **Python Repos** (`rig`): Only `.py` and `.ipynb` (executed via `uv run <script>.py`) are permitted.
 - **Universal Data & Documentation**: Standard non-executable support formats (`.md`, `.json`, `.yml`, `.yaml`, `.sql`, `.toml`, `.csv`) are allowed alongside the host script language.
 - **Enforcement Pattern**:
