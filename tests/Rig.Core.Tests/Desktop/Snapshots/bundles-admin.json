@@ -29,12 +29,12 @@
       "type": "app",
       "delay_ms": 1600,
       "path": "{slack-path}",
+      "summary": "Slack, full screen 2.",
       "placement": {
         "screen": 2,
         "layout": {
-          "mode": "halves",
-          "slot": 1,
-          "orientation": "vertical"
+          "mode": "full",
+          "slot": 1
         }
       },
       "window_process_name": "slack.exe"
@@ -44,12 +44,12 @@
       "type": "app",
       "delay_ms": 900,
       "path": "{onepassword-path}",
+      "summary": "1Password, full screen 3.",
       "placement": {
-        "screen": 2,
+        "screen": 3,
         "layout": {
-          "mode": "halves",
-          "slot": 2,
-          "orientation": "vertical"
+          "mode": "full",
+          "slot": 1
         }
       },
       "window_process_name": "1Password.exe"

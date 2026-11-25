@@ -9,7 +9,7 @@
         "--new-window",
         "{rig-root}\\rig.code-workspace"
       ],
-      "summary": "Opens the multi-root workspace file in VS Code, full screen 1, with Fork beside it on screen 2.",
+      "summary": "Opens the multi-root workspace file in VS Code, full screen 1, with Fork on screen 2 and a work Chrome window on screen 3.",
       "delay_ms": 1600,
       "placement": {
         "screen": 1,
@@ -26,7 +26,7 @@
       "name": "Fork",
       "type": "app",
       "path": "{fork-path}",
-      "summary": "Opens Fork full screen 2, beside VS Code, for branches and diffs.",
+      "summary": "Opens Fork full screen 2, between VS Code and the work Chrome window, for branches and diffs.",
       "delay_ms": 1200,
       "placement": {
         "screen": 2,
@@ -36,6 +36,26 @@
         }
       },
       "window_process_name": "Fork.exe"
+    },
+    {
+      "name": "IDE Chrome",
+      "type": "app",
+      "path": "{chrome-path}",
+      "args": [
+        "--user-data-dir={chrome-user-data}",
+        "--profile-directory={chrome-profile-work}",
+        "--new-window"
+      ],
+      "summary": "A work-profile Chrome window, full screen 3, for docs and pull requests beside the editor.",
+      "delay_ms": 1400,
+      "placement": {
+        "screen": 3,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "chrome.exe"
     }
   ]
 }

@@ -20,14 +20,34 @@
       "window_wait_timeout_ms": 30000
     },
     {
+      "name": "Work Chrome",
+      "type": "app",
+      "path": "{chrome-path}",
+      "args": [
+        "--user-data-dir={chrome-user-data}",
+        "--profile-directory={chrome-profile-work}",
+        "--new-window"
+      ],
+      "summary": "A work-profile Chrome window, full screen 2, between Orca and the rig dashboard.",
+      "delay_ms": 1400,
+      "placement": {
+        "screen": 2,
+        "layout": {
+          "mode": "full",
+          "slot": 1
+        }
+      },
+      "window_process_name": "chrome.exe"
+    },
+    {
       "name": "Work Triage",
       "type": "command",
       "command": "rig tools ensure web && \"{chrome-path}\" --user-data-dir=\"{chrome-user-data}\" --profile-directory=\"{chrome-profile-work}\" --new-window http://127.0.0.1:8090/triage/inbox",
       "cwd": "{rig-root}",
-      "summary": "The rig triage queue (`rig triage`) in an ordinary Chrome window on the work profile, full screen 2, beside Orca: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard. `--new-window` makes Chrome open a window even though the Admin desktop's work-profile window already exists, and `window_title` matches every dashboard page (`Rig / Triage`, `Rig / Estate`) as well as the title it loads with (`Rig // Estate Management`), so a later restore finds the window again.",
+      "summary": "The rig triage queue (`rig triage`) in an ordinary Chrome window on the work profile, full screen 3, a screen of its own: starts the rig web dashboard if it is not already answering, then opens its triage inbox. The triage window also gives the rest of the dashboard. `--new-window` makes Chrome open a window even though the Admin desktop's work-profile window already exists, and `window_title` matches every dashboard page (`Rig / Triage`, `Rig / Estate`) as well as the title it loads with (`Rig // Estate Management`), so a later restore finds the window again.",
       "delay_ms": 2200,
       "placement": {
-        "screen": 2,
+        "screen": 3,
         "layout": {
           "mode": "full",
           "slot": 1

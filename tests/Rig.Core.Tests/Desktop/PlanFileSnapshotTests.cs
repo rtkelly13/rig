@@ -53,6 +53,20 @@ public sealed class PlanFileSnapshotTests
         Assert.Equal(PlanFiles.Format(plan.ToJson()), PlanFiles.Format(PlanFiles.Load(root).ToJson()));
     }
 
+    [Theory]
+    [InlineData("IDE")]
+    [InlineData("Work")]
+    [InlineData("Admin")]
+    public void The_daily_desktops_fill_three_screens_and_fold_onto_fewer(string name)
+    {
+        var plan = LoadPlan("workspace-plan.bundle") with { Features = new Dictionary<string, bool> { ["orca-sessions"] = true } };
+        var desktop = plan with { Desktops = [.. plan.Desktops.Where(candidate => candidate.Name == name)] };
+
+        Assert.Empty(Placement.ValidatePlanStructure(desktop, expectedScreenCount: 3, strict: true));
+        Assert.Empty(Placement.ValidatePlanStructure(Placement.FoldScreens(desktop, 2), expectedScreenCount: 2, strict: true));
+        Assert.Empty(Placement.ValidatePlanStructure(Placement.FoldScreens(desktop, 1), expectedScreenCount: 1, strict: true));
+    }
+
     [Fact]
     public void A_plan_using_every_field_writes_back_as_recorded() =>
         AssertSnapshot("full-plan", PlanFiles.Format(FullPlan().ToJson()));

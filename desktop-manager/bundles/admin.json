@@ -32,12 +32,12 @@
       "placement": {
         "screen": 2,
         "layout": {
-          "mode": "halves",
-          "slot": 1,
-          "orientation": "vertical"
+          "mode": "full",
+          "slot": 1
         }
       },
-      "window_process_name": "slack.exe"
+      "window_process_name": "slack.exe",
+      "summary": "Slack, full screen 2."
     },
     {
       "name": "1Password",
@@ -45,14 +45,14 @@
       "path": "{onepassword-path}",
       "delay_ms": 900,
       "placement": {
-        "screen": 2,
+        "screen": 3,
         "layout": {
-          "mode": "halves",
-          "slot": 2,
-          "orientation": "vertical"
+          "mode": "full",
+          "slot": 1
         }
       },
-      "window_process_name": "1Password.exe"
+      "window_process_name": "1Password.exe",
+      "summary": "1Password, full screen 3."
     }
   ]
 }
