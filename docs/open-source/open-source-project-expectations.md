@@ -94,7 +94,7 @@ flowchart TD
     ```
 - **Node / TypeScript Repositories** (`design-system`, `mermaid-toolkit`):
   - Scripts MUST be `.ts`, `.js`, or `.mjs`, executed via `pnpm` or `node`.
-- **Python Repositories** (`rig`, `ynab-budget-companion`):
+- **Python Repositories** (`rig`):
   - Scripts MUST be `.py`, executed strictly via `uv run` (direct execution of `python` or `python3` is blocked).
 - **Estate-Wide Rule**: Shell scripts (`.sh`, `.bash`, `.zsh`, `.ps1`, `.psm1`) are **strictly prohibited** in all repositories.
 

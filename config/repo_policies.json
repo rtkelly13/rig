@@ -210,7 +210,6 @@
       "repos": [
         "obsidian-vault",
         "rig",
-        "ynab-budget-companion",
         "hearth"
       ]
     },
@@ -425,11 +424,6 @@
         ],
         "allowed_exceptions": []
       },
-      "required_checks": [
-        "ci"
-      ]
-    },
-    "ynab-budget-companion": {
       "required_checks": [
         "ci"
       ]

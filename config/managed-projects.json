@@ -218,16 +218,6 @@
       }
     },
     {
-      "name": "ynab-budget-companion",
-      "repo": "git@github.com:rtkelly13/ynab-budget-companion.git",
-      "description": "Local personal budget companion with FastAPI backend and React frontend.",
-      "domain": "Personal Finance & Full-Stack Application",
-      "stack": "FastAPI / React",
-      "orca": {
-        "group": "personal/apps"
-      }
-    },
-    {
       "name": "hearth",
       "repo": "git@github.com:rtkelly13/hearth.git",
       "description": "Personal life systems: health, fitness, money and lifestyle automation. The home counterpart to rig.",

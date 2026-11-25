@@ -14,6 +14,13 @@
       "retired": "2026-11-06"
     },
     {
+      "name": "ynab-budget-companion",
+      "repo": "git@github.com:rtkelly13/ynab-budget-companion.git",
+      "description": "Local YNAB budget companion (FastAPI and React scaffold). Deleted once the YNAB subscription lapsed; nothing in it was carried forward.",
+      "status": "deleted",
+      "retired": "2026-11-25"
+    },
+    {
       "name": "notes-old-clone",
       "repo": "git@github.com:rtkelly13/notes.git",
       "description": "Legacy notes repository clone preserved for migration reference.",
