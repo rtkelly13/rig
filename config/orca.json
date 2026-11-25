@@ -149,7 +149,7 @@
     },
     "parquet-dotnet": {
       "path": "~/code/rtkelly-labs/parquet-dotnet",
-      "base_ref": "origin/master",
+      "base_ref": "origin/main",
       "color": "#a16207",
       "icon": "emoji:🪵"
     },
