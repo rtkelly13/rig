@@ -61,6 +61,7 @@ public sealed class RuntimeManagerTests : IDisposable
         {
             ["app.txt"] = "committed\n",
             [".config/dotnet-tools.json"] = "{}\n",
+            ["paket.dependencies"] = "\n",
             ["src/Rig.Paket/Rig.Paket.csproj"] = "<Project />\n",
         });
         File.WriteAllText(Path.Join(repo, "app.txt"), "uncommitted edit\n");
@@ -88,7 +89,10 @@ public sealed class RuntimeManagerTests : IDisposable
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual(
             ["dotnet", "publish", Path.Join(copy, "src", "Rig.Paket"), "-c", "Release", "-o", Path.Join(copy, "rig", "paket"), "-m:2", "-v", "q"]));
         // Paket's restore targets run the paket local tool, so the copy restores its tools before the first publish.
-        Assert.Equal(["tool", "restore"], tools.Calls.First(call => call.Argv[0] == "dotnet").Argv.Skip(1));
+        // Then Paket, because Directory.Build.props imports the files it fetches.
+        Assert.Equal(
+            [["tool", "restore"], ["paket", "restore"]],
+            tools.Calls.Where(call => call.Argv[0] == "dotnet").Take(2).Select(call => call.Argv.Skip(1).ToArray()));
         var windows = OperatingSystem.IsWindows();
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.PublishedSidecar(copy, windows), "--check"]));
         Assert.Contains(tools.Calls, call => call.Argv.SequenceEqual([RuntimeManager.Published(copy, "rig", windows), "jobs", "run", "--help"]));

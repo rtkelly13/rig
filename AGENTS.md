@@ -8,6 +8,7 @@ Shared development utilities — desktop workspace management, general tooling, 
 ## Commands
 
 ```bash
+dotnet tool restore && dotnet paket restore   # first: Directory.Build.props imports Paket-fetched foundations files
 dotnet run --project src/Rig.Cli -- status          # git state
 dotnet run --project src/Rig.Cli -- status --tests  # the same plus the C# test suite
 dotnet test --project tests/Rig.Core.Tests -- --filter-class "*SomeTests"  # one test class

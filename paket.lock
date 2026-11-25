@@ -227,6 +227,15 @@ NUGET
       xunit.v3.runner.common (4.0.3)
     YamlDotNet (18.1)
 
+GROUP Build
+
+GITHUB
+  remote: rtkelly-labs/foundations
+    dotnet/BannedSymbols.txt (2da88415fca43143c9a4e0a81bf7787cea38ee33)
+    dotnet/Common.props (2da88415fca43143c9a4e0a81bf7787cea38ee33)
+    dotnet/Common.targets (2da88415fca43143c9a4e0a81bf7787cea38ee33)
+    dotnet/scripts/coverage-floor.cs (2da88415fca43143c9a4e0a81bf7787cea38ee33)
+    dotnet/scripts/require-jobs-succeeded.cs (2da88415fca43143c9a4e0a81bf7787cea38ee33)
 GROUP Sidecar
 STORAGE: NONE
 STRATEGY: MIN

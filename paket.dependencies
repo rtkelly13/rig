@@ -81,3 +81,12 @@ group Sidecar
   nuget System.Net.Http = 4.3.4
   nuget System.Security.Cryptography.Pkcs = 10.0.13
   nuget System.Security.Cryptography.X509Certificates = 4.3.2
+
+// Shared build settings, CI scripts and banned APIs from rtkelly-labs/foundations, pinned to the same SHA as the
+// reusable workflow in .github/workflows/ci.yml. Bump all of them together: `dotnet paket update --group Build`.
+group Build
+  github rtkelly-labs/foundations:2da88415fca43143c9a4e0a81bf7787cea38ee33 dotnet/Common.props
+  github rtkelly-labs/foundations:2da88415fca43143c9a4e0a81bf7787cea38ee33 dotnet/Common.targets
+  github rtkelly-labs/foundations:2da88415fca43143c9a4e0a81bf7787cea38ee33 dotnet/BannedSymbols.txt
+  github rtkelly-labs/foundations:2da88415fca43143c9a4e0a81bf7787cea38ee33 dotnet/scripts/coverage-floor.cs
+  github rtkelly-labs/foundations:2da88415fca43143c9a4e0a81bf7787cea38ee33 dotnet/scripts/require-jobs-succeeded.cs
