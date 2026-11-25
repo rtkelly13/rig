@@ -349,12 +349,14 @@ jobs:
           # Rig.Core is the largest project and Rig.Core.Tests the largest suite.
           - shard: core
             projects: tests/Rig.Core.Tests/Rig.Core.Tests.csproj
+          # Rig.Cli.Tests (~107 s under coverage) was over half of `app`, the critical path.
+          - shard: cli
+            projects: tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
           # Everything else pulls in every product project: Rig.Specs and the architecture
           # tests reference the CLI and the launcher, the ownership tests the tool.
           - shard: app
             projects: >-
               tests/Rig.Architecture.Tests/Rig.Architecture.Tests.csproj
-              tests/Rig.Cli.Tests/Rig.Cli.Tests.csproj
               tests/Rig.CommandOwnership.Tests/Rig.CommandOwnership.Tests.csproj
               tests/Rig.LocReport.Tests/Rig.LocReport.Tests.csproj
               tests/Rig.Specs/Rig.Specs.csproj
