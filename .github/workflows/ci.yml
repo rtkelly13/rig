@@ -83,7 +83,7 @@ jobs:
           global-json-file: global.json
       # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
       # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
-      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # the linux-x64 Playwright driver, so `analyze` deletes the other platforms' (~460 MB) before it saves.
       # Paket comes from the cache too, which is why the tool restore runs after it.
       - name: Restore NuGet cache
         id: nuget-cache
@@ -91,9 +91,6 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
@@ -368,7 +365,7 @@ jobs:
           global-json-file: global.json
       # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
       # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
-      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # the linux-x64 Playwright driver, so `analyze` deletes the other platforms' (~460 MB) before it saves.
       # Paket comes from the cache too, which is why the tool restore runs after it.
       - name: Restore NuGet cache
         id: nuget-cache
@@ -376,9 +373,6 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
@@ -459,7 +453,7 @@ jobs:
           global-json-file: global.json
       # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
       # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
-      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # the linux-x64 Playwright driver, so `analyze` deletes the other platforms' (~460 MB) before it saves.
       # Paket comes from the cache too, which is why the tool restore runs after it.
       - name: Restore NuGet cache
         id: nuget-cache
@@ -467,9 +461,6 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
@@ -477,15 +468,16 @@ jobs:
         run: dotnet restore rig.slnx
       # The one writer of the NuGet cache: this job restores the whole solution, and only main's entry is
       # readable by every PR. Saved before the build, so a failing build still leaves the packages behind.
+      # Not a `!` path exclusion: the cache tars the whole folder, so exclusions under it are ignored.
+      - name: Drop the other platforms' Playwright drivers
+        if: steps.nuget-cache.outputs.cache-hit != 'true' # EXPERIMENT: revert before merge
+        run: rm -rf ~/.nuget/packages/microsoft.playwright/*/.playwright/node/{darwin-*,linux-arm64,win32_x64}
       - name: Save NuGet cache
         if: steps.nuget-cache.outputs.cache-hit != 'true' # EXPERIMENT: revert before merge
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.nuget/packages
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
           key: ${{ steps.nuget-cache.outputs.cache-primary-key }}
       - name: Build with analyzers
         run: dotnet build rig.slnx --no-restore -c Release
@@ -550,7 +542,7 @@ jobs:
           global-json-file: global.json
       # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
       # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
-      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # the linux-x64 Playwright driver, so `analyze` deletes the other platforms' (~460 MB) before it saves.
       # Paket comes from the cache too, which is why the tool restore runs after it.
       - name: Restore NuGet cache
         id: nuget-cache
@@ -558,9 +550,6 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
-            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
