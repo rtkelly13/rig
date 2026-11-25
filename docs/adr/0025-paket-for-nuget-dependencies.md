@@ -65,7 +65,8 @@ None of these is a package rig references directly.
 2. **Each project lists what it uses in its own `paket.references`.** `Directory.Packages.props` and
    `ManagePackageVersionsCentrally` are removed; there is no dual setup.
 3. **Paket is a pinned local tool** (`.config/dotnet-tools.json`). CI runs `dotnet tool restore` before any
-   restore or build, and the NuGet and Playwright cache keys hash `paket.lock`.
+   restore or build. The NuGet cache key hashes `paket.lock`, and the Playwright cache keys use the
+   `Microsoft.Playwright` version read from it.
 4. **Pinning the CLI stack** (ADR 0023 item 4) is now an exact line for `DotMake.CommandLine` and
    `System.CommandLine` in `paket.dependencies`, and `paket.lock` pins their transitives.
 5. **Renovate** enables the `paket` manager and `lockFileMaintenance` for it.
