@@ -204,7 +204,7 @@ public static partial class TabGrouping
             return null;
         }
 
-        if (url.Host.ToLowerInvariant() is "github.com" or "www.github.com")
+        if (GitHubPage.OnGitHub(url))
         {
             return GitHubPage.Parse(url)?.Repo;
         }

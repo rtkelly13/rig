@@ -35,6 +35,23 @@ public sealed class GitHubPageTests
         Assert.Equal("Acme-Corp/Data-Platform", page.Repo.FullName);
     }
 
+    [Theory]
+    [InlineData("https://github.com/Acme-Corp/data-platform")]
+    [InlineData("https://github.com/Acme-Corp/data-platform/pull/12")]
+    [InlineData("https://github.com/Acme-Corp/data-platform/issues/7")]
+    public void A_canonical_address_reads_back_as_its_page(string address)
+    {
+        var page = GitHubPage.Parse(new Uri(address));
+        Assert.Equal(address, page?.Url.AbsoluteUri);
+        Assert.Equal(page, GitHubPage.Parse(page?.Url));
+    }
+
+    [Fact]
+    public void A_subpage_canonicalises_to_its_page() =>
+        Assert.Equal(
+            "https://github.com/acme-corp/data-platform/pull/12",
+            GitHubPage.Parse(new Uri("https://www.github.com/acme-corp/data-platform/pull/12/files?w=1#diff"))?.Url.AbsoluteUri);
+
     private static string? Describe(GitHubPage? page) => page switch
     {
         PullRequestPage pr => $"pr {pr.Pr}",

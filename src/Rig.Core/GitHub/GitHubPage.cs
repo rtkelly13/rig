@@ -20,11 +20,21 @@ public abstract record GitHubPage(RepoSlug Repo)
         ],
         StringComparer.Ordinal);
 
+    /// <summary>The page's canonical address; <see cref="Parse(Uri?)"/> reads it back as this page.</summary>
+    public abstract Uri Url { get; }
+
+    /// <summary>Whether <paramref name="url"/> is on github.com, whatever page it shows.</summary>
+    public static bool OnGitHub(Uri? url) =>
+        url is { IsAbsoluteUri: true } && url.Host.ToLowerInvariant() is "github.com" or "www.github.com";
+
     /// <summary>The page <paramref name="url"/> shows, or null for any address that is not a github.com repo page.</summary>
     public static GitHubPage? Parse(Uri? url) =>
-        url is { IsAbsoluteUri: true } && url.Host.ToLowerInvariant() is "github.com" or "www.github.com"
-            ? Parse(url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries))
-            : null;
+        url is not null && OnGitHub(url) ? Parse(url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries)) : null;
+
+    /// <summary>The address under the repo, for the cases to build on.</summary>
+    private protected Uri At(string tail) => new($"https://github.com/{Repo.FullName}{tail}");
+
+    private protected static string Text(int number) => number.ToString(CultureInfo.InvariantCulture);
 
     private static GitHubPage? Parse(string[] path) => path switch
     {
@@ -42,7 +52,11 @@ public abstract record GitHubPage(RepoSlug Repo)
 
 /// <summary>Any page of a repo that is not a specific pull request or issue: its code, lists, actions, a new PR form.</summary>
 /// <param name="Repo">The repo.</param>
-public sealed record RepoPage(RepoSlug Repo) : GitHubPage(Repo);
+public sealed record RepoPage(RepoSlug Repo) : GitHubPage(Repo)
+{
+    /// <inheritdoc/>
+    public override Uri Url => At(string.Empty);
+}
 
 /// <summary>A pull request, on any of its tabs.</summary>
 /// <param name="Repo">The repo.</param>
@@ -51,9 +65,16 @@ public sealed record PullRequestPage(RepoSlug Repo, int Number) : GitHubPage(Rep
 {
     /// <summary>The PR as <c>owner/repo#n</c>.</summary>
     public PrRef Pr => new(Repo.Owner, Repo.Name, Number);
+
+    /// <inheritdoc/>
+    public override Uri Url => At($"/pull/{Text(Number)}");
 }
 
 /// <summary>An issue.</summary>
 /// <param name="Repo">The repo.</param>
 /// <param name="Number">The issue number.</param>
-public sealed record IssuePage(RepoSlug Repo, int Number) : GitHubPage(Repo);
+public sealed record IssuePage(RepoSlug Repo, int Number) : GitHubPage(Repo)
+{
+    /// <inheritdoc/>
+    public override Uri Url => At($"/issues/{Text(Number)}");
+}

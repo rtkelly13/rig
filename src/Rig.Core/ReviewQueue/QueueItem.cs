@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Serialization;
+using Rig.Core.GitHub;
+using Rig.Core.Text;
 
 namespace Rig.Core.ReviewQueue;
 
@@ -26,9 +28,15 @@ public sealed record QueueItem(
     [JsonIgnore]
     public string Reference => $"{Repo}#{Number.ToString(CultureInfo.InvariantCulture)}";
 
+    /// <summary>The item's page on GitHub.</summary>
+    [JsonIgnore]
+    public GitHubPage Page => RepoSlug.FromPath(Repo) is { } repo
+        ? Kind == "pr" ? new PullRequestPage(repo, Number) : new IssuePage(repo, Number)
+        : throw new InvalidOperationException($"queue item {Reference} has no owner/repo slug: '{Repo}'");
+
     /// <summary>The canonical GitHub URL.</summary>
     [JsonIgnore]
-    public Uri Url => new($"https://github.com/{Repo}/{(Kind == "pr" ? "pull" : "issues")}/{Number.ToString(CultureInfo.InvariantCulture)}");
+    public Uri Url => Page.Url;
 }
 
 /// <summary>The existing, clock-independent priority/readiness/size/age order.</summary>
