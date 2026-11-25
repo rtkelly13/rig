@@ -301,6 +301,59 @@ public sealed class PrPruneTests
         Assert.All(plan.Reports, report => Assert.Equal(ReportKind.Protected, report.Kind));
     }
 
+    // What macOS reads without Accessibility evidence: placeholder pinned and audible flags on every tab.
+    private static IReadOnlyList<ChromeWindow> Unreadable(IEnumerable<ChromeWindow> windows) =>
+    [
+        .. windows.Select(window => window with
+        {
+            Tabs = [.. window.Tabs.Select(tab => tab with { Pinned = true, Audible = true, Alerts = [Rig.Core.Chrome.MacOS.MacRead.MetadataUnavailable] })],
+        }),
+    ];
+
+    private static string PrUrl(int number) => $"https://github.com/Acme-Corp/data-platform/pull/{number}/files";
+
+    [Fact]
+    public void A_merged_pr_page_closes_even_when_its_flags_are_placeholders()
+    {
+        var browser = new TabBrowser();
+        browser.Window(Tab(1) with { Url = PrUrl(1) }, Tab(2) with { Url = PrUrl(2) }, Tab(3) with { Url = PrUrl(3) });
+
+        var plan = PrPrune.Plan(
+            Unreadable(browser.Windows),
+            Resolve(new() { [1] = PrStatus.Merged, [2] = PrStatus.Closed, [3] = PrStatus.Open }));
+
+        Assert.Equal([(1, CloseKind.Merged, "merged"), (2, CloseKind.Closed, "closed without merging")], Closes(plan));
+        Assert.Empty(plan.Reports);
+    }
+
+    [Fact]
+    public void Placeholder_flags_still_protect_the_active_tab_a_duplicate_and_a_mismatched_address()
+    {
+        var browser = new TabBrowser();
+        browser.Window(
+            Tab(1, selected: true) with { Url = PrUrl(1) },
+            Tab(2) with { Url = PrUrl(9) },
+            Tab(3),
+            Tab(4) with { Url = PrUrl(4) },
+            Tab(4, selected: false) with { Url = PrUrl(4) });
+
+        var plan = PrPrune.Plan(
+            Unreadable(browser.Windows),
+            Resolve(new() { [1] = PrStatus.Merged, [2] = PrStatus.Merged, [3] = PrStatus.Merged, [4] = PrStatus.Open }));
+
+        Assert.Empty(plan.Closes);
+        Assert.Equal([(1, ReportKind.Protected), (2, ReportKind.Protected), (3, ReportKind.Protected), (4, ReportKind.Protected)], Reports(plan).Order());
+    }
+
+    [Theory]
+    [InlineData("https://github.com/Acme-Corp/data-platform/pull/12", 12)]
+    [InlineData("https://github.com/acme-corp/data-platform/pull/12/files?w=1#diff", 12)]
+    [InlineData("https://github.com/acme-corp/data-platform/issues/12", null)]
+    [InlineData("https://github.com/acme-corp/data-platform/pull/new", null)]
+    [InlineData("https://gist.github.com/acme-corp/data-platform/pull/12", null)]
+    public void Ref_from_url_reads_only_pr_pages(string address, int? number) =>
+        Assert.Equal(number is { } n ? Ref(n) : null, PrPrune.RefFromUrl(new Uri(address)));
+
     [Fact]
     public void Non_pr_tabs_are_ignored()
     {

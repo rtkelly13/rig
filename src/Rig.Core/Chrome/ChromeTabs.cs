@@ -234,6 +234,15 @@ public sealed record ChromeTab(
 
     /// <summary>The page address where the platform exposes one (macOS scripting); UI Automation does not.</summary>
     public Uri? Url { get; init; }
+
+    /// <summary>
+    /// No native evidence could be tied to the tab, so <see cref="Pinned"/> and <see cref="Audible"/> are placeholders
+    /// set true to protect it; its title, URL and selection still come from scripting.
+    /// </summary>
+    public bool EvidenceUnknown => Alerts.Contains(MacOS.MacRead.MetadataUnavailable);
+
+    /// <summary>Why native evidence is missing, when the read knew; null otherwise.</summary>
+    public string? EvidenceProblem => EvidenceUnknown ? Alerts.FirstOrDefault(alert => alert != MacOS.MacRead.MetadataUnavailable) : null;
 }
 
 /// <summary>A point in virtual-screen pixels; monitors left of or above the primary go negative.</summary>

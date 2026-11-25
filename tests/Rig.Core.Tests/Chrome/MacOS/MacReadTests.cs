@@ -229,6 +229,25 @@ public sealed class MacReadTests
         Assert.False(MacRead.PinnedLabelsConsistent([plain, pinned]));
     }
 
+    [Theory]
+    [InlineData("https://x.com/someone/status/1", "x.com/someone/status/1")]
+    [InlineData("https://example.com/", "example.com")]
+    [InlineData("http://localhost:3000/a", "localhost:3000/a")]
+    public void An_untitled_tab_pairs_on_the_address_its_strip_shows(string address, string label)
+    {
+        var raw = Raw() with { Tabs = [new JxaTab(701, "", address)] };
+        var node = AxWindow() with { Children = [Strip(Slot(label + " - Inactive tab - 159 MB freed up", selected: true))] };
+        Assert.NotNull(MacRead.AlignedSlots(node, raw));
+    }
+
+    [Fact]
+    public void An_untitled_tab_does_not_pair_with_another_address()
+    {
+        var raw = Raw() with { Tabs = [new JxaTab(701, "", "https://x.com/someone/status/1")] };
+        var node = AxWindow() with { Children = [Strip(Slot("x.com/someone/status/2", selected: true))] };
+        Assert.Null(MacRead.AlignedSlots(node, raw));
+    }
+
     [Fact]
     public void Inconsistent_pinned_labels_drop_the_strip()
     {

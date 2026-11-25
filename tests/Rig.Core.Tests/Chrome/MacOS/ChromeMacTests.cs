@@ -330,6 +330,48 @@ public sealed class ChromeMacTests
         Assert.True(tab.Audible);
     }
 
+    private const string PrTitle = "Fix paging · Pull Request #12 · acme-corp/data-platform";
+    private const string PrAddress = "https://github.com/acme-corp/data-platform/pull/12/files";
+
+    // Accessibility denied: the notes tab is active and a PR page sits beside it, both with placeholder flags.
+    private static JxaSnapshot WithPrBeside() =>
+        Snapshot(RawWindow() with { Tabs = [new JxaTab(TabId, Title, Address), new JxaTab(702, PrTitle, PrAddress)] });
+
+    private static ChromeTab PrTab(bool selected = false) =>
+        new(new RuntimeId([702]), WindowId, 1, PrTitle, PrTitle, selected, true, true, true)
+        {
+            Url = new Uri(PrAddress),
+            Alerts = [MacRead.MetadataUnavailable],
+        };
+
+    [Fact]
+    public void Close_tab_closes_a_background_pr_page_without_accessibility_evidence()
+    {
+        _api.IsTrusted = false;
+        var jxa = new ScriptedJxa { FallbackSnapshot = Snapshot(RawWindow()) }
+            .Snapshot(WithPrBeside())
+            .Snapshot(WithPrBeside())
+            .Reply("invoked");
+
+        var outcome = Over(jxa).CloseTab(PrTab());
+
+        Assert.True(outcome.Closed, outcome.Detail);
+        Assert.Contains(PrAddress, jxa.Scripts.Single(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Close_tab_refuses_a_page_without_accessibility_evidence_that_is_not_a_pr()
+    {
+        _api.IsTrusted = false;
+        var jxa = new ScriptedJxa { FallbackSnapshot = Snapshot(RawWindow()) };
+
+        var outcome = Over(jxa).CloseTab(Tab());
+
+        Assert.False(outcome.Closed);
+        Assert.Equal($"{MacRead.MetadataUnavailable}; refusing close", outcome.Detail);
+        Assert.Empty(jxa.Scripts);
+    }
+
     [Fact]
     public void Close_tab_refuses_a_changed_title()
     {

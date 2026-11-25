@@ -149,6 +149,35 @@ public static partial class SiteRules
         return Calls.Any(pattern => pattern.IsMatch(text));
     }
 
+    /// <summary>
+    /// The address is a meeting itself, not a call site's lobby, home or chat page: a Meet code, a Zoom web client or
+    /// join link, a Teams meeting join, a Slack huddle, a Webex meeting, or a named Jitsi or Whereby room. For a tab whose
+    /// audio and alerts are unknown, this is the call evidence; a call site's title alone is not.
+    /// </summary>
+    public static bool IsCallRoom(Uri url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (!url.IsAbsoluteUri)
+        {
+            return false;
+        }
+
+        var host = url.Host.ToLowerInvariant();
+        var path = url.AbsolutePath.ToLowerInvariant();
+        var first = path.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        return host switch
+        {
+            "meet.google.com" => MeetCode().IsMatch(first),
+            "meet.jit.si" or "whereby.com" => first.Length > 0,
+            "app.slack.com" => path.Contains("/huddle/", StringComparison.Ordinal),
+            "teams.microsoft.com" or "teams.live.com" => path.Contains("meetup-join", StringComparison.Ordinal)
+                || url.Query.Contains("meetingjoin", StringComparison.OrdinalIgnoreCase),
+            _ when OnHost(host, "zoom.us") => first is "wc" or "j" or "s",
+            _ when OnHost(host, "webex.com") => first is "meet" or "wbxmjs" or "webappng",
+            _ => false,
+        };
+    }
+
     /// <summary>The title is a call or names nothing specific, so it is never de-duplicated.</summary>
     public static bool NeverDedupe(string title) => IsCall(title) || Never.Any(pattern => pattern.IsMatch(title));
 
@@ -181,6 +210,12 @@ public static partial class SiteRules
     private static SiteRule Rule(string site, string pattern, string key, bool auto = true, bool exactOnly = false) =>
         new(site, new Regex(pattern, RegexOptions.CultureInvariant, Timeout), key, auto, exactOnly);
 
+    private static bool OnHost(string host, string domain) =>
+        host == domain || host.EndsWith("." + domain, StringComparison.Ordinal);
+
     [GeneratedRegex(@"\{(\w+)\}")]
     private static partial Regex Placeholder();
+
+    [GeneratedRegex("^[a-z]{3}-[a-z]{4}-[a-z]{3}$")]
+    private static partial Regex MeetCode();
 }

@@ -230,11 +230,12 @@ public static partial class PrPrune
             closes.AddRange(byPr[pr].Select(item => new PlannedClose(item, by.Kind, by.Reason, keeperTab)));
         }
 
-        // Pinned and audible tabs are never closed, whatever the rule said.
+        // Pinned and audible tabs are never closed, whatever the rule said; a tab whose flags are only placeholders
+        // still closes when its PR is finished and its address proves it shows that PR.
         foreach (var close in closes)
         {
             var tab = close.Item.Tab;
-            if (tab.Pinned || tab.Audible)
+            if ((tab.Pinned || tab.Audible) && !FinishedUnknown(close))
             {
                 var guard = tab.Pinned ? "pinned" : "audible";
                 reports.Add(new PrReport(close.Item, ReportKind.Protected, $"{guard}; would close as: {close.Reason}"));
@@ -245,6 +246,37 @@ public static partial class PrPrune
                 allCloses.Add(close);
             }
         }
+    }
+
+    /// <summary>
+    /// <c>owner/repo#n</c> from a GitHub PR page address (any subpage), or null for any other address.
+    /// </summary>
+    public static PrRef? RefFromUrl(Uri url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (!url.IsAbsoluteUri || !string.Equals(url.Host, "github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var parts = url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 4
+            && parts[2] == "pull"
+            && int.TryParse(parts[3], NumberStyles.None, CultureInfo.InvariantCulture, out var number)
+            ? new PrRef(parts[0], parts[1], number)
+            : null;
+    }
+
+    // Placeholder flags (no native evidence) give way for a merged or closed PR whose page the tab's address shows, as
+    // long as it is not the tab the user is looking at in its window. Duplicates and chain closes stay protected.
+    private static bool FinishedUnknown(PlannedClose close)
+    {
+        var tab = close.Item.Tab;
+        return tab.EvidenceUnknown
+            && !tab.Selected
+            && close.Kind is CloseKind.Merged or CloseKind.Closed
+            && tab.Url is { } url
+            && RefFromUrl(url) == close.Item.Pr;
     }
 
     [GeneratedRegex(@"· Pull Request #(?<number>\d+) · (?<owner>[\w.-]+)/(?<repo>[\w.-]+)(?=\s|$)")]
