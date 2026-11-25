@@ -81,13 +81,22 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
+      # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
+      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # Paket comes from the cache too, which is why the tool restore runs after it.
+      - name: Restore NuGet cache
+        id: nuget-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.nuget/packages
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       # This job runs for docs-only PRs too: docs-audit and command-ownership both
       # consume these artifacts. Restore only the two projects they need in that case
       # instead of the whole solution, whose test projects never get built here.
@@ -106,10 +115,10 @@ jobs:
       # builds the full solution for its tests in parallel. Analyzers stay off here: this
       # job only has to produce runnable output, and `analyze` runs them over the whole
       # solution. Cutting them takes this build from ~1m50 to ~1m.
+      # No `-o`: it sends every project in the graph to one folder, so the Paket sidecar target copied the whole
+      # CLI (Playwright, every SkiaSharp native) into paket/ beside it and the artifact doubled to ~450 MB zipped.
       - name: Build rig CLI
-        run: >-
-          dotnet build src/Rig.Cli -c Release -o "${{ runner.temp }}/rig-cli" --no-restore
-          -p:RunAnalyzers=false
+        run: dotnet build src/Rig.Cli -c Release --no-restore -p:RunAnalyzers=false
       - name: Build ownership tool
         run: >-
           dotnet build tools/command-ownership -c Release -o "${{ runner.temp }}/command-ownership"
@@ -118,7 +127,11 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: rig-cli
-          path: ${{ runner.temp }}/rig-cli
+          # Every consumer runs on linux-x64: the Windows and macOS natives (~400 MB with SkiaSharp's PDBs) stay behind.
+          path: |
+            src/Rig.Cli/bin/Release/net11.0/
+            !src/Rig.Cli/bin/Release/net11.0/**/runtimes/win-*/**
+            !src/Rig.Cli/bin/Release/net11.0/**/runtimes/osx*/**
           retention-days: 1
           # The Playwright driver sits in the hidden .playwright folder; image-cross-check installs Chromium from it.
           include-hidden-files: true
@@ -234,12 +247,19 @@ jobs:
           uv run ty check src
       - name: Security scan
         run: uv run bandit -r src/ -ll
+      # Keyed on the playwright package version, which pins Chromium, not on the whole lock.
+      - name: Read the pinned Playwright version
+        id: playwright-version
+        run: |
+          version="$(sed -n '/^name = "playwright"/{n;s/^version = "\([^"]*\)".*/\1/p;}' uv.lock)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-linux-${{ hashFiles('tools/image-drift/uv.lock') }}
+          key: playwright-linux-${{ steps.playwright-version.outputs.version }}
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: uv run playwright install --with-deps chromium
@@ -276,12 +296,19 @@ jobs:
           cache-dependency-glob: tools/image-drift/uv.lock
       - name: Install dependencies
         run: uv sync --locked --dev
+      - name: Read the pinned Playwright version
+        id: playwright-version
+        shell: bash
+        run: |
+          version="$(sed -n '/^name = "playwright"/{n;s/^version = "\([^"]*\)".*/\1/p;}' uv.lock)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache-win
         with:
           path: ~\AppData\Local\ms-playwright
-          key: playwright-windows-${{ hashFiles('tools/image-drift/uv.lock') }}
+          key: playwright-windows-${{ steps.playwright-version.outputs.version }}
       - name: Install Playwright Chromium
         if: steps.playwright-cache-win.outputs.cache-hit != 'true'
         run: uv run playwright install chromium
@@ -339,13 +366,22 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
+      # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
+      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # Paket comes from the cache too, which is why the tool restore runs after it.
+      - name: Restore NuGet cache
+        id: nuget-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.nuget/packages
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       # Analyzers are two thirds of compile time and `analyze` runs them once over the whole
@@ -356,15 +392,22 @@ jobs:
           for project in $PROJECTS; do
             dotnet build "$project" --no-restore -c Release -p:RunAnalyzers=false
           done
-      # Cache Playwright's browser binaries to avoid the download on every run; the version pin lives in
-      # paket.lock, so the key follows it.
+      # Cache Playwright's browser binaries to avoid the download on every run. The package version pins the
+      # Chromium revision, so the key is that version alone: an unrelated paket.lock bump keeps the cache.
+      - name: Read the pinned Playwright version
+        if: matrix.shard == 'browser'
+        id: playwright-version
+        run: |
+          version="$(sed -n 's/^ *Microsoft\.Playwright (\([^)]*\)).*/\1/p' paket.lock | head -n 1)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Cache Playwright Chromium
         if: matrix.shard == 'browser'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-dotnet-linux-${{ hashFiles('paket.lock') }}
+          key: playwright-dotnet-linux-${{ steps.playwright-version.outputs.version }}
       - name: Install Playwright Chromium
         if: matrix.shard == 'browser' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net11.0/playwright.ps1 install --with-deps chromium
@@ -414,15 +457,36 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
+      # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
+      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # Paket comes from the cache too, which is why the tool restore runs after it.
+      - name: Restore NuGet cache
+        id: nuget-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.nuget/packages
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
+      # The one writer of the NuGet cache: this job restores the whole solution, and only main's entry is
+      # readable by every PR. Saved before the build, so a failing build still leaves the packages behind.
+      - name: Save NuGet cache
+        if: github.event_name == 'push' && steps.nuget-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.nuget/packages
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
+          key: ${{ steps.nuget-cache.outputs.cache-primary-key }}
       - name: Build with analyzers
         run: dotnet build rig.slnx --no-restore -c Release
 
@@ -484,13 +548,22 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
+      # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
+      # the linux-x64 Playwright driver, so the other platforms' drivers (~460 MB) stay out of the cache.
+      # Paket comes from the cache too, which is why the tool restore runs after it.
+      - name: Restore NuGet cache
+        id: nuget-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.nuget/packages
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/darwin-*
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/linux-arm64
+            !~/.nuget/packages/microsoft.playwright/*/.playwright/node/win32_x64
+          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
-      - name: Cache NuGet packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '**/*.csproj', 'global.json') }}
       - name: Restore
         run: dotnet restore rig.slnx
       - name: Format changed files
@@ -552,12 +625,19 @@ jobs:
         run: dotnet tool restore
       - name: Build
         run: dotnet build rig.slnx -c Release
+      - name: Read the pinned Playwright version
+        id: playwright-version
+        shell: bash
+        run: |
+          version="$(sed -n 's/^ *Microsoft\.Playwright (\([^)]*\)).*/\1/p' paket.lock | head -n 1)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~\AppData\Local\ms-playwright
-          key: playwright-dotnet-windows-${{ hashFiles('paket.lock') }}
+          key: playwright-dotnet-windows-${{ steps.playwright-version.outputs.version }}
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pwsh tests/Rig.Web.BrowserTests/bin/Release/net11.0/playwright.ps1 install chromium
@@ -638,12 +718,18 @@ jobs:
         with:
           name: rig-cli
           path: ${{ runner.temp }}/rig-cli
+      - name: Read the pinned Playwright version
+        id: playwright-version
+        run: |
+          version="$(sed -n 's/^ *Microsoft\.Playwright (\([^)]*\)).*/\1/p' paket.lock | head -n 1)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Cache Playwright Chromium
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-dotnet-linux-${{ hashFiles('paket.lock') }}
+          key: playwright-dotnet-linux-${{ steps.playwright-version.outputs.version }}
       # upload-artifact drops file modes, and the install below runs this node driver, so restore its bit first.
       - name: Restore the Playwright driver's execute bit
         run: chmod +x "${{ runner.temp }}/rig-cli/.playwright/node/linux-x64/node"
