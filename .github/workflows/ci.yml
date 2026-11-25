@@ -470,10 +470,10 @@ jobs:
       # readable by every PR. Saved before the build, so a failing build still leaves the packages behind.
       # Not a `!` path exclusion: the cache tars the whole folder, so exclusions under it are ignored.
       - name: Drop the other platforms' Playwright drivers
-        if: steps.nuget-cache.outputs.cache-hit != 'true' # EXPERIMENT: revert before merge
+        if: github.event_name == 'push' && steps.nuget-cache.outputs.cache-hit != 'true'
         run: rm -rf ~/.nuget/packages/microsoft.playwright/*/.playwright/node/{darwin-*,linux-arm64,win32_x64}
       - name: Save NuGet cache
-        if: steps.nuget-cache.outputs.cache-hit != 'true' # EXPERIMENT: revert before merge
+        if: github.event_name == 'push' && steps.nuget-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
