@@ -41,8 +41,11 @@ public interface IClosePlan
 /// <summary>What closing needs from a driver: the UI Automation adapter in production, a fake in tests.</summary>
 public interface IChromeTabActions
 {
-    /// <summary>Closes <paramref name="tab"/>, found again by its runtime id.</summary>
-    CloseOutcome CloseTab(ChromeTab tab);
+    /// <summary>
+    /// Closes <paramref name="tabs"/>, all from one window, each found again by its runtime id. One outcome per tab, in
+    /// the order given; a tab listed twice gets two.
+    /// </summary>
+    IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs);
 
     /// <summary>Re-selects each window's selected tab, or its fallback when that tab closed.</summary>
     IReadOnlyDictionary<long, ChromeTab?> RestoreSelection(
@@ -95,7 +98,8 @@ public static class ClosePlans
     /// Closes every planned tab, one window at a time, and puts that window's selection back before moving to the next.
     /// </summary>
     /// <remarks>
-    /// Closing selects each tab first, so working window by window means each window changes once instead of
+    /// A window's tabs go to the driver together, so a driver can close them in one go (macOS does). Where closing
+    /// selects each tab first (Windows), working window by window also means each window changes once instead of
     /// flickering as closes hop between windows. Windows go in <paramref name="order"/> (handles), then the others in
     /// <paramref name="windows"/> order; <paramref name="afterWindow"/> runs once per window after its selection is
     /// restored. Each close re-finds its tab by runtime id, so the index shift every close causes cannot redirect a
@@ -126,7 +130,7 @@ public static class ClosePlans
                 using var activity = Source.StartActivity("chrome_tabs.close_window");
                 activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
                 activity?.SetTag("close.planned", closes.Count);
-                results.AddRange(closes.Select(close => CloseOne(actions, close)));
+                results.AddRange(CloseAll(actions, closes, activity));
                 using (Source.StartActivity("chrome_tabs.restore_selection"))
                 {
                     actions.RestoreSelection([window], Activations(closes));
@@ -142,15 +146,25 @@ public static class ClosePlans
         return applied;
     }
 
-    // One span per tab, so a slow close shows in `traces show` as its own bar rather than inside the window's total.
-    private static AppliedClose CloseOne(IChromeTabActions actions, IPlannedTabClose close)
+    // Each tab's outcome is an event on its window's span, so `traces show` lists what happened to every tab.
+    private static IEnumerable<AppliedClose> CloseAll(IChromeTabActions actions, List<IPlannedTabClose> closes, Activity? activity)
     {
-        using var activity = Source.StartActivity("chrome_tabs.close_tab");
-        activity?.SetTag("tab.label", close.Item.Label);
-        var outcome = actions.CloseTab(close.Item.Tab);
-        activity?.SetTag("close.closed", outcome.Closed);
-        activity?.SetTag("close.detail", outcome.Detail);
-        return new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed);
+        var outcomes = actions.CloseTabs([.. closes.Select(close => close.Item.Tab)]);
+        if (outcomes.Count != closes.Count)
+        {
+            throw new InvalidOperationException($"The driver answered {outcomes.Count} of {closes.Count} closes.");
+        }
+
+        return closes.Zip(outcomes, (close, outcome) =>
+        {
+            activity?.AddEvent(new ActivityEvent("chrome_tabs.close_tab", tags: new ActivityTagsCollection
+            {
+                ["tab.label"] = close.Item.Label,
+                ["close.closed"] = outcome.Closed,
+                ["close.detail"] = outcome.Detail,
+            }));
+            return new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed);
+        });
     }
 
     /// <summary>

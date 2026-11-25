@@ -17,7 +17,9 @@ internal sealed class FakeChromeTabActions : IChromeTabActions
     /// <summary>Each restore's windows and fallbacks.</summary>
     public List<(List<long> Windows, Dictionary<long, ChromeTab>? Fallbacks)> Restored { get; } = [];
 
-    public CloseOutcome CloseTab(ChromeTab tab)
+    public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs) => [.. tabs.Select(CloseTab)];
+
+    private CloseOutcome CloseTab(ChromeTab tab)
     {
         if (FailWith is { } detail)
         {

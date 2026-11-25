@@ -31,6 +31,9 @@ public sealed class ChromeExtension(IExtensionBridge bridge, Func<string, IReadO
         Read().Where(read => read.Snapshot.FocusedWindowId is not null).Select(read => ExtensionSnapshot.Handle(read.Space, read.Snapshot.FocusedWindowId!.Value)).FirstOrDefault();
 
     /// <inheritdoc/>
+    public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs) => [.. tabs.Select(CloseTab)];
+
+    /// <summary>Closes <paramref name="tab"/>, found again by its runtime id.</summary>
     public CloseOutcome CloseTab(ChromeTab tab)
     {
         ArgumentNullException.ThrowIfNull(tab);

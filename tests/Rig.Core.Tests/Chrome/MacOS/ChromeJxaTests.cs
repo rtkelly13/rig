@@ -335,23 +335,50 @@ public sealed class ChromeJxaTests
     }
 
     [Fact]
-    public void A_close_action_carries_the_expected_page_as_ascii_json()
+    public void A_close_carries_each_expected_page_as_ascii_json()
     {
-        var action = JxaScripts.CloseAction(Title, "https://example.com/雪?x=\"c\"\u2028");
-        Assert.StartsWith(
-            "const expected = {\"title\":\"Notes, \\u0022\\u96EA\\u0022\\nline\",\"url\":\"https://example.com/\\u96EA?x=\\u0022c\\u0022\\u2028\"};\n\n",
-            action,
+        var script = JxaScripts.Close([Tab(42, 701) with { Title = Title, Url = new Uri("https://example.com/雪?x=\"c\"") }]);
+        Assert.Contains(
+            "const targets = [{\"window\":42,\"tab\":701,\"title\":\"Notes, \\u0022\\u96EA\\u0022\\nline\",\"url\":\"https://example.com/\\u96EA?x=\\u0022c\\u0022\"}];",
+            script,
             StringComparison.Ordinal);
-        Assert.Contains("target.close();", action, StringComparison.Ordinal);
-        Assert.True(action.All(char.IsAscii));
+        Assert.Contains("target.close();", script, StringComparison.Ordinal);
+        Assert.True(script.All(char.IsAscii));
     }
 
     [Fact]
-    public void A_close_action_with_placeholder_tokens_in_the_page_stays_data()
+    public void A_close_with_placeholder_tokens_in_the_page_stays_data()
     {
-        var script = JxaScripts.TabAction(Tab(42, 701), JxaScripts.CloseAction("__TAB_ID__ __ACTION__", "about:blank"));
-        Assert.Contains("{\"title\":\"__TAB_ID__ __ACTION__\",\"url\":\"about:blank\"}", script, StringComparison.Ordinal);
-        Assert.Contains("tabID = 701;", script, StringComparison.Ordinal);
+        var script = JxaScripts.Close([Tab(42, 701) with { Title = "__TARGETS__", Url = new Uri("about:blank") }]);
+        Assert.Contains("\"title\":\"__TARGETS__\",\"url\":\"about:blank\"}]", script, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(script, "__TARGETS__"));
+    }
+
+    [Fact]
+    public void A_close_refuses_a_tab_without_an_address_or_a_usable_id()
+    {
+        Assert.Throws<ChromeMacException>(() => JxaScripts.Close([Tab(42, 701) with { Url = null }]));
+        Assert.Throws<ChromeMacException>(() => JxaScripts.Close([Tab(42, -1)]));
+    }
+
+    [Fact]
+    public void Close_reads_one_status_per_tab()
+    {
+        var (jxa, proc) = Bridge("{\"statuses\":[\"invoked\",\"stale\"]}");
+        Assert.Equal(["invoked", "stale"], jxa.Close("script"));
+        Assert.Equal("script", proc.Requests[0].StdinText);
+    }
+
+    [Fact]
+    public void Each_run_is_a_span_named_for_its_script()
+    {
+        using var spans = new RecordedSpans("Rig.Chrome");
+        var (jxa, _) = Bridge("{\"status\":\"invoked\"}");
+
+        _ = jxa.Act("script");
+
+        var span = Assert.Single(spans.Stopped, item => item.OperationName == "chrome_mac.osascript");
+        Assert.Equal("act", span.GetTagItem("jxa.script"));
     }
 
     [Fact]

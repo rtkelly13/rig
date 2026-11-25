@@ -169,7 +169,7 @@ public sealed class ChromeMacTests
     {
         var tab = Tab() with { Url = null };
 
-        var outcome = Over(new ScriptedJxa()).CloseTab(tab);
+        var outcome = Over(new ScriptedJxa()).CloseTabs([tab]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("URL unavailable; refusing close", outcome.Detail);
@@ -183,7 +183,7 @@ public sealed class ChromeMacTests
         var jxa = new ScriptedJxa()
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()));
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("tab is pinned or audible; refusing close", outcome.Detail);
@@ -196,11 +196,11 @@ public sealed class ChromeMacTests
         var jxa = new ScriptedJxa()
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()))
-            .Reply("invoked")
+            .Closes("invoked")
             .Snapshot(Snapshot());
         var mac = Over(jxa);
 
-        var outcome = mac.CloseTab(Tab());
+        var outcome = mac.CloseTabs([Tab()]).Single();
 
         Assert.True(outcome.Closed);
         Assert.Equal("closed", outcome.Detail);
@@ -214,9 +214,9 @@ public sealed class ChromeMacTests
         var jxa = new ScriptedJxa()
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()))
-            .Reply("stale");
+            .Closes("stale");
 
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("close refused: stale", outcome.Detail);
@@ -228,12 +228,12 @@ public sealed class ChromeMacTests
         var jxa = new ScriptedJxa()
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()))
-            .Reply("invoked")
+            .Closes("invoked")
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()))
             .Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("invoked close but the tab is still present; a prompt may be open", outcome.Detail);
@@ -351,9 +351,9 @@ public sealed class ChromeMacTests
         var jxa = new ScriptedJxa { FallbackSnapshot = Snapshot(RawWindow()) }
             .Snapshot(WithPrBeside())
             .Snapshot(WithPrBeside())
-            .Reply("invoked");
+            .Closes("invoked");
 
-        var outcome = Over(jxa).CloseTab(PrTab());
+        var outcome = Over(jxa).CloseTabs([PrTab()]).Single();
 
         Assert.True(outcome.Closed, outcome.Detail);
         Assert.Contains(PrAddress, jxa.Scripts.Single(), StringComparison.Ordinal);
@@ -365,7 +365,7 @@ public sealed class ChromeMacTests
         _api.IsTrusted = false;
         var jxa = new ScriptedJxa { FallbackSnapshot = WithPrBeside() };
 
-        var outcome = Over(jxa).CloseTab(PrTab() with { Pinned = false, Audible = false, Alerts = [] });
+        var outcome = Over(jxa).CloseTabs([PrTab() with { Pinned = false, Audible = false, Alerts = [] }]).Single();
 
         Assert.Equal((false, $"{MacRead.MetadataUnavailable}; refusing close"), (outcome.Closed, outcome.Detail));
         Assert.Empty(jxa.Scripts);
@@ -377,7 +377,7 @@ public sealed class ChromeMacTests
         _api.IsTrusted = false;
         var jxa = new ScriptedJxa { FallbackSnapshot = Snapshot(RawWindow()) };
 
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal($"{MacRead.MetadataUnavailable}; refusing close", outcome.Detail);
@@ -389,7 +389,7 @@ public sealed class ChromeMacTests
     {
         var jxa = new ScriptedJxa().Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab() with { Title = "Old title" });
+        var outcome = Over(jxa).CloseTabs([Tab() with { Title = "Old title" }]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("title changed to 'Notes'", outcome.Detail);
@@ -401,7 +401,7 @@ public sealed class ChromeMacTests
     {
         var jxa = new ScriptedJxa().Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab() with { Url = new Uri("https://example.com/other") });
+        var outcome = Over(jxa).CloseTabs([Tab() with { Url = new Uri("https://example.com/other") }]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("URL changed; refusing close", outcome.Detail);
@@ -415,7 +415,7 @@ public sealed class ChromeMacTests
         _tab.Attributes.Remove("AXSubrole");
         var jxa = new ScriptedJxa().Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("Accessibility metadata unavailable; refusing close", outcome.Detail);
@@ -427,7 +427,7 @@ public sealed class ChromeMacTests
     {
         var jxa = new ScriptedJxa().Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab() with { RuntimeId = new RuntimeId([999]) });
+        var outcome = Over(jxa).CloseTabs([Tab() with { RuntimeId = new RuntimeId([999]) }]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("tab no longer present", outcome.Detail);
@@ -438,12 +438,70 @@ public sealed class ChromeMacTests
     public void Close_tab_reports_a_failed_script()
     {
         var jxa = new ScriptedJxa { FailAct = true };
-        _ = jxa.Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
+        _ = jxa.Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow()));
 
-        var outcome = Over(jxa).CloseTab(Tab());
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
 
         Assert.False(outcome.Closed);
         Assert.Equal("close failed: denied", outcome.Detail);
+    }
+
+    [Fact]
+    public void Close_tabs_counts_a_tab_gone_after_a_failed_script_as_closed()
+    {
+        var jxa = new ScriptedJxa { FailAct = true };
+        _ = jxa.Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot(RawWindow())).Snapshot(Snapshot());
+
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
+
+        Assert.True(outcome.Closed);
+        Assert.Equal("closed", outcome.Detail);
+    }
+
+    [Fact]
+    public void Close_tabs_closes_a_window_in_one_read_one_script_and_one_poll()
+    {
+        var second = new JxaTab(702, "Other", "https://example.com/other");
+        var window = RawWindow() with { Tabs = [new JxaTab(TabId, Title, Address), second] };
+        AddAxTab("Other");
+        var jxa = new ScriptedJxa()
+            .Snapshot(Snapshot(window))
+            .Snapshot(Snapshot(window))
+            .Closes("invoked", "stale")
+            .Snapshot(Snapshot(RawWindow() with { Tabs = [second] }));
+        var other = Tab() with { RuntimeId = new RuntimeId([702]), Index = 1, Name = "Other", Title = "Other", Url = new Uri("https://example.com/other"), Selected = false };
+
+        var outcomes = Over(jxa).CloseTabs([Tab(), other]);
+
+        Assert.Equal([(true, "closed"), (false, "close refused: stale")], outcomes.Select(outcome => (outcome.Closed, outcome.Detail)));
+        Assert.Equal(3, jxa.SnapshotCount);
+        var script = Assert.Single(jxa.Scripts);
+        Assert.Contains("\"tab\":701", script, StringComparison.Ordinal);
+        Assert.Contains("\"tab\":702", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Close_tabs_sends_only_the_tabs_that_pass_and_answers_in_order()
+    {
+        var jxa = new ScriptedJxa()
+            .Snapshot(Snapshot(RawWindow()))
+            .Snapshot(Snapshot(RawWindow()))
+            .Closes("invoked")
+            .Snapshot(Snapshot());
+
+        var outcomes = Over(jxa).CloseTabs([Tab() with { RuntimeId = new RuntimeId([999]) }, Tab()]);
+
+        Assert.Equal([(false, "tab no longer present"), (true, "closed")], outcomes.Select(outcome => (outcome.Closed, outcome.Detail)));
+        Assert.DoesNotContain("999", Assert.Single(jxa.Scripts), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Close_tabs_of_nothing_touches_nothing()
+    {
+        var jxa = new ScriptedJxa();
+
+        Assert.Empty(Over(jxa).CloseTabs([]));
+        Assert.Equal(0, jxa.SnapshotCount);
     }
 
     [Fact]
@@ -864,6 +922,25 @@ public sealed class ChromeMacTests
         Assert.Empty(outcome.Tabs);
     }
 
+    // A second, unselected tab in the strip after the first, as Chrome's accessibility tree shows it.
+    private void AddAxTab(string title)
+    {
+        var close = new FakeAxApi.Element(15, new()
+        {
+            ["AXRole"] = "AXButton",
+            ["AXTitle"] = "Close",
+        });
+        var tab = new FakeAxApi.Element(14, new()
+        {
+            ["AXRole"] = "AXRadioButton",
+            ["AXSubrole"] = "AXTabButton",
+            ["AXTitle"] = title,
+            ["AXValue"] = false,
+            ["AXChildren"] = new[] { close },
+        });
+        _strip.Attributes["AXChildren"] = new[] { _tab, tab };
+    }
+
     private static ChromeTab Tab() =>
         new(new RuntimeId([(int)TabId]), WindowId, 0, $"{Title} - Memory usage - 128 MB", Title, true, false, true, false)
         {
@@ -888,6 +965,7 @@ public sealed class ChromeMacTests
     {
         private readonly Queue<JxaSnapshot> _snapshots = new();
         private readonly Queue<string> _acts = new();
+        private readonly Queue<string[]> _closes = new();
 
         public List<string> Scripts { get; } = [];
 
@@ -909,6 +987,23 @@ public sealed class ChromeMacTests
         {
             _acts.Enqueue(status);
             return this;
+        }
+
+        public ScriptedJxa Closes(params string[] statuses)
+        {
+            _closes.Enqueue(statuses);
+            return this;
+        }
+
+        public IReadOnlyList<string> Close(string script)
+        {
+            if (FailAct)
+            {
+                throw new ChromeMacException("denied");
+            }
+
+            Scripts.Add(script);
+            return _closes.Count > 0 ? _closes.Dequeue() : throw new InvalidOperationException("No scripted close left");
         }
 
         public JxaSnapshot Snapshot()

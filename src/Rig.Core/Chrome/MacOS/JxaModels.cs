@@ -156,6 +156,10 @@ public static class JxaDecode
     /// <summary>The <c>status</c> an action script replied with.</summary>
     public static string Status(JsonElement reply) => Decode(reply, "action result", static root => Str(Field(root, "status")));
 
+    /// <summary>The <c>statuses</c> a batch script replied with, one per tab in the order it was given them.</summary>
+    public static IReadOnlyList<string> Statuses(JsonElement reply) =>
+        Decode<IReadOnlyList<string>>(reply, "close result", static root => [.. Array(Field(root, "statuses")).Select(Str)]);
+
     private static T Decode<T>(JsonElement reply, string what, Func<JsonElement, T> read)
     {
         try

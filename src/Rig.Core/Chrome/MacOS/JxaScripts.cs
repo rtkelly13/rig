@@ -74,11 +74,28 @@ public static class JxaScripts
         }
         """ + "\n";
 
-    private const string CloseActionBody = "\n" + """
-            if (target.title() !== expected.title || target.url() !== expected.url)
-                return JSON.stringify({status: 'stale'});
-            target.close();
-            return JSON.stringify({status: 'invoked'});
+    private const string CloseTemplate = "\n" + """
+        ObjC.import('AppKit');
+        function run() {
+            const targets = __TARGETS__;
+            const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.google.Chrome');
+            if (Number(apps.count) !== 1) return JSON.stringify({statuses: targets.map(() => 'missing')});
+            const chrome = Application('com.google.Chrome');
+            const close = expected => {
+                try {
+                    if (chrome.windows.id().filter(id => Number(id) === expected.window).length !== 1) return 'missing';
+                    const window = chrome.windows.byId(expected.window);
+                    if (window.tabs.id().filter(id => Number(id) === expected.tab).length !== 1) return 'missing';
+                    const target = window.tabs.byId(expected.tab);
+                    if (target.title() !== expected.title || target.url() !== expected.url) return 'stale';
+                    target.close();
+                    return 'invoked';
+                } catch (error) {
+                    return 'failed';
+                }
+            };
+            return JSON.stringify({statuses: targets.map(close)});
+        }
         """ + "\n";
 
     private const string ActivateTemplate = "\n" + """
@@ -131,13 +148,23 @@ public static class JxaScripts
     }
 
     /// <summary>
-    /// The action body that closes the target only while it still shows <paramref name="title"/> and
-    /// <paramref name="address"/> (the exact text the snapshot read), passed as one ASCII-only JSON object; replies <c>stale</c> otherwise.
+    /// The script that closes each of <paramref name="tabs"/> in turn, found again by its window and tab ids, only while it
+    /// still shows the title and URL the snapshot read. It replies one status per tab, in order: <c>invoked</c>,
+    /// <c>missing</c>, <c>stale</c> or <c>failed</c>; one tab's failure never stops the rest. The tabs travel as one
+    /// ASCII-only JSON array, so page text is only ever string data.
     /// </summary>
-    public static string CloseAction(string title, string address)
+    public static string Close(IReadOnlyList<ChromeTab> tabs)
     {
-        var expected = JsonOutput.Line(new JsonObject { ["title"] = title, ["url"] = address });
-        return $"const expected = {expected};\n{CloseActionBody}";
+        ArgumentNullException.ThrowIfNull(tabs);
+        var targets = new JsonArray([.. tabs.Select(Target)]);
+        return CloseTemplate.Replace("__TARGETS__", JsonOutput.Line(targets), StringComparison.Ordinal);
+    }
+
+    private static JsonNode Target(ChromeTab tab)
+    {
+        var ids = ActionIds.Of(tab);
+        var address = tab.Url?.OriginalString ?? throw new ChromeMacException("URL unavailable");
+        return new JsonObject { ["window"] = ids.Window, ["tab"] = ids.Tab, ["title"] = tab.Title, ["url"] = address };
     }
 
     /// <summary>The script that unminimises window <paramref name="handle"/>, brings it to the front and activates Chrome.</summary>
