@@ -77,7 +77,8 @@ public static class Geometry
     public static UnitRect NormalizedPlacementRect(PlacementSpec placement)
     {
         ArgumentNullException.ThrowIfNull(placement);
-        var rect = UnitLayout(UnitRect.Full, placement.Layout);
+        var area = placement.Fold is null ? UnitRect.Full : UnitLayout(UnitRect.Full, placement.Fold.Column);
+        var rect = UnitLayout(area, placement.Layout);
         return placement.Subdivide is null ? rect : UnitLayout(rect, placement.Subdivide);
     }
 
@@ -122,7 +123,8 @@ public static class Geometry
     public static Rect PlacementRectIn(Rect screen, PlacementSpec placement)
     {
         ArgumentNullException.ThrowIfNull(placement);
-        var rect = LayoutRect(screen, placement.Layout);
+        var area = placement.Fold is null ? screen : LayoutRect(screen, placement.Fold.Column);
+        var rect = LayoutRect(area, placement.Layout);
         return placement.Subdivide is null ? rect : LayoutRect(rect, placement.Subdivide);
     }
 

@@ -341,7 +341,7 @@ public static class WindowReuse
     {
         ArgumentNullException.ThrowIfNull(a);
         ArgumentNullException.ThrowIfNull(b);
-        return JsonNode.DeepEquals(a.ToJson(), b.ToJson());
+        return a.Fold == b.Fold && JsonNode.DeepEquals(a.ToJson(), b.ToJson());
     }
 
     private static string Fold(string? value) => UnicodeText.CaseFold(UnicodeText.Strip(value ?? string.Empty));

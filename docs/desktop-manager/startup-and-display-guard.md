@@ -49,12 +49,11 @@ desktop-manager claude-sessions startup [--config ...] [--enable ...]
 - When the workstation is locked, as it is after Windows Update signs in following
   an overnight restart, it types nothing and exits 4. The
   [jobs coordinator](jobs.md) runs it again on each tick until it gets past that.
-- When fewer screens are live than the plan places windows on, `workspace restore`
-  opens nothing, writes `workspace-restore-skipped.txt` and exits 4. Startup then
-  types nothing and exits 4 too. This happens when a dock or USB-C display has not
-  come back after the restart. Both run again on each tick, so the workspace and
-  sessions come up within 15 minutes of the screens returning. The note opens once
-  per boot, not on every retry.
+- When fewer screens are live than the plan places windows on, as when a dock or
+  USB-C display has not come back after the restart, `workspace restore` still
+  opens everything: the missing screens fold into the last connected one
+  ([plan files](plan-files.md)). Once the display is back, the next `align` tick
+  moves each window to its planned screen.
 - Sessions it has no room for (no idle tab and every window full, or over
   `--max-sessions`) are listed in `claude-sessions-left-over.txt`. The note opens
   in Notepad with the `claude-sessions recover` command that resumes them.

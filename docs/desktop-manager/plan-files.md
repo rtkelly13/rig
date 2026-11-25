@@ -48,6 +48,14 @@ An app entry, here Chrome with explicit profile flags:
   if `disabled`. When the screen's width can't be read, the plan is taken as
   written: as many columns as the highest slot on that desktop and screen.
   `columns` goes in `layout` only, not in `subdivide`.
+- Screens fold when fewer are connected than the plan names. On each desktop,
+  every screen from the last connected one up shares that screen as equal columns,
+  one per screen the desktop uses, in screen order, and each window keeps its own
+  layout inside its column. With two screens, a desktop that uses screens 1-3 puts
+  2 and 3 side by side on screen 2; with only a laptop screen, all three share it
+  as thirds. `restore` and `align` print `fewer screens than planned: screens 2-3
+  share screen 2`. The plan file is never rewritten, so the next `align` tick after
+  the screen comes back puts every window back where the plan says.
 - `disabled: true` keeps an entry in the plan but skips it.
 - `feature` ties an entry to a [feature flag](feature-flags.md).
 - `"command_at_logon": "deferred"` (terminal entries with shell `wt-pwsh` only)

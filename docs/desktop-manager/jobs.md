@@ -129,8 +129,8 @@ A run takes its jobs in registry order, one at a time:
   run this boot exited with one, each tick runs it again, even if it is a logon-only
   job, until it exits otherwise. `claude-sessions` exits 4 when the workstation was
   locked at logon, so its sessions come up on the first tick after unlocking.
-  `restore` and `claude-sessions` both exit 4 when fewer screens are live than the
-  plan needs, so they run once the screens are back.
+  `restore` does not wait for missing screens: it folds them into the connected
+  ones, and `align` spreads the windows back out once the screens return.
   `estate-orca` and `orca-sync` exit 3 when Orca is not running, so they run on
   the first tick after it starts. Both target the default Orca profile, which
   holds the work repos and the estate alike.

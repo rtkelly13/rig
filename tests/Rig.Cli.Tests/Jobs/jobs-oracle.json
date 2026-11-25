@@ -34,9 +34,7 @@
     "/plans/windows-workspace.json"
    ],
    "idle_minutes": 0,
-   "retry_exit_codes": [
-    4
-   ],
+   "retry_exit_codes": [],
    "feature": null
   },
   {

@@ -82,25 +82,76 @@ public sealed class PlacementTests
     }
 
     [Fact]
-    public void A_shortfall_is_reported_only_when_fewer_screens_are_live_than_placed_on()
+    public void A_plan_whose_screens_are_all_connected_or_whose_live_count_is_unknown_does_not_fold()
     {
         var plan = Plan(Desktop("Work", Entry("A", 1), Entry("B", 3), new LaunchEntry("Unplaced")));
 
-        Assert.Equal(new MonitorShortfall(3, 2), Placement.FindMonitorShortfall(plan, 2));
-        Assert.Null(Placement.FindMonitorShortfall(plan, 3));
-        Assert.Null(Placement.FindMonitorShortfall(plan, 0));
-        Assert.Null(Placement.FindMonitorShortfall(Plan(Desktop("Work", Entry("A", 1))), 1));
+        Assert.Same(plan, Placement.FoldScreens(plan, 3));
+        Assert.Same(plan, Placement.FoldScreens(plan, 4));
+        Assert.Same(plan, Placement.FoldScreens(plan, 0));
+        Assert.Null(Placement.DescribeFold(plan));
     }
 
     [Fact]
-    public void A_disabled_entry_or_desktop_needs_no_screen()
+    public void Missing_screens_fold_into_the_last_connected_one_as_columns_in_screen_order()
     {
-        var entry = Plan(Desktop("Work", Entry("A", 2), Entry("Paused", 3) with { Disabled = true }));
-        var desktop = Plan(Desktop("Work", Entry("A", 2)), Desktop("Lab", Entry("B", 3)) with { Disabled = true });
+        var plan = Plan(Desktop("Work", Entry("Orca", 1), Entry("Chrome", 2), Entry("Rig", 3, new("halves", 1, "vertical")), Entry("Links", 3, new("halves", 2, "vertical"))));
 
-        Assert.Null(Placement.FindMonitorShortfall(entry, 2));
-        Assert.Null(Placement.FindMonitorShortfall(desktop, 2));
-        Assert.Equal(new MonitorShortfall(2, 1), Placement.FindMonitorShortfall(entry, 1));
+        var folded = Placement.FoldScreens(plan, 2).Desktops[0].Launch.Select(entry => entry.Placement!).ToList();
+
+        Assert.Equal(new PlacementSpec(1, new("full")), folded[0]);
+        Assert.Equal([2, 2, 2], folded.Skip(1).Select(placement => placement.Screen));
+        Assert.Equal(new ScreenFold(2, new("columns", 1, Count: 2)), folded[1].Fold);
+        Assert.Equal(new ScreenFold(3, new("columns", 2, Count: 2)), folded[2].Fold);
+        Assert.Equal(new PlacementLayout("halves", 1, "vertical"), folded[2].Layout);
+        Assert.Equal("screens 2-3 share screen 2", Placement.DescribeFold(Placement.FoldScreens(plan, 2)));
+    }
+
+    [Fact]
+    public void One_screen_holds_three_planned_screens_as_thirds()
+    {
+        var plan = Plan(Desktop("Admin", Entry("Google", 1), Entry("Slack", 2), Entry("1Password", 3)));
+        var screen = new Rect(0, 0, 3000, 1000);
+
+        var rects = Placement.FoldScreens(plan, 1).Desktops[0].Launch.Select(entry => Geometry.PlacementRectIn(screen, entry.Placement!)).ToList();
+
+        Assert.Equal([new Rect(0, 0, 1000, 1000), new Rect(1000, 0, 1000, 1000), new Rect(2000, 0, 1000, 1000)], rects);
+        Assert.Equal("screens 1-3 share screen 1", Placement.DescribeFold(Placement.FoldScreens(plan, 1)));
+    }
+
+    [Fact]
+    public void A_lone_missing_screen_takes_the_whole_connected_one()
+    {
+        var plan = Plan(Desktop("Work", Entry("A", 1), Entry("B", 3)));
+
+        var folded = Placement.FoldScreens(plan, 2).Desktops[0].Launch[1].Placement!;
+
+        Assert.Equal(2, folded.Screen);
+        Assert.Equal(new Rect(0, 0, 1920, 1080), Geometry.PlacementRectIn(new Rect(0, 0, 1920, 1080), folded));
+    }
+
+    [Fact]
+    public void Each_desktop_folds_by_the_screens_it_uses_and_inactive_entries_take_no_column()
+    {
+        var plan = Plan(
+            Desktop("Work", Entry("A", 2), Entry("B", 3), Entry("Paused", 4) with { Disabled = true }),
+            Desktop("IDE", Entry("Code", 1)));
+
+        var folded = Placement.FoldScreens(plan, 2);
+
+        Assert.Equal(2, folded.Desktops[0].Launch[1].Placement!.Fold!.Column.Count);
+        Assert.Equal(2, folded.Desktops[0].Launch[2].Placement!.Screen);
+        Assert.Null(folded.Desktops[0].Launch[2].Placement!.Fold);
+        Assert.Same(plan.Desktops[1], folded.Desktops[1]);
+    }
+
+    [Fact]
+    public void A_folded_window_already_in_its_column_counts_as_the_same_placement()
+    {
+        var folded = new PlacementSpec(1, new("full"), Fold: new ScreenFold(2, new("columns", 2, Count: 3)));
+
+        Assert.False(WindowReuse.SamePlacement(new PlacementSpec(1, new("full")), folded));
+        Assert.Equal(Geometry.NormalizedPlacementRect(new PlacementSpec(1, new("thirds", 2))), Geometry.NormalizedPlacementRect(folded));
     }
 
     [Fact]
