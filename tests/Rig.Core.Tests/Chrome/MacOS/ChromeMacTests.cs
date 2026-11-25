@@ -496,6 +496,90 @@ public sealed class ChromeMacTests
     }
 
     [Fact]
+    public void Close_tabs_reports_a_read_that_failed()
+    {
+        var jxa = new ScriptedJxa { FailWhenEmpty = true };
+
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
+
+        Assert.Equal((false, "close failed: Chrome went away"), (outcome.Closed, outcome.Detail));
+        Assert.Empty(jxa.Scripts);
+    }
+
+    [Fact]
+    public void Close_tabs_reports_a_close_it_could_not_confirm()
+    {
+        var jxa = new ScriptedJxa { FailWhenEmpty = true }
+            .Snapshot(Snapshot(RawWindow()))
+            .Snapshot(Snapshot(RawWindow()))
+            .Closes("invoked");
+
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
+
+        Assert.Equal((false, "close failed: invoked close but could not confirm it: Chrome went away"), (outcome.Closed, outcome.Detail));
+    }
+
+    [Fact]
+    public void Close_tabs_distrusts_a_reply_for_the_wrong_number_of_tabs()
+    {
+        var jxa = new ScriptedJxa()
+            .Snapshot(Snapshot(RawWindow()))
+            .Snapshot(Snapshot(RawWindow()))
+            .Closes()
+            .Snapshot(Snapshot(RawWindow()));
+
+        var outcome = Over(jxa).CloseTabs([Tab()]).Single();
+
+        Assert.Equal((false, "close failed: Chrome replied for a different number of tabs"), (outcome.Closed, outcome.Detail));
+    }
+
+    [Fact]
+    public void Close_tabs_refuses_an_unusable_id_without_asking_Chrome()
+    {
+        var jxa = new ScriptedJxa();
+
+        var outcome = Over(jxa).CloseTabs([Tab() with { RuntimeId = new RuntimeId([0]) }]).Single();
+
+        Assert.Equal((false, "close failed: Invalid Chrome action ID"), (outcome.Closed, outcome.Detail));
+        Assert.Equal(0, jxa.SnapshotCount);
+    }
+
+    [Fact]
+    public void Close_tabs_splits_a_large_window_across_scripts()
+    {
+        var raw = Enumerable.Range(0, ChromeMac.CloseBatch + 1).Select(index => new JxaTab(TabId + index, $"Tab {index}", $"https://example.com/{index}")).ToList();
+        var window = RawWindow() with { Tabs = raw };
+        _strip.Attributes["AXChildren"] = raw.Select((tab, index) => new FakeAxApi.Element(100 + index, new()
+        {
+            ["AXRole"] = "AXRadioButton",
+            ["AXSubrole"] = "AXTabButton",
+            ["AXTitle"] = tab.Title,
+            ["AXValue"] = index == 0,
+            ["AXChildren"] = new[] { new FakeAxApi.Element(200 + index, new() { ["AXRole"] = "AXButton", ["AXTitle"] = "Close" }) },
+        })).ToArray();
+        var tabs = raw.Select((tab, index) => Tab() with
+        {
+            RuntimeId = new RuntimeId([(int)tab.Id]),
+            Index = index,
+            Name = tab.Title,
+            Title = tab.Title,
+            Url = new Uri(tab.Address),
+            Selected = index == 0,
+        }).ToList();
+        var jxa = new ScriptedJxa()
+            .Snapshot(Snapshot(window))
+            .Snapshot(Snapshot(window))
+            .Closes([.. Enumerable.Repeat("invoked", ChromeMac.CloseBatch)])
+            .Closes("invoked")
+            .Snapshot(Snapshot(RawWindow() with { Tabs = [] }));
+
+        var outcomes = Over(jxa).CloseTabs(tabs);
+
+        Assert.All(outcomes, outcome => Assert.True(outcome.Closed, outcome.Detail));
+        Assert.Equal(2, jxa.Scripts.Count);
+    }
+
+    [Fact]
     public void Close_tabs_of_nothing_touches_nothing()
     {
         var jxa = new ScriptedJxa();
@@ -973,6 +1057,9 @@ public sealed class ChromeMacTests
 
         public bool FailAct { get; init; }
 
+        /// <summary>When set, a snapshot asked for after the scripted ones fails as Chrome would, rather than the test.</summary>
+        public bool FailWhenEmpty { get; init; }
+
         public JxaSnapshot? FallbackSnapshot { get; set; }
 
         public string ActFallback { get; set; } = "missing";
@@ -1009,6 +1096,11 @@ public sealed class ChromeMacTests
         public JxaSnapshot Snapshot()
         {
             SnapshotCount++;
+            if (_snapshots.Count == 0 && FallbackSnapshot is null && FailWhenEmpty)
+            {
+                throw new ChromeMacException("Chrome went away");
+            }
+
             return _snapshots.Count > 0 ? _snapshots.Dequeue() : FallbackSnapshot ?? throw new InvalidOperationException("No scripted snapshot left");
         }
 

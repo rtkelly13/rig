@@ -291,4 +291,23 @@ public sealed class DedupeTests
         Assert.All(closes, item => Assert.Contains(new KeyValuePair<string, object?>("tab.label", "title:Merge Queue Handbook"), item.Tags));
         Assert.All(closes, item => Assert.Contains(new KeyValuePair<string, object?>("close.closed", true), item.Tags));
     }
+
+    [Fact]
+    public void A_driver_that_answers_for_the_wrong_number_of_tabs_is_a_bug()
+    {
+        var browser = new TabBrowser();
+        browser.Window(new TabSpec("Merge Queue Handbook"), new TabSpec("Merge Queue Handbook", Selected: true));
+
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ClosePlans.Apply([Dedupe.Plan(browser.Windows)], browser.Windows, new SilentActions()));
+        Assert.Equal("The driver answered 0 of 1 closes.", error.Message);
+    }
+
+    private sealed class SilentActions : IChromeTabActions
+    {
+        public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs) => [];
+
+        public IReadOnlyDictionary<long, ChromeTab?> RestoreSelection(IEnumerable<ChromeWindow> before, IReadOnlyDictionary<long, ChromeTab>? fallbacks = null) =>
+            new Dictionary<long, ChromeTab?>();
+    }
 }

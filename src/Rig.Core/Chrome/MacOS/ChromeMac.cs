@@ -28,6 +28,12 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
     /// <summary>Reads of one window before the accessibility evidence is dropped.</summary>
     public const int ReadAttempts = 4;
 
+    /// <summary>
+    /// Tabs one close script handles. Chrome takes a fraction of a second a tab, so this keeps a script well inside
+    /// <see cref="ChromeJxa.Timeout"/> however many tabs a window closes.
+    /// </summary>
+    public const int CloseBatch = 20;
+
     /// <summary>The pause between looks while Chrome settles.</summary>
     public static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(50);
 
@@ -91,8 +97,8 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
 
     /// <inheritdoc/>
     /// <remarks>
-    /// One read checks every tab, one script closes the ones that pass, and one poll waits for them to leave, so a
-    /// window's closes cost about what one did. The script checks each tab's title and URL again as it closes it. Each
+    /// One read checks every tab, one script (per <see cref="CloseBatch"/> tabs) closes the ones that pass, and one poll
+    /// waits for them to leave, so a window's closes cost about what one did. The script checks each tab's title and URL again as it closes it. Each
     /// outcome's time is its share of the whole batch.
     /// </remarks>
     public IReadOnlyList<CloseOutcome> CloseTabs(IReadOnlyList<ChromeTab> tabs)
@@ -133,11 +139,7 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         string? failure = null;
         try
         {
-            statuses = eligible.Count == 0 ? [] : _jxa.Close(JxaScripts.Close(eligible));
-            if (statuses.Count != eligible.Count)
-            {
-                throw new ChromeMacException("Chrome replied for a different number of tabs");
-            }
+            statuses = [.. eligible.Chunk(CloseBatch).SelectMany(Statuses)];
         }
         catch (ChromeMacException error)
         {
@@ -147,31 +149,38 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
         }
 
         var invoked = eligible.Where((_, index) => statuses[index] == "invoked").Select(Id).ToHashSet();
-        var present = Remaining(invoked, failure is null ? StepTimeout : TimeSpan.Zero);
+        var (present, unconfirmed) = Remaining(invoked, failure is null ? StepTimeout : TimeSpan.Zero);
         var replies = new Queue<string>(statuses);
         return [.. tabs.Select((tab, index) => refusals[index] is { } refusal
             ? (false, refusal)
-            : Result(replies.Dequeue(), present.Contains(Id(tab)), failure))];
+            : Result(replies.Dequeue(), present.Contains(Id(tab)), failure, unconfirmed))];
     }
 
-    private static (bool Closed, string Detail) Result(string status, bool present, string? failure) =>
+    private IReadOnlyList<string> Statuses(ChromeTab[] tabs)
+    {
+        var statuses = _jxa.Close(JxaScripts.Close(tabs));
+        return statuses.Count == tabs.Length ? statuses : throw new ChromeMacException("Chrome replied for a different number of tabs");
+    }
+
+    // A script failure decides every tab that did not go; a failed look afterwards only those it invoked.
+    private static (bool Closed, string Detail) Result(string status, bool present, string? failure, string? unconfirmed) =>
         (status, present, failure) switch
         {
             ("invoked", false, _) => (true, "closed"),
             (_, _, { } failed) => (false, failed),
-            ("invoked", true, _) => (false, "invoked close but the tab is still present; a prompt may be open"),
+            ("invoked", true, _) => (false, unconfirmed ?? "invoked close but the tab is still present; a prompt may be open"),
             _ => (false, $"close refused: {status}"),
         };
 
     private static long Id(ChromeTab tab) => tab.RuntimeId.Parts[0];
 
-    // The tabs of <paramref name="ids"/> still in Chrome once they have all gone or <paramref name="timeout"/> passed;
-    // all of them when Chrome cannot be read.
-    private HashSet<long> Remaining(HashSet<long> ids, TimeSpan timeout)
+    // The tabs of <paramref name="ids"/> still in Chrome once they have all gone or <paramref name="timeout"/> passed.
+    // When Chrome cannot be read, all of them, with why.
+    private (HashSet<long> Present, string? Problem) Remaining(HashSet<long> ids, TimeSpan timeout)
     {
         if (ids.Count == 0)
         {
-            return ids;
+            return (ids, null);
         }
 
         HashSet<long> present = ids;
@@ -186,12 +195,12 @@ public sealed partial class ChromeMac : IChromeWindowReader, IChromeTabActions, 
                 timeout,
                 out _);
         }
-        catch (ChromeMacException)
+        catch (ChromeMacException error)
         {
-            return ids;
+            return (ids, $"close failed: invoked close but could not confirm it: {error.Message}");
         }
 
-        return present;
+        return (present, null);
     }
 
     // Why <paramref name="tab"/> can never close as given, before Chrome is asked anything; null when it might.
