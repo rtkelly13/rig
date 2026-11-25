@@ -10,19 +10,34 @@ namespace Rig.Core.Chrome.MacOS;
 /// </summary>
 public static class JxaScripts
 {
-    /// <summary>Chrome's pid, whether it is frontmost, and every window with its tabs.</summary>
+    /// <summary>
+    /// Chrome's pid, whether it is frontmost, and every window with its tabs. Each property is fetched for every window
+    /// (or every tab) in one Apple event: asking tab by tab costs three round trips a tab, seconds on a full browser. A
+    /// window or tab that comes or goes between the fetches leaves the lists unaligned, and a window brought forward
+    /// reorders them, which only the ids read again afterwards show; either way that read is taken again.
+    /// </summary>
     public const string Snapshot = "\n" + """
         ObjC.import('AppKit');
         function run() {
             const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.google.Chrome');
             if (Number(apps.count) === 0) return JSON.stringify({pid: 0, frontmost: false, windows: []});
             const app = apps.objectAtIndex(0);
-            const chrome = Application('com.google.Chrome');
-            return JSON.stringify({pid: Number(app.processIdentifier), frontmost: Number(app.active) === 1,
-                windows: chrome.windows().map(w => ({id: String(w.id()), index: w.index(),
-                    title: w.title(), active: w.activeTabIndex(), minimized: w.minimized(), mode: w.mode(),
-                    bounds: w.bounds(), tabs: w.tabs().map(t => ({id: String(t.id()), title: t.title(),
-                        url: t.url()}))}))});
+            const w = Application('com.google.Chrome').windows;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const ids = w.id(), index = w.index(), title = w.title(), active = w.activeTabIndex(),
+                    minimized = w.minimized(), mode = w.mode(), bounds = w.bounds(),
+                    tabIds = w.tabs.id(), tabTitles = w.tabs.title(), tabUrls = w.tabs.url();
+                const order = JSON.stringify([ids, tabIds]) === JSON.stringify([w.id(), w.tabs.id()]);
+                const aligned = [index, title, active, minimized, mode, bounds, tabIds, tabTitles, tabUrls]
+                    .every(list => list.length === ids.length)
+                    && tabIds.every((tabs, i) => tabTitles[i].length === tabs.length && tabUrls[i].length === tabs.length);
+                if (!aligned || !order) continue;
+                return JSON.stringify({pid: Number(app.processIdentifier), frontmost: Number(app.active) === 1,
+                    windows: ids.map((id, i) => ({id: String(id), index: index[i], title: title[i], active: active[i],
+                        minimized: minimized[i], mode: mode[i], bounds: bounds[i],
+                        tabs: tabIds[i].map((tab, j) => ({id: String(tab), title: tabTitles[i][j], url: tabUrls[i][j]}))}))});
+            }
+            throw new Error('Chrome windows kept changing during the read');
         }
         """ + "\n";
 
@@ -48,11 +63,11 @@ public static class JxaScripts
             if (Number(apps.count) !== 1) return JSON.stringify({status: 'missing'});
             const chrome = Application('com.google.Chrome');
             const windowID = __WINDOW_ID__, tabID = __TAB_ID__;
-            const windows = chrome.windows().filter(w => Number(w.id()) === windowID);
-            if (windows.length !== 1) return JSON.stringify({status: 'missing'});
-            const window = chrome.windows.byId(windowID), tabs = window.tabs();
+            if (chrome.windows.id().filter(id => Number(id) === windowID).length !== 1)
+                return JSON.stringify({status: 'missing'});
+            const window = chrome.windows.byId(windowID);
             const matches = [];
-            tabs.forEach((t, i) => { if (Number(t.id()) === tabID) matches.push(i); });
+            window.tabs.id().forEach((id, i) => { if (Number(id) === tabID) matches.push(i); });
             if (matches.length !== 1) return JSON.stringify({status: 'missing'});
             const target = window.tabs.byId(tabID);
             __ACTION__
@@ -72,7 +87,7 @@ public static class JxaScripts
             const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.google.Chrome');
             if (Number(apps.count) !== 1) return JSON.stringify({status: 'missing'});
             const chrome = Application('com.google.Chrome'), id = __ID__;
-            if (chrome.windows().filter(w => Number(w.id()) === id).length !== 1)
+            if (chrome.windows.id().filter(windowID => Number(windowID) === id).length !== 1)
                 return JSON.stringify({status: 'missing'});
             const window = chrome.windows.byId(id);
             window.minimized = false;
@@ -88,10 +103,10 @@ public static class JxaScripts
             const state = __STATE__;
             const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.google.Chrome');
             if (Number(apps.count) === 1) {
-                const chrome = Application('com.google.Chrome'), windows = chrome.windows();
-                if (windows.filter(w => Number(w.id()) === state.front).length === 1)
+                const chrome = Application('com.google.Chrome'), ids = chrome.windows.id().map(Number);
+                if (ids.filter(id => id === state.front).length === 1)
                     chrome.windows.byId(state.front).index = 1;
-                if (windows.filter(w => Number(w.id()) === state.target).length === 1)
+                if (ids.filter(id => id === state.target).length === 1)
                     chrome.windows.byId(state.target).minimized = state.minimized;
             }
             return JSON.stringify({status: 'restored'});

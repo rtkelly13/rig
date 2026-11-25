@@ -272,4 +272,24 @@ public sealed class DedupeTests
         Assert.Single(actions.Restored);
         Assert.Empty(sitePlan.Activations());
     }
+
+    [Fact]
+    public void Each_close_is_its_own_span_inside_its_window()
+    {
+        var browser = new TabBrowser();
+        browser.Window(
+            new TabSpec("Merge Queue Handbook"),
+            new TabSpec("Merge Queue Handbook"),
+            new TabSpec("Merge Queue Handbook", Selected: true));
+        using var spans = new RecordedSpans("Rig.Chrome");
+
+        ClosePlans.Apply([Dedupe.Plan(browser.Windows)], browser.Windows, new FakeChromeTabActions());
+
+        var window = Assert.Single(spans.Stopped, span => span.OperationName == "chrome_tabs.close_window");
+        var closes = spans.Stopped.Where(span => span.OperationName == "chrome_tabs.close_tab").ToList();
+        Assert.Equal(2, closes.Count);
+        Assert.All(closes, span => Assert.Equal(window.SpanId, span.ParentSpanId));
+        Assert.All(closes, span => Assert.Equal("title:Merge Queue Handbook", span.GetTagItem("tab.label")));
+        Assert.All(closes, span => Assert.Equal(true, span.GetTagItem("close.closed")));
+    }
 }

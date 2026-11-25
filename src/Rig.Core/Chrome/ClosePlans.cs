@@ -126,13 +126,12 @@ public static class ClosePlans
                 using var activity = Source.StartActivity("chrome_tabs.close_window");
                 activity?.SetTag("window.profile", window.ProfileName ?? window.ProfileKey);
                 activity?.SetTag("close.planned", closes.Count);
-                foreach (var close in closes)
+                results.AddRange(closes.Select(close => CloseOne(actions, close)));
+                using (Source.StartActivity("chrome_tabs.restore_selection"))
                 {
-                    var outcome = actions.CloseTab(close.Item.Tab);
-                    results.Add(new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed));
+                    actions.RestoreSelection([window], Activations(closes));
                 }
 
-                actions.RestoreSelection([window], Activations(closes));
                 activity?.SetTag("close.closed", results.Count(result => result.Closed));
             }
 
@@ -141,6 +140,17 @@ public static class ClosePlans
         }
 
         return applied;
+    }
+
+    // One span per tab, so a slow close shows in `traces show` as its own bar rather than inside the window's total.
+    private static AppliedClose CloseOne(IChromeTabActions actions, IPlannedTabClose close)
+    {
+        using var activity = Source.StartActivity("chrome_tabs.close_tab");
+        activity?.SetTag("tab.label", close.Item.Label);
+        var outcome = actions.CloseTab(close.Item.Tab);
+        activity?.SetTag("close.closed", outcome.Closed);
+        activity?.SetTag("close.detail", outcome.Detail);
+        return new AppliedClose(close, outcome.Closed, outcome.Detail, outcome.Elapsed);
     }
 
     /// <summary>
