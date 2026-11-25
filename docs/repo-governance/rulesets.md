@@ -108,8 +108,12 @@ Review findings that should block merging must be posted as review threads.
 The October 2026 rollout verified native conversation resolution on all 18 enabled, non-archived
 managed repositories, including private `rig`, `obsidian-vault` and `hearth`. This supersedes the
 private-repository exclusions recorded in the original rollout. The two demonstration repositories
-(`MySQLEFConcurrencyBug` and `AWSBatch-MapReduce`) received the missing rulesets too. Only the
-conversation rule was added to the vault and hearth; their workflows were not assigned CI check names.
+(`MySQLEFConcurrencyBug` and `AWSBatch-MapReduce`) received the missing rulesets too. The vault and
+hearth got only the conversation rule at first, because the profile's `build` and `pr-title` match no
+job of theirs, so `enforce` refused the checks and every vault PR could merge red. The vault now
+overrides them with `lint`, its OKF frontmatter check, which runs on every PR: a path-filtered
+required check never starts on the PRs it skips, and those PRs then wait forever. Hearth has no
+`pull_request` workflow yet, so it is still ungated.
 
 ## Rulesets only, no classic branch protection
 

@@ -429,6 +429,11 @@
         "ci"
       ]
     },
+    "obsidian-vault": {
+      "required_checks": [
+        "lint"
+      ]
+    },
     "ynab-budget-companion": {
       "required_checks": [
         "ci"
