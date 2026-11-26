@@ -199,6 +199,41 @@ and left to right on each monitor. Closing selects each tab first, so working
 through one window at a time means each window changes once, instead of
 flickering as the closes move between windows.
 
+## Rig links
+
+The rig dashboard runs as a Chrome `--app` window, which has no tab strip, so a
+link clicked in it would open in whichever Chrome window was used last. Instead,
+links out of the dashboard and pages that `rig open URL` opens go to the
+**Rig links** window, which the Work desktop's plan puts on the right half of
+screen 3, beside the dashboard.
+
+`LinkRouter` (`src/Rig.Core/Chrome/LinkRouter.cs`) does it with this adapter:
+
+1. Read the Chrome windows and find the one whose title carries `Rig links`.
+   Chrome's `--window-name=Rig links` sets that title, and it survives tab
+   changes.
+2. With no such window, launch `chrome --new-window --window-name="Rig links"`
+   with the URL, using the plan's `chrome-profile-personal` profile, the same one
+   as the dashboard.
+3. Otherwise bring that window to the front (the grouping lease), and launch the
+   URL with that window's own profile. Chrome opens a command-line URL in the
+   profile's most recently active window, which is now the Rig links window.
+4. Read the windows again until the new tab appears. A tab that landed elsewhere
+   moves into the Rig links window by the same drag that grouping uses. The lease
+   then puts the focus back on the dashboard.
+
+The dashboard's half is one capture-phase click listener (`web/rigLinks.ts`). It
+sends every plain click on an external `http(s)` link to `POST /api/open`, and
+opens the link itself when the host answers anything but 200. Modified clicks
+keep the browser's behaviour. The route accepts a body only as every dashboard
+write does: on loopback, from the same origin, as `application/json`. Away from
+Windows, or when the desktop plan cannot name Chrome, `rig open` and the route
+both fall back to the default browser.
+
+The Chrome path, user-data folder and profile come from the desktop plan's
+aliases (`chrome-path`, `chrome-user-data`, `chrome-profile-personal`), with
+`tools.desktop.aliases` in `~/.workspace/config.json` applied over them.
+
 ## Installing
 
 The scheduled `organise --unattended` run (see [Organise](#organise)) belongs to

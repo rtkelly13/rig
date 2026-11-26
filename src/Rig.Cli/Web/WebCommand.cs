@@ -46,6 +46,7 @@ internal sealed record WebPlaces(string Checkout, string RegistryFile, string Wo
 /// <param name="output">Where the banner goes.</param>
 /// <param name="error">Where problems go.</param>
 /// <param name="ops">The data behind the MCP tools; null builds this machine's real sources.</param>
+/// <param name="openLink">Opens a dashboard link in the Rig links Chrome window; null leaves links to the page.</param>
 /// <param name="aliases">The <c>install</c>, <c>ensure</c>, <c>uninstall</c>, <c>backup</c>, <c>migrate</c> and <c>db-status</c> subcommands that forward to <c>rig tools</c>.</param>
 internal sealed class WebCommand(
     WebPlaces places,
@@ -53,7 +54,8 @@ internal sealed class WebCommand(
     TextWriter output,
     TextWriter error,
     RigOps? ops = null,
-    IReadOnlyList<Command>? aliases = null)
+    IReadOnlyList<Command>? aliases = null,
+    Func<Uri, Rig.Core.Chrome.LinkOutcome>? openLink = null)
 {
     private readonly Lazy<RigOps> _ops = new(() => ops ?? RigOps.Default());
 
@@ -104,7 +106,7 @@ internal sealed class WebCommand(
             places.CodeRoot,
             places.C4StaticDir,
             places.C4SampleBundle);
-        var server = await RigWebHost.CreateAsync(settings, _ops.Value, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var server = await RigWebHost.CreateAsync(settings, _ops.Value, openLink: openLink, cancellationToken: cancellationToken).ConfigureAwait(false);
         await using (server.ConfigureAwait(false))
         {
             return await ServeAsync(server, settings, open, cancellationToken).ConfigureAwait(false);

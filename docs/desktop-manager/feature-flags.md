@@ -64,10 +64,11 @@ A desktop ref in the bundle can carry a `feature` too. For example,
 ## Flags in the machine plan
 
 - `orca-sessions` (on) opens Orca on screen 1 of the Work desktop, one profile
-  holding the work repos and rig. Screen 2 holds a work Chrome window and screen 3
-  the rig dashboard, neither behind a flag. The earlier Windows Terminal, Warp,
-  work-Chrome and Fork variants were deleted when the plan moved to two screens;
-  git history keeps them.
+  holding the work repos and rig. Screen 2 holds a work Chrome window, and screen 3
+  the rig dashboard beside the [Rig links](chrome-tabs-uia.md#rig-links) window;
+  none of them is behind a flag. The earlier Windows Terminal, Warp, work-Chrome
+  and Fork variants were deleted when the plan moved to two screens; git history
+  keeps them.
 - `personal-desktop` and `experimental-desktop` (both off) keep the Personal and
   Lab desktops as opt-ins, and while off they retire any leftover desktop of that
   name.
