@@ -185,19 +185,9 @@ internal sealed partial class DesktopWorkspaceCommand
             return 2;
         }
 
-        var liveScreens = machine.Win32.Monitors().Count;
-        if (!dryRun && desktop is null && screen is null
-            && Placement.FindMonitorShortfall(plan, liveScreens) is { } shortfall)
+        if (Placement.DescribeFold(plan) is { } fold)
         {
-            var note = Path.Join(host.LogsDirectory(path), "monitor-shortfall.txt");
-            Directory.CreateDirectory(host.LogsDirectory(path));
-            await File.WriteAllTextAsync(
-                note,
-                $"Workspace restore skipped: plan needs {shortfall.Required} screens, only {shortfall.Live} detected.\n",
-                cancellationToken).ConfigureAwait(false);
-            await host.Output.WriteLineAsync(
-                $"Workspace restore skipped: plan needs {shortfall.Required} screens, only {shortfall.Live} detected. Note: {note}.", cancellationToken).ConfigureAwait(false);
-            return RestoreDeferred;
+            await host.Output.WriteLineAsync($"Fewer screens than planned: {fold}.", cancellationToken).ConfigureAwait(false);
         }
 
         var scoped = WorkspaceScope.For(plan, desktop, screen);

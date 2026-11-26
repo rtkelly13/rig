@@ -62,9 +62,6 @@ public sealed record JobsEnvironment(
 /// <summary>The jobs the coordinator runs, in the order a run takes them.</summary>
 public static class JobRegistry
 {
-    /// <summary><c>workspace restore</c> found fewer screens than the plan places windows on and opened nothing.</summary>
-    public const int RestoreDeferred = 4;
-
     /// <summary>When <c>chrome-organise</c> is killed: five minutes after its idle wait, which ends five before the next tick.</summary>
     public const int ChromeOrganiseLimitMinutes = Job.TickMinutes + 5;
 
@@ -103,7 +100,6 @@ public static class JobRegistry
                 [rig, "desktop", "workspace", "restore", "--config", plan], Logon, JobCadence.EveryRun, 45)
             {
                 Requires = [plan],
-                RetryExitCodes = new HashSet<int> { RestoreDeferred },
             },
             new("chrome-organise", "Close merged, duplicate and superseded Chrome tabs, and group the rest, once idle.",
                 [rig, "chrome-tabs", "organise", "--unattended", "--consolidate-saved", "--trigger", "scheduled", "--wait-minutes", $"{Job.TickMinutes - 5}"],

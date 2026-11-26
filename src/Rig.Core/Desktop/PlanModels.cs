@@ -15,11 +15,20 @@ public sealed record PlacementLayout(string Mode, int Slot = 1, string? Orientat
     public JsonObject ToJson() => new JsonObject { ["mode"] = Mode, ["slot"] = Slot }.AddText("orientation", Orientation).AddIf(MinWidth is not null, "min_width", MinWidth);
 }
 
+/// <summary>Where a placement lands when its planned screen folds into a lower one because fewer screens are connected.</summary>
+/// <param name="Planned">The screen the plan file names.</param>
+/// <param name="Column">The column of the folded screen that stands in for <paramref name="Planned"/>.</param>
+public sealed record ScreenFold(int Planned, PlacementLayout Column);
+
 /// <summary>A window's planned screen and region.</summary>
 /// <param name="Screen">The screen, numbered from 1.</param>
 /// <param name="Layout">The region of that screen.</param>
 /// <param name="Subdivide">An optional split of that region, with the same shape.</param>
-public sealed record PlacementSpec(int Screen, PlacementLayout Layout, PlacementLayout? Subdivide = null)
+/// <param name="Fold">
+/// Runtime-only: set when the planned screen is not connected and its windows share <see cref="Screen"/> with the
+/// screens around it. Never written to a plan file.
+/// </param>
+public sealed record PlacementSpec(int Screen, PlacementLayout Layout, PlacementLayout? Subdivide = null, ScreenFold? Fold = null)
 {
     /// <summary>The placement as a plan file holds it.</summary>
     public JsonObject ToJson() => new JsonObject { ["screen"] = Screen, ["layout"] = Layout.ToJson() }.AddIf(Subdivide is not null, "subdivide", Subdivide?.ToJson());

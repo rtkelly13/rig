@@ -3,11 +3,6 @@ using Rig.Core.Text;
 
 namespace Rig.Core.Desktop;
 
-/// <summary>A plan that places windows on more screens than are connected.</summary>
-/// <param name="Required">The highest screen any placement names.</param>
-/// <param name="Live">How many screens are connected.</param>
-public sealed record MonitorShortfall(int Required, int Live);
-
 /// <summary>Whether the paths a plan names exist on this machine. The seam <see cref="Placement.ValidatePlan"/> checks paths through.</summary>
 public interface IPathProbe
 {
@@ -158,15 +153,72 @@ public static class Placement
     }
 
     /// <summary>
-    /// The shortfall when fewer screens are connected (<paramref name="liveScreenCount"/>) than the plan places windows
-    /// on. <see langword="null"/> when the plan fits, needs one screen at most, or the live count is unknown (zero).
-    /// Only entries that launch count: a disabled entry or desktop, or one whose feature is off, needs no screen.
+    /// <paramref name="plan"/> reshaped for <paramref name="liveScreenCount"/> connected screens. On each desktop, every
+    /// screen from the last connected one up folds into that last screen: it splits into equal columns, one per screen
+    /// the desktop places windows on, in screen order, and each window keeps its own layout inside its column. With
+    /// two screens a three-screen desktop puts screens 2 and 3 side by side on screen 2; with one, all three share
+    /// screen 1 as thirds. The plan is unchanged when every screen it uses is connected or the live count is unknown
+    /// (zero), so restoring again once the screen is back unfolds it.
     /// </summary>
-    public static MonitorShortfall? FindMonitorShortfall(WorkspacePlan plan, int liveScreenCount)
+    public static WorkspacePlan FoldScreens(WorkspacePlan plan, int liveScreenCount)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        var required = HighestScreen(plan);
-        return required > 1 && liveScreenCount > 0 && liveScreenCount < required ? new(required, liveScreenCount) : null;
+        if (liveScreenCount < 1 || HighestScreen(plan) <= liveScreenCount)
+        {
+            return plan;
+        }
+
+        return plan with { Desktops = [.. plan.Desktops.Select(desktop => FoldDesktop(desktop, plan.Features, liveScreenCount))] };
+    }
+
+    /// <summary>
+    /// One line saying which screens <see cref="FoldScreens"/> folded, such as <c>screens 2-3 share screen 2</c>, or
+    /// <see langword="null"/> when nothing folded.
+    /// </summary>
+    public static string? DescribeFold(WorkspacePlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        var folds = plan.Desktops.Where(desktop => !desktop.Disabled).SelectMany(desktop => desktop.Launch)
+            .Where(entry => IsActive(entry, plan.Features)).Select(entry => entry.Placement).OfType<PlacementSpec>()
+            .Where(placement => placement.Fold is not null).ToList();
+        if (folds.Count == 0)
+        {
+            return null;
+        }
+
+        var into = folds.Min(placement => placement.Screen);
+        var highest = folds.Max(placement => placement.Fold!.Planned);
+        return string.Create(CultureInfo.InvariantCulture, $"screens {into}-{highest} share screen {into}");
+    }
+
+    private static DesktopPlan FoldDesktop(DesktopPlan desktop, IReadOnlyDictionary<string, bool> features, int live)
+    {
+        var folded = desktop.Launch.Where(entry => IsActive(entry, features)).Select(entry => entry.Placement).OfType<PlacementSpec>()
+            .Select(placement => placement.Screen).Where(screen => screen >= live).Distinct().Order().ToList();
+        if (desktop.Disabled || !folded.Any(screen => screen > live))
+        {
+            return desktop;
+        }
+
+        return desktop with
+        {
+            Launch =
+            [
+                .. desktop.Launch.Select(entry =>
+                {
+                    if (entry.Placement is not { } placement || placement.Screen < live)
+                    {
+                        return entry;
+                    }
+
+                    var column = folded.IndexOf(placement.Screen);
+                    var fold = column < 0 ? null
+                        : folded.Count == 1 ? new ScreenFold(placement.Screen, new PlacementLayout("full"))
+                        : new ScreenFold(placement.Screen, new PlacementLayout("columns", column + 1, Count: folded.Count));
+                    return entry with { Placement = placement with { Screen = live, Fold = fold } };
+                }),
+            ],
+        };
     }
 
     /// <summary>Everything wrong with one placement, each message prefixed <c>desktop/entry:</c>.</summary>

@@ -23,9 +23,6 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
     /// <summary>The exit code <c>align</c> uses when some window moves failed.</summary>
     public const int AlignMovesFailed = 3;
 
-    /// <summary>The exit code <c>restore</c> uses when fewer screens are live than the plan places windows on.</summary>
-    public const int RestoreDeferred = 4;
-
     /// <summary>The <c>workspace</c> group with every subcommand.</summary>
     public Command Build()
     {
@@ -88,13 +85,16 @@ internal sealed partial class DesktopWorkspaceCommand(DesktopHost host)
         host.Output.WriteLine($"Features: {rendered}");
     }
 
-    /// <summary>The plan a command runs against: flags applied and columns fitted, but not yet verified.</summary>
+    /// <summary>
+    /// The plan a command runs against: flags applied, columns fitted, and screens that are not connected folded into
+    /// the last one that is (<see cref="Placement.FoldScreens"/>), but not yet verified.
+    /// </summary>
     private WorkspacePlan LoadContext(string path, IReadOnlyList<string> enable, IReadOnlyList<string> disable)
     {
-        var screenWidths = host.Windows() is { } native
-            ? native.Win32.Monitors().Select((m, i) => (Screen: i + 1, Width: m.Bounds.Width)).ToDictionary(x => x.Screen, x => x.Width)
-            : null;
-        return PlanLoading.Load(path, host.Flags, enable, disable, screenWidths: screenWidths, verify: false);
+        var monitors = host.Windows() is { } native ? native.Win32.Monitors() : null;
+        var screenWidths = monitors?.Select((m, i) => (Screen: i + 1, Width: m.Bounds.Width)).ToDictionary(x => x.Screen, x => x.Width);
+        var plan = PlanLoading.Load(path, host.Flags, enable, disable, screenWidths: screenWidths, verify: false);
+        return Placement.FoldScreens(plan, monitors?.Count ?? 0);
     }
 
     /// <summary>The plan a command runs against, verified as <c>load_plan</c> verifies it.</summary>

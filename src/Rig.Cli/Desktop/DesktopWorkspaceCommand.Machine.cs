@@ -135,10 +135,9 @@ internal sealed partial class DesktopWorkspaceCommand
         }
 
         var prefix = dryRun ? "align (dry run)" : "align";
-        if (Placement.FindMonitorShortfall(plan, machine.Win32.Monitors().Count) is { } shortfall)
+        if (Placement.DescribeFold(plan) is { } fold)
         {
-            Report($"{prefix}: skipped (plan needs {shortfall.Required} screens, {shortfall.Live} detected)", echo: true);
-            return 0;
+            Report($"{prefix}: fewer screens than planned: {fold}", echo: true);
         }
 
         using var restoreLock = DisplayGuardLocks.Hold(
