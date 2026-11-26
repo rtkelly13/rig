@@ -74,4 +74,16 @@ public sealed class ProgramPathTests : IDisposable
 
     [Fact]
     public void The_process_path_finds_git() => Assert.NotNull(ProgramPath.Find("git"));
+
+    [Fact]
+    public void Find_all_lists_every_match_in_path_order_with_each_extension()
+    {
+        var first = Program("a/tool.cmd");
+        var second = Program("b/tool.exe");
+        var third = Program("b/tool.cmd");
+
+        Assert.Equal(
+            [first, second, third],
+            ProgramPath.FindAll("tool", string.Join(Path.PathSeparator, _dir.Folder("a"), _dir.Folder("b")), ".exe;.cmd"));
+    }
 }

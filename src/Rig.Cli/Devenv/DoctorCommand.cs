@@ -2,6 +2,8 @@
 using System.CommandLine;
 using Rig.Core.GitHub;
 using Rig.Core.Processes;
+using Rig.Core.Roots;
+using Rig.Core.Runtime;
 
 namespace Rig.Cli.Devenv;
 
@@ -81,6 +83,12 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
 
         _ = await FailsAsync(root, ["devenv", "agents"], cancellationToken).ConfigureAwait(false);
 
+        if (host.SearchPath is { } searchPath)
+        {
+            await output.WriteLineAsync("\n6. rig on PATH", cancellationToken).ConfigureAwait(false);
+            issues += await RigOnPathAsync(searchPath, cancellationToken).ConfigureAwait(false);
+        }
+
         if (issues == 0)
         {
             await output.WriteLineAsync("\n✓ All required development components are healthy!", cancellationToken).ConfigureAwait(false);
@@ -105,6 +113,29 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
         var version = await proc.RunAsync(new ProcRequest([program, "--version"]) { Timeout = TimeSpan.FromSeconds(15) }, cancellationToken).ConfigureAwait(false);
         var first = version.OutOrEmpty.Split('\n', 2)[0].Trim();
         return $"  {label,-20} ✓ {(first.Length > 0 ? $"{first} " : string.Empty)}({path})";
+    }
+
+    // Report-only: one row per rig on PATH, the one `rig` runs marked with '>', then what to fix. Returns the issue count.
+    private async Task<int> RigOnPathAsync(string searchPath, CancellationToken cancellationToken)
+    {
+        var appData = host.AppDataRoot ?? Path.Join(host.Home, ".local", "share", AppData.Name);
+        var report = RigCopies.Check(searchPath, host.PathExtensions, host.Home, RuntimeManager.RuntimeRoot(appData), host.Windows);
+        if (report.Copies.Count == 0)
+        {
+            await output.WriteLineAsync($"  {"rig",-20} ✗ Not on PATH", cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var (copy, index) in report.Copies.Select((copy, index) => (copy, index)))
+        {
+            await output.WriteLineAsync($"  {(index == 0 ? ">" : " ")} {copy.Label,-22} {copy.Path.Replace('\\', '/')}", cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var finding in report.Findings)
+        {
+            await output.WriteLineAsync($"  {(finding.Issue ? "!" : "-")} {finding.Message}", cancellationToken).ConfigureAwait(false);
+        }
+
+        return report.Issues;
     }
 
     private static string FolderRow(RepoFolderCheck check) => check.Status switch

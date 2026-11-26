@@ -127,7 +127,10 @@ internal static class Program
             Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("LOCALAPPDATA"),
             Console.In,
-            layout.ForHome);
+            layout.ForHome,
+            Environment.GetEnvironmentVariable("PATH") ?? string.Empty,
+            OperatingSystem.IsWindows() ? Environment.GetEnvironmentVariable("PATHEXT") : null,
+            AppData.Current());
         var github = new GhApi(proc);
         Gh.OriginReader origin = async _ => RepoSlug.FromRemote(await git.OutAsync(null, "remote", "get-url", "origin").ConfigureAwait(false));
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())

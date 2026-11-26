@@ -22,7 +22,10 @@ namespace Rig.Cli.Devenv;
 /// <param name="LocalAppData">The <c>LOCALAPPDATA</c> variable, where Windows Terminal's settings live; ignored under another <c>--home</c>.</param>
 /// <param name="Input">Where <c>git --interactive</c> reads its answers (default: none, so every prompt takes its default).</param>
 /// <param name="Layouts"></param>
-internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null, Func<string, EstateLayout>? Layouts = null)
+/// <param name="SearchPath">The <c>PATH</c> value <c>rig doctor</c> lists every <c>rig</c> on; null skips that section.</param>
+/// <param name="PathExtensions">The <c>PATHEXT</c> value on Windows; null elsewhere.</param>
+/// <param name="AppDataRoot">rig's app-data folder, which holds the runtime copies (default: <c>~/.local/share/rig</c>).</param>
+internal sealed record DevenvHost(string Home, string PolicyPath, bool Windows, string Checkout, string CodeRoot, string? Shell, Func<string, string?> Find, string? ConfigHome = null, bool MacOS = false, string? WorkingDirectory = null, string? LocalAppData = null, TextReader? Input = null, Func<string, EstateLayout>? Layouts = null, string? SearchPath = null, string? PathExtensions = null, string? AppDataRoot = null)
 {
     /// <summary>The estate layout for <paramref name="home"/>, which a command's <c>--home</c> may point elsewhere.</summary>
     public EstateLayout LayoutFor(string home) => (Layouts ?? EstateLayout.Isolated)(home);

@@ -88,3 +88,17 @@ including an agent's shell in another repo's worktree, which is where
 The shim carries a `Written by desktop-manager runtime install` line. A file at that path without it
 belongs to something else: install leaves it alone and says so. `~/.local/bin` must be on `PATH`, and
 a shell function or alias named `rig` takes precedence over it.
+
+### Checking that `rig` is this copy
+
+`rig doctor` (section 6, "rig on PATH") lists every `rig` on `PATH` in the order the shell tries
+them, marks the one `rig` runs with `>`, and says what each one is. It changes nothing. It counts
+as an issue when:
+
+- the first `rig` is neither the shim nor `current`'s own `rig` (a pinned copy under the runtime
+  folder counts, because it never follows an install or rollback);
+- neither the shim nor `current` is on `PATH`, or the shim file is missing;
+- any `rig` sits in a Python virtualenv's `Scripts` or `bin` folder. That is the old Python CLI and
+  fails with `ModuleNotFoundError`; delete the virtualenv or take its folder off `PATH`.
+
+Other copies further down, such as a `bin/Debug` build, are listed for information only.
