@@ -1,5 +1,6 @@
 using System.CommandLine;
 using Rig.Cli.Devenv;
+using Rig.Core.Runtime;
 using Rig.Core.Tests;
 using Rig.Core.Tests.Fakes;
 
@@ -33,10 +34,21 @@ public sealed class DoctorCommandTests : IDisposable
         return command;
     }
 
-    private async Task<(int Code, string Out)> RunAsync(bool windows = false, Func<string, string?>? find = null, string? workingDirectory = null)
+    private async Task<(int Code, string Out)> RunAsync(bool windows = false, Func<string, string?>? find = null, string? workingDirectory = null, string? searchPath = null)
     {
         using var output = new StringWriter();
-        var host = new DevenvHost(_home.Path, "/none.json", windows, "/rig", Path.Join(_home.Path, "code"), "/bin/zsh", find ?? (_ => null), WorkingDirectory: workingDirectory ?? _home.Path);
+        var host = new DevenvHost(
+            _home.Path,
+            "/none.json",
+            windows,
+            "/rig",
+            Path.Join(_home.Path, "code"),
+            "/bin/zsh",
+            find ?? (_ => null),
+            WorkingDirectory: workingDirectory ?? _home.Path,
+            SearchPath: searchPath,
+            PathExtensions: OperatingSystem.IsWindows() ? ".EXE;.CMD" : null,
+            AppDataRoot: Path.Join(_home.Path, "appdata"));
         var devenv = new Command("devenv");
         foreach (var name in Stubbed)
         {
@@ -126,5 +138,66 @@ public sealed class DoctorCommandTests : IDisposable
         Assert.Contains("- Unresolved   Could not resolve repository 'rtkelly13/gone' on GitHub", output, StringComparison.Ordinal);
         Assert.Contains(_proc.Requests, request => request.Argv.Take(2).SequenceEqual(["gh", "api"]));
         Assert.DoesNotContain(_proc.Requests, request => request.Argv[0] == "uv" || request.Argv[0] == "dotnet");
+    }
+
+    // A runnable rig at `file`: an execute bit off Windows, where the extension is what counts.
+    private static string RigFile(string file)
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, string.Empty);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        return file;
+    }
+
+    [Fact]
+    public async Task Without_a_path_the_rig_on_path_section_is_skipped()
+    {
+        var (_, output) = await RunAsync();
+
+        Assert.DoesNotContain("6. rig on PATH", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_shim_alone_on_path_is_healthy()
+    {
+        var shim = RigFile(RigShim.PathFor(_home.Path, OperatingSystem.IsWindows()));
+
+        var (code, output) = await RunAsync(windows: OperatingSystem.IsWindows(), searchPath: Path.GetDirectoryName(shim));
+
+        Assert.Equal(0, code);
+        Assert.Contains($"6. rig on PATH\n  > rig shim               {shim.Replace('\\', '/')}\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_python_venv_shadowing_the_shim_is_counted_and_named()
+    {
+        var venv = _home.Folder("old/.venv");
+        await File.WriteAllTextAsync(Path.Join(venv, "pyvenv.cfg"), string.Empty, Token);
+        var stale = RigFile(Path.Join(venv, OperatingSystem.IsWindows() ? "Scripts" : "bin", OperatingSystem.IsWindows() ? "rig.exe" : "rig"));
+        var shim = RigFile(RigShim.PathFor(_home.Path, OperatingSystem.IsWindows()));
+
+        var (code, output) = await RunAsync(
+            windows: OperatingSystem.IsWindows(),
+            searchPath: string.Join(Path.PathSeparator, Path.GetDirectoryName(stale), Path.GetDirectoryName(shim)));
+
+        Assert.Equal(1, code);
+        Assert.Contains($"  > old Python rig (venv)  {stale.Replace('\\', '/')}\n    rig shim               {shim.Replace('\\', '/')}\n", output, StringComparison.Ordinal);
+        Assert.Contains("  ! `rig` runs ", output, StringComparison.Ordinal);
+        Assert.Contains("holds the old Python rig CLI, which no longer runs.", output, StringComparison.Ordinal);
+        Assert.EndsWith("! Found 2 missing required component(s). Run 'rig devenv setup' to resolve.\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task No_rig_on_path_says_so()
+    {
+        var (code, output) = await RunAsync(searchPath: _home.Folder("empty"));
+
+        Assert.Equal(1, code);
+        Assert.Contains("  rig                  ✗ Not on PATH\n", output, StringComparison.Ordinal);
+        Assert.Contains("is missing. Run `rig runtime install` to write it.", output, StringComparison.Ordinal);
     }
 }
