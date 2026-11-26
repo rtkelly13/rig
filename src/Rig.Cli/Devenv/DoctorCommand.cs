@@ -79,6 +79,13 @@ internal sealed class DoctorCommand(DevenvHost host, IProc proc, TimeProvider ti
             issues++;
         }
 
+        // A stale profile block can define a shell function that shadows the installed rig on PATH.
+        if (await FailsAsync(root, ["devenv", "agent-launcher", "--check"], cancellationToken).ConfigureAwait(false) > 0)
+        {
+            await output.WriteLineAsync("  Run 'rig devenv agent-launcher' to refresh the shortcut and remove retired shims.", cancellationToken).ConfigureAwait(false);
+            issues++;
+        }
+
         _ = await FailsAsync(root, ["devenv", "agents"], cancellationToken).ConfigureAwait(false);
 
         if (issues == 0)

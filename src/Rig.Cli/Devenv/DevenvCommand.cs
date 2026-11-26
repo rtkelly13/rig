@@ -65,8 +65,11 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         agents.SetAction(_ => Agents());
         var root = new Option<string>("--root") { Description = "Code root to write the shim to (default: this estate's).", DefaultValueFactory = _ => host.CodeRoot };
         var profile = new Option<string?>("--profile") { Description = "Shell profile to add the shortcut to (default: the active one under --home)." };
-        var launcher = new Command("agent-launcher", "Write the agent launcher shim to the code root and the `agent` shortcut to the shell profile.") { dryRun, home, root, profile };
-        launcher.SetAction(parsed => Launcher(parsed.GetValue(dryRun), parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!)));
+        var launcherCheck = new Option<bool>("--check") { Description = "Report whether the shim and the profile block are current and no retired shim remains, changing nothing; exit 1 when not." };
+        var launcher = new Command("agent-launcher", "Write the agent launcher shim to the code root and the `agent` shortcut to the shell profile, removing retired shims.") { dryRun, home, root, profile, launcherCheck };
+        launcher.SetAction(parsed => parsed.GetValue(launcherCheck)
+            ? LauncherCheck(parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!))
+            : Launcher(parsed.GetValue(dryRun), parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!)));
         var ghCheck = new Option<bool>("--check") { Description = "Report whether the gh scope overlay is installed and current, changing nothing; exit 1 when it is not." };
         var gh = new Command("gh", "Install the personal gh token scope overlay that the workspace devenv merges in.") { dryRun, home, ghCheck };
         gh.SetAction(parsed => Gh(parsed.GetValue(dryRun), parsed.GetValue(ghCheck), parsed.GetValue(home)!));
@@ -174,18 +177,24 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         return 0;
     }
 
-    // The shim at the code root (both shims on Windows), then the profile block calling it. 1 when a write fails.
+    private string LauncherCli => LauncherShim.CliProject(LauncherShim.MainCheckout(host.Checkout));
+
+    private string LauncherShimPath(string root) => Path.Join(root, host.Windows ? "agent.ps1" : "agent.sh");
+
+    private string LauncherBlock(string shim) => host.Windows ? LauncherShim.PowerShellBlock(shim) : LauncherShim.PosixBlock(shim);
+
+    // The shim at the code root (both shims on Windows), then the profile block calling it, then the retired shims go.
+    // 1 when a write fails.
     private int Launcher(bool dryRun, string root, string profile)
     {
-        var cli = LauncherShim.CliProject(LauncherShim.MainCheckout(host.Checkout));
-        var shim = Path.Join(root, host.Windows ? "agent.ps1" : "agent.sh");
+        var shim = LauncherShimPath(root);
         if (dryRun)
         {
             output.WriteLine($"[dry-run] Would write agent launcher shim to {root}");
         }
         else
         {
-            if (!Attempt("Failed to write the agent launcher shim", () => WriteShims(root, cli)))
+            if (!Attempt("Failed to write the agent launcher shim", () => WriteShims(root, LauncherCli)))
             {
                 return 1;
             }
@@ -193,7 +202,49 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
             output.WriteLine($"OK: Agent launcher shim ready: {shim}");
         }
 
-        return Shortcut(dryRun, profile, host.Windows ? LauncherShim.PowerShellBlock(shim) : LauncherShim.PosixBlock(shim));
+        var shortcut = Shortcut(dryRun, profile, LauncherBlock(shim));
+        return RemoveRetired(dryRun, root) | shortcut;
+    }
+
+    // A retired shim devenv wrote is deleted; a file of the same name it did not write stays.
+    private int RemoveRetired(bool dryRun, string root)
+    {
+        var failed = false;
+        foreach (var path in Directory.Exists(root) ? LauncherShim.RetiredIn(root, host.Windows) : [])
+        {
+            if (dryRun)
+            {
+                output.WriteLine($"[dry-run] Would remove retired shim {path}");
+            }
+            else if (Attempt("Failed to remove a retired shim", () => File.Delete(path)))
+            {
+                output.WriteLine($"OK: Removed retired shim {path}");
+            }
+            else
+            {
+                failed = true;
+            }
+        }
+
+        return failed ? 1 : 0;
+    }
+
+    // What agent-launcher would change, reported line by line; 1 when it would change anything.
+    private int LauncherCheck(string root, string profile)
+    {
+        var shim = LauncherShimPath(root);
+        var expected = host.Windows ? LauncherShim.PowerShell(LauncherCli) : LauncherShim.Posix(LauncherCli);
+        var shimCurrent = File.Exists(shim) && File.ReadAllText(shim) == expected;
+        var blockCurrent = LauncherShim.Current(ReadLf(profile), LauncherBlock(shim));
+        var retired = Directory.Exists(root) ? LauncherShim.RetiredIn(root, host.Windows) : [];
+        output.WriteLine($"  {"Agent launcher shim",-20} {(shimCurrent ? "✓ Current" : "! Missing or stale")}   {shim}");
+        output.WriteLine($"  {"Agent shortcut",-20} {(blockCurrent ? "✓ Current" : "! Missing or stale")}   {profile}");
+        foreach (var path in retired)
+        {
+            output.WriteLine($"  {"Retired shim",-20} ! Still present   {path}");
+        }
+
+        return shimCurrent && blockCurrent && retired.Count == 0 ? 0 : 1;
     }
 
     private void WriteShims(string root, string cli)

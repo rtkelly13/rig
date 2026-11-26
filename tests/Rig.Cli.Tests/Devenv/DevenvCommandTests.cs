@@ -485,6 +485,75 @@ public sealed class DevenvCommandTests : IDisposable
         Assert.StartsWith("Failed to configure agent shortcut: ", error, StringComparison.Ordinal);
     }
 
+    // The block and rig shim the Python devenv wrote: rig() shadowed the installed rig on PATH and ran a module that is
+    // gone, so every `rig` in a shell failed with "No module named shared_utilities".
+    private const string PythonEraBlock =
+        $"{LauncherShim.Begin}\n# Managed by `devenv setup` — do not edit between these markers.\nagent() {{\n    \"/c/agent.sh\" \"$@\"\n}}\n"
+        + $"agents() {{\n    \"/c/agent.sh\" \"$@\"\n}}\nrig() {{\n    \"/c/rig.sh\" \"$@\"\n}}\n{LauncherShim.End}\n";
+
+    private const string PythonEraRigShim =
+        $"#!/usr/bin/env bash\n{LauncherShim.Generated}\nexec uv run --no-sync --project \"/c/rig\" python -m shared_utilities.rig_cli \"$@\"\n";
+
+    private async Task SeedPythonEraAsync()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _ = Directory.CreateDirectory(Root);
+        await File.WriteAllTextAsync(Zshrc, $"export EDITOR=vim\n\n{PythonEraBlock}", token);
+        await File.WriteAllTextAsync(Path.Join(Root, "rig.sh"), PythonEraRigShim, token);
+        await File.WriteAllTextAsync(Path.Join(Root, "rig.ps1"), $"{LauncherShim.Generated}\nuv run python -m shared_utilities.rig_cli @args\n", token);
+        await File.WriteAllTextAsync(Path.Join(Root, "agents.sh"), "#!/bin/sh\n# my own agents script\n", token);
+    }
+
+    [Fact]
+    public async Task Agent_launcher_check_flags_a_python_era_block_and_rig_shim()
+    {
+        await SeedPythonEraAsync();
+
+        var (code, output, _) = await InvokeAsync(null, ["agent-launcher", "--root", Root, "--check"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains($"Agent shortcut       ! Missing or stale   {Zshrc}\n", output, StringComparison.Ordinal);
+        Assert.Contains($"Retired shim         ! Still present   {Path.Join(Root, "rig.sh")}\n", output, StringComparison.Ordinal);
+        Assert.Contains($"Retired shim         ! Still present   {Path.Join(Root, "rig.ps1")}\n", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("agents.sh", output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Join(Root, "rig.sh")));
+    }
+
+    [Fact]
+    public async Task Agent_launcher_replaces_the_python_era_block_and_removes_only_generated_retired_shims()
+    {
+        await SeedPythonEraAsync();
+        var token = TestContext.Current.CancellationToken;
+
+        var (code, output, error) = await InvokeAsync(null, ["agent-launcher", "--root", Root]);
+
+        Assert.Equal((0, string.Empty), (code, error));
+        Assert.Contains($"OK: Removed retired shim {Path.Join(Root, "rig.sh")}\n", output, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Join(Root, "rig.sh")));
+        Assert.False(File.Exists(Path.Join(Root, "rig.ps1")));
+        Assert.Equal("#!/bin/sh\n# my own agents script\n", await File.ReadAllTextAsync(Path.Join(Root, "agents.sh"), token));
+        var profile = await File.ReadAllTextAsync(Zshrc, token);
+        Assert.Equal($"export EDITOR=vim\n\n{LauncherShim.PosixBlock(Path.Join(Root, "agent.sh"))}\n", profile);
+        Assert.DoesNotContain("rig()", profile, StringComparison.Ordinal);
+
+        var (again, report, _) = await InvokeAsync(null, ["agent-launcher", "--root", Root, "--check"]);
+
+        Assert.Equal(0, again);
+        Assert.DoesNotContain("!", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Agent_launcher_dry_run_names_retired_shims_without_removing_them()
+    {
+        await SeedPythonEraAsync();
+
+        var (code, output, _) = await InvokeAsync(null, ["agent-launcher", "--root", Root, "--dry-run"]);
+
+        Assert.Equal(0, code);
+        Assert.Contains($"[dry-run] Would remove retired shim {Path.Join(Root, "rig.sh")}\n", output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Join(Root, "rig.sh")));
+    }
+
     private string Overlay => GhScopes.Target(_home.Path, null);
 
     [Fact]
