@@ -272,7 +272,11 @@ internal static class Program
                         home,
                         OperatingSystem.IsWindows(),
                         proc,
-                        TimeProvider.System),
+                        TimeProvider.System,
+                        Environment.GetEnvironmentVariable("PATH") ?? string.Empty,
+                        OperatingSystem.IsWindows() ? Environment.GetEnvironmentVariable("PATHEXT") : null,
+                        OperatingSystem.IsWindows() ? new WindowsUserPath() : null,
+                        Environment.ExpandEnvironmentVariables),
                     Console.Out).Build,
                 () => tools.Build(),
                 new MailCommand(
