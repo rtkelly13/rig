@@ -16,7 +16,7 @@ namespace Rig.Cli.Tests.Estate;
 public sealed class DecisionsCommandTests : IDisposable
 {
     private readonly TempDir _root = new();
-    private readonly ManualClock _clock = new(DateTimeOffset.UtcNow.AddDays(8));
+    private readonly ManualClock _clock = new(TimeProvider.System.GetUtcNow().AddDays(8));
 
     public void Dispose() => _root.Dispose();
 

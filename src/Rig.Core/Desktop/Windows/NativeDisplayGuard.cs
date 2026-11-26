@@ -70,7 +70,7 @@ public sealed class NativeDisplayGuardPorts : IDisplayGuardPorts
     }
 
     /// <inheritdoc/>
-    public double Now => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+    public double Now => TimeProvider.System.GetUtcNow().ToUnixTimeMilliseconds() / 1000.0;
 
     /// <inheritdoc/>
     public MonitorSignature MonitorSignature()

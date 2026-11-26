@@ -35,3 +35,11 @@ M:System.Threading.Tasks.Task.Run``1(System.Func{System.Threading.Tasks.Task{``0
 P:System.Threading.Tasks.Task.Factory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of Task.Factory.StartNew.
 T:System.Threading.Tasks.TaskFactory;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
 T:System.Threading.Tasks.TaskFactory`1;Await the work directly, or use Parallel.ForEachAsync for bounded fan-out, instead of a TaskFactory.
+
+# Ban reading the wall clock directly. Take a TimeProvider (TimeProvider.System at the composition root) so the
+# time is injectable in tests; measure elapsed time with GetTimestamp/GetElapsedTime, which a clock change cannot move.
+P:System.DateTime.Now;Use TimeProvider.GetLocalNow() from an injected TimeProvider instead of DateTime.Now.
+P:System.DateTime.UtcNow;Use TimeProvider.GetUtcNow() from an injected TimeProvider instead of DateTime.UtcNow.
+P:System.DateTime.Today;Use TimeProvider.GetLocalNow().Date from an injected TimeProvider instead of DateTime.Today.
+P:System.DateTimeOffset.Now;Use TimeProvider.GetLocalNow() from an injected TimeProvider instead of DateTimeOffset.Now.
+P:System.DateTimeOffset.UtcNow;Use TimeProvider.GetUtcNow() from an injected TimeProvider instead of DateTimeOffset.UtcNow.

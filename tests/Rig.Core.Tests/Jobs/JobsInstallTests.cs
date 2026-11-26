@@ -47,7 +47,7 @@ public sealed class JobsInstallTests : IDisposable
 
     [Fact]
     public void An_unknown_task_is_refused() =>
-        Assert.Throws<ArgumentException>(() => JobsTaskXml.Render("unknown", new("root", "plan", "rig"), "user", DateTimeOffset.UtcNow));
+        Assert.Throws<ArgumentException>(() => JobsTaskXml.Render("unknown", new("root", "plan", "rig"), "user", TimeProvider.System.GetUtcNow()));
 
     [Theory]
     [InlineData(true)]
