@@ -1,11 +1,13 @@
-// Builds every committed web asset: the SPA bundle and fonts, and each Tailwind
-// entry. The outputs are committed because the Python CLI and server serve them
-// without Node. `--check` builds into temp/ and fails if any committed file
-// differs, so a source edit or a design-system bump that changes output is caught.
+// Builds every web asset: the SPA bundle, its fonts and licences, and each
+// Tailwind entry. Rig.Web's build runs this (RigBuildWebAssets in its csproj), so
+// the Rig.Web outputs are gitignored. Only the image-drift gallery stylesheet is
+// committed, because that Python tool reads it at runtime without Node.
+// `--check` builds into temp/ and fails if the committed gallery.css differs, so a
+// source edit or a design-system bump that changes it is caught.
 import { build } from 'esbuild';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { readFile, mkdir, copyFile, readdir } from 'node:fs/promises';
+import { readFile, mkdir, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,13 +17,16 @@ const checking = process.argv.includes('--check');
 const scratch = path.join(root, 'temp/web-build-check');
 const outputFor = (committed) => (checking ? path.join(scratch, committed) : path.join(root, committed));
 
-// Every Tailwind entry and the committed file it compiles to. Each entry imports
+// Every Tailwind entry and the file it compiles to. Each entry imports
 // its tokens from @rtkelly-labs/design-system.
 const stylesheets = [
   ['web/app.src.css', 'src/Rig.Web/templates/app_assets/app.css'],
   ['tools/image-drift/styles/gallery.src.css', 'tools/image-drift/src/image_drift/templates/gallery.css'],
   ['styles/c4.src.css', 'src/Rig.Web/C4/static/c4.css'],
 ];
+
+// The outputs that stay in git; every other output is built by `dotnet build`.
+const committed = ['tools/image-drift/src/image_drift/templates/gallery.css'];
 
 const appAssets = 'src/Rig.Web/templates/app_assets';
 await mkdir(outputFor(appAssets), { recursive: true });
@@ -36,9 +41,9 @@ await build({
   define: { 'process.env.NODE_ENV': '"production"' },
 });
 const tailwindCli = path.join(path.dirname(require.resolve('@tailwindcss/cli/package.json')), 'dist/index.mjs');
-for (const [source, committed] of stylesheets) {
-  await mkdir(path.dirname(outputFor(committed)), { recursive: true });
-  const tailwind = spawnSync(process.execPath, [tailwindCli, '-i', source, '-o', outputFor(committed), '--minify'], {
+for (const [source, output] of stylesheets) {
+  await mkdir(path.dirname(outputFor(output)), { recursive: true });
+  const tailwind = spawnSync(process.execPath, [tailwindCli, '-i', source, '-o', outputFor(output), '--minify'], {
     cwd: root,
     stdio: 'inherit',
   });
@@ -62,14 +67,6 @@ const assets = [
 for (const [source, name] of assets)
   await copyFile(path.join(root, 'node_modules', source), path.join(outputFor(appAssets), name));
 if (checking) {
-  const files = await readdir(outputFor(appAssets));
-  const existing = await readdir(path.join(root, appAssets));
-  if (files.toSorted().join() !== existing.toSorted().join())
-    throw new Error('Web assets differ; run pnpm css:build');
-  const committed = [
-    ...files.map((file) => path.join(appAssets, file)),
-    ...stylesheets.map(([, output]) => output).filter((output) => !output.startsWith(appAssets)),
-  ];
   for (const file of committed) {
     if (!(await readFile(outputFor(file))).equals(await readFile(path.join(root, file)))) {
       throw new Error(`${file} is stale; run pnpm css:build`);

@@ -9,13 +9,16 @@ the commands an agent runs every session.
 
 ```bash
 dotnet run --project src/Rig.Cli -- status --tests      # git state, then the solution's tests
-pnpm install && pnpm css:build                          # rebuild every committed web asset
-pnpm css:check                                          # fails if any committed output is stale
+pnpm install && pnpm css:build                          # rebuild every web asset by hand
+pnpm css:check                                          # fails if the committed gallery.css is stale
 ```
 
 Every stylesheet is Tailwind 4 (CSS-first, so no `tailwind.config.js`) built on
-`@rtkelly-labs/design-system`. Each entry imports the package's `theme.css`, and the outputs are
-committed because the server must work without Node:
+`@rtkelly-labs/design-system`. Each entry imports the package's `theme.css`. The Rig.Web outputs are
+gitignored: `dotnet build` runs `pnpm install` and `scripts/build-web.mjs` (the `RigBuildWebAssets`
+target in `src/Rig.Web/Rig.Web.csproj`) whenever `web/`, `styles/`, the lockfile or the script
+changed, so building rig needs Node and pnpm. Pass `-p:BuildWebAssets=false` to skip it. Only
+`gallery.css` is committed, because the image-drift Python tool reads it without Node:
 
 | Entry | Output |
 |---|---|

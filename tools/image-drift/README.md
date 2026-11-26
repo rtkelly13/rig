@@ -40,5 +40,5 @@ rig web host (`http://127.0.0.1:8090/studio`), which reads the API from
 ## Stylesheet
 
 `styles/gallery.src.css` compiles to `src/image_drift/templates/gallery.css` through the
-repository's `pnpm css:build`. The output is committed because the CLI inlines it into a
+repository's `pnpm css:build`. Unlike rig's own web assets, this output is committed because the CLI inlines it into a
 self-contained `preview.html` and must work without Node; `pnpm css:check` verifies it.

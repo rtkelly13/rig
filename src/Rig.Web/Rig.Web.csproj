@@ -13,5 +13,28 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Rig.Web.Tests" />
   </ItemGroup>
+
+  <!-- The SPA bundle, its fonts and licences, and the C4 stylesheet are built here, not committed: every build and
+       publish runs `pnpm install` and scripts/build-web.mjs when web/, styles/, the lockfile or the script changed.
+       The server reads them from this project's templates/ and C4/static/ folders. Build with
+       -p:BuildWebAssets=false where nothing serves them (CI's analysis and test shards that use fake trees). -->
+  <PropertyGroup>
+    <BuildWebAssets Condition="'$(BuildWebAssets)' == ''">true</BuildWebAssets>
+    <RigRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../'))</RigRepoRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <RigWebAssetInput Include="$(RigRepoRoot)web/**/*;$(RigRepoRoot)styles/**/*" />
+    <RigWebAssetInput Include="$(RigRepoRoot)package.json;$(RigRepoRoot)pnpm-lock.yaml;$(RigRepoRoot)scripts/build-web.mjs" />
+    <RigWebAssetOutput Include="$(MSBuildThisFileDirectory)templates/app_assets/app.js" />
+    <RigWebAssetOutput Include="$(MSBuildThisFileDirectory)templates/app_assets/app.css" />
+    <RigWebAssetOutput Include="$(MSBuildThisFileDirectory)C4/static/c4.css" />
+  </ItemGroup>
+  <Target Name="RigBuildWebAssets" BeforeTargets="BeforeBuild" Condition="'$(BuildWebAssets)' == 'true'"
+          Inputs="@(RigWebAssetInput)" Outputs="@(RigWebAssetOutput)">
+    <Exec Command="pnpm install --frozen-lockfile" WorkingDirectory="$(RigRepoRoot)" />
+    <Exec Command="node scripts/build-web.mjs" WorkingDirectory="$(RigRepoRoot)" />
+    <!-- esbuild leaves an unchanged bundle's timestamp alone, so touch the outputs or the next build runs this again. -->
+    <Touch Files="@(RigWebAssetOutput)" />
+  </Target>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
