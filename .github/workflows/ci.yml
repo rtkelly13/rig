@@ -92,8 +92,18 @@ jobs:
           path: |
             ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
-      - name: Restore .NET tools (Paket)
-        run: dotnet tool restore
+      # One Paket restore up front. Otherwise each MSBuild node in `dotnet restore` starts its own global
+      # `paket restore` and they race on obj/: NuGet can read a project's references mid-write and restore
+      # Rig.Core with no packages. PaketDisableGlobalRestore (an MSBuild property from the environment) stops
+      # them; the first `dotnet restore` asks for one regardless, because obj/*.paket.props, which sets
+      # PaketPropsVersion, only exists once NuGet has restored. Each project still runs its own
+      # restore the first time (paket restore leaves no obj/*.paket.lock.hash); once `dotnet restore` has run,
+      # PAKET_ERROR_ON_MSBUILD_EXEC fails any later step that would restore again, instead of building without packages.
+      - name: Restore .NET tools and Paket packages
+        run: |
+          dotnet tool restore
+          dotnet paket restore
+          echo "PaketDisableGlobalRestore=true" >> "$GITHUB_ENV"
       # This job runs for docs-only PRs too: docs-audit and command-ownership both
       # consume these artifacts. Restore only the two projects they need in that case
       # instead of the whole solution, whose test projects never get built here.
@@ -108,6 +118,7 @@ jobs:
             dotnet restore src/Rig.Cli
             dotnet restore tools/command-ownership
           fi
+          echo "PAKET_ERROR_ON_MSBUILD_EXEC=true" >> "$GITHUB_ENV"
       # Only the two artifacts other jobs consume, not every test project. `dotnet` still
       # builds the full solution for its tests in parallel. Analyzers stay off here: this
       # job only has to produce runnable output, and `analyze` runs them over the whole
@@ -374,10 +385,22 @@ jobs:
           path: |
             ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
-      - name: Restore .NET tools (Paket)
-        run: dotnet tool restore
+      # One Paket restore up front. Otherwise each MSBuild node in `dotnet restore` starts its own global
+      # `paket restore` and they race on obj/: NuGet can read a project's references mid-write and restore
+      # Rig.Core with no packages. PaketDisableGlobalRestore (an MSBuild property from the environment) stops
+      # them; the first `dotnet restore` asks for one regardless, because obj/*.paket.props, which sets
+      # PaketPropsVersion, only exists once NuGet has restored. Each project still runs its own
+      # restore the first time (paket restore leaves no obj/*.paket.lock.hash); once `dotnet restore` has run,
+      # PAKET_ERROR_ON_MSBUILD_EXEC fails any later step that would restore again, instead of building without packages.
+      - name: Restore .NET tools and Paket packages
+        run: |
+          dotnet tool restore
+          dotnet paket restore
+          echo "PaketDisableGlobalRestore=true" >> "$GITHUB_ENV"
       - name: Restore
-        run: dotnet restore rig.slnx
+        run: |
+          dotnet restore rig.slnx
+          echo "PAKET_ERROR_ON_MSBUILD_EXEC=true" >> "$GITHUB_ENV"
       # Analyzers are two thirds of compile time and `analyze` runs them once over the whole
       # solution, so the shards skip them rather than each re-analyzing Rig.Core.
       - name: Build
@@ -462,10 +485,22 @@ jobs:
           path: |
             ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
-      - name: Restore .NET tools (Paket)
-        run: dotnet tool restore
+      # One Paket restore up front. Otherwise each MSBuild node in `dotnet restore` starts its own global
+      # `paket restore` and they race on obj/: NuGet can read a project's references mid-write and restore
+      # Rig.Core with no packages. PaketDisableGlobalRestore (an MSBuild property from the environment) stops
+      # them; the first `dotnet restore` asks for one regardless, because obj/*.paket.props, which sets
+      # PaketPropsVersion, only exists once NuGet has restored. Each project still runs its own
+      # restore the first time (paket restore leaves no obj/*.paket.lock.hash); once `dotnet restore` has run,
+      # PAKET_ERROR_ON_MSBUILD_EXEC fails any later step that would restore again, instead of building without packages.
+      - name: Restore .NET tools and Paket packages
+        run: |
+          dotnet tool restore
+          dotnet paket restore
+          echo "PaketDisableGlobalRestore=true" >> "$GITHUB_ENV"
       - name: Restore
-        run: dotnet restore rig.slnx
+        run: |
+          dotnet restore rig.slnx
+          echo "PAKET_ERROR_ON_MSBUILD_EXEC=true" >> "$GITHUB_ENV"
       # The one writer of the NuGet cache: this job restores the whole solution, and only main's entry is
       # readable by every PR. Saved before the build, so a failing build still leaves the packages behind.
       # Not a `!` path exclusion: the cache tars the whole folder, so exclusions under it are ignored.
@@ -551,10 +586,22 @@ jobs:
           path: |
             ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('paket.lock', '.config/dotnet-tools.json', 'global.json') }}
-      - name: Restore .NET tools (Paket)
-        run: dotnet tool restore
+      # One Paket restore up front. Otherwise each MSBuild node in `dotnet restore` starts its own global
+      # `paket restore` and they race on obj/: NuGet can read a project's references mid-write and restore
+      # Rig.Core with no packages. PaketDisableGlobalRestore (an MSBuild property from the environment) stops
+      # them; the first `dotnet restore` asks for one regardless, because obj/*.paket.props, which sets
+      # PaketPropsVersion, only exists once NuGet has restored. Each project still runs its own
+      # restore the first time (paket restore leaves no obj/*.paket.lock.hash); once `dotnet restore` has run,
+      # PAKET_ERROR_ON_MSBUILD_EXEC fails any later step that would restore again, instead of building without packages.
+      - name: Restore .NET tools and Paket packages
+        run: |
+          dotnet tool restore
+          dotnet paket restore
+          echo "PaketDisableGlobalRestore=true" >> "$GITHUB_ENV"
       - name: Restore
-        run: dotnet restore rig.slnx
+        run: |
+          dotnet restore rig.slnx
+          echo "PAKET_ERROR_ON_MSBUILD_EXEC=true" >> "$GITHUB_ENV"
       - name: Format changed files
         env:
           EVENT: ${{ github.event_name }}
