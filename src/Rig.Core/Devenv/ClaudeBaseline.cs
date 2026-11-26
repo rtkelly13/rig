@@ -63,12 +63,11 @@ public static class ClaudeBaseline
     ];
 
     /// <summary>
-    /// MCP servers that need no credentials and no per-machine paths. Servers needing an API key or a vault path are
-    /// registered per machine with <c>claude mcp add</c>: a baseline is only for what is safe on every machine.
+    /// MCP servers are opt-in: a stdio entry starts another process in every agent session. Register measured tools
+    /// per project or connect to an existing shared HTTP host; see docs/mcp-tooling.md. Existing entries are preserved.
     /// </summary>
     public static IReadOnlyList<(string Name, JsonObject Config)> McpServers =>
     [
-        ("chrome-devtools", new JsonObject { ["command"] = "npx", ["args"] = new JsonArray("-y", "chrome-devtools-mcp@latest") }),
     ];
 
     /// <summary><c>~/.claude/settings.json</c> under <paramref name="home"/>.</summary>

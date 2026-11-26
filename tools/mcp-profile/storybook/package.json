@@ -1,0 +1,8 @@
+{
+  "name": "rig-storybook-mcp-profile",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@storybook/mcp": "10.6.8"
+  }
+}
