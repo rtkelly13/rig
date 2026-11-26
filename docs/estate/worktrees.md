@@ -65,8 +65,13 @@ so the sidebar fills with finished branches. `estate orca-worktrees` lists every
 worktree in the Orca profile (and in a separate work profile, if `--work-orca-data` names one) and says
 which are finished. As with `estate tidy`, the scope is explicit: `--repo <name|path>`
 (repeatable; a project's folder or display name, or a path inside its checkout or a worktree)
-or `--all` for every project, and neither or both exits 2. `--apply` removes the finished
+or `--all` for every project, and neither or both exits 2. When the estate's Orca is
+not running it exits 3, as the other Orca commands do. `--apply` removes the finished
 ones, `--kept` lists the kept ones with the reason, and `--json` gives every row.
+
+The scheduled [`estate-orca-worktrees` job](../desktop-manager/jobs.md#jobs) runs this
+daily on logon and tick as `--all --apply`, after `estate sync` has pruned the gone
+branches; a tick retries it while Orca is down.
 
 | verdict | means | `--apply` |
 |---|---|---|
