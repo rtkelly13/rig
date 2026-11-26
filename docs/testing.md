@@ -24,7 +24,7 @@ global `using Xunit` and aggressive parallel collections, so a new project needs
 | `Rig.Cli.Tests` | command parsing and output |
 | `Rig.Web.Tests` | ASP.NET routes, MCP, the SPA assets and the design-token rules |
 | `Rig.Web.BrowserTests` | the SPA in headless Chromium (Playwright), both themes; needs `playwright.ps1 install chromium` |
-| `Rig.Architecture.Tests` | the layer rules (NetArchTest) |
+| `Rig.Architecture.Tests` | the layer rules: NetArchTest for references out of a project, ArchUnitNET for cycles and the role layering |
 | `Rig.CommandOwnership.Tests` | the ownership gate's discovery |
 | `Rig.Specs` | the Gherkin scenarios, through Reqnroll |
 
@@ -92,8 +92,12 @@ dotnet run scripts/coverage-floor.cs -- TestResults/coverage.*.json
 Win32 and UI Automation adapters cannot run on the Linux job, so keep logic out of them. Code that can be tested
 belongs in a type the Linux job measures.
 
-Layer rules live in `tests/Rig.Architecture.Tests` (NetArchTest), next to the project references that already
-stop a lower layer referencing a higher one.
+Layer rules live in `tests/Rig.Architecture.Tests`, next to the project references that already stop a lower layer
+referencing a higher one. `StructureTests` reads every type reference from the compiled IL, folds it into namespaces,
+and classifies each edge by the roles in `Graph/Roles.cs`. A new area fails until it is given a role. A new
+feature-crossing or upward edge fails with the type pairs behind it, which is what to move down a layer; the agent
+making the change does the move, and the test checks it. Each listed exception that stops occurring fails until its
+line is deleted.
 
 ## CI time budget
 
