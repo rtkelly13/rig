@@ -44,7 +44,7 @@ public static class LinkRoutes
                 return OpsJson.Error(StatusCodes.Status501NotImplemented, "This machine cannot route links; open it in the browser");
             }
 
-            var outcome = await Task.Run(() => open(page)).ConfigureAwait(false);
+            var outcome = open(page);
             return OpsJson.Ok(context, new { landed = outcome.Landed, detail = outcome.Detail });
         })));
     }
