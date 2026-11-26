@@ -13,7 +13,11 @@ namespace Rig.Cli.Runtime;
 /// <param name="Windows">Whether the shim is <c>rig.cmd</c> and links are junctions.</param>
 /// <param name="Proc">Runs git, uv, dotnet and the copy's own checks.</param>
 /// <param name="Clock">The clock <c>installed.json</c> stamps its time with.</param>
-internal sealed record RuntimeHost(string Root, string Checkout, string Home, bool Windows, IProc Proc, TimeProvider Clock);
+/// <param name="SearchPath">This process's <c>PATH</c>, checked for every <c>rig</c> after install; null skips the check.</param>
+/// <param name="PathExtensions">The <c>PATHEXT</c> value on Windows; null elsewhere.</param>
+/// <param name="UserPath">The Windows User PATH install may fix; null (off Windows) reports only.</param>
+/// <param name="Expand">Expands a User PATH entry's <c>%VARIABLE%</c>s (default: unchanged).</param>
+internal sealed record RuntimeHost(string Root, string Checkout, string Home, bool Windows, IProc Proc, TimeProvider Clock, string? SearchPath = null, string? PathExtensions = null, IUserPath? UserPath = null, Func<string, string>? Expand = null);
 
 /// <summary>
 /// <c>rig runtime</c>: the pinned copy of one commit that the scheduled tasks run from. Exit codes: 0 success, 1 the install, rollback or
@@ -128,6 +132,7 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
             }
 
             ReportShim();
+            ReportCopies();
             return 0;
         }
         catch (Exception error) when (error is RuntimeInstallException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
@@ -204,6 +209,48 @@ internal sealed class RuntimeCommand(RuntimeHost host, TextWriter output)
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             output.WriteLine($"rig on PATH: could not write {shown}: {error.Message}");
+        }
+    }
+
+    // Every other rig on this process's PATH that could shadow the shim, as `rig doctor` reports them. Then the safe fixes,
+    // on the Windows User PATH only: drop Python venv folders holding a rig and put the shim's folder first when neither it
+    // nor `current` is there. The Machine PATH, shell profiles and other builds are only reported.
+    internal void ReportCopies()
+    {
+        if (host.SearchPath is not { } searchPath)
+        {
+            return;
+        }
+
+        foreach (var finding in RigCopies.Check(searchPath, host.PathExtensions, host.Home, host.Root, host.Windows).Findings)
+        {
+            output.WriteLine($"{(finding.Issue ? "!" : "-")} {finding.Message}");
+        }
+
+        if (host.UserPath is not { } userPath)
+        {
+            return;
+        }
+
+        try
+        {
+            var plan = UserPathFix.Plan(userPath.Read(), host.Expand ?? (entry => entry), host.PathExtensions, host.Home, host.Root);
+            if (plan.Value is not { } value)
+            {
+                return;
+            }
+
+            userPath.Write(value);
+            foreach (var change in plan.Changes)
+            {
+                output.WriteLine(change);
+            }
+
+            output.WriteLine("Open a new shell to pick up the new PATH.");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            output.WriteLine($"Could not update your User PATH: {error.Message}");
         }
     }
 

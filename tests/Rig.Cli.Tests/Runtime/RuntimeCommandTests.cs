@@ -891,6 +891,105 @@ public sealed class RuntimeCommandTests : IDisposable
         Assert.Contains("Left ", _out.ToString(), StringComparison.Ordinal);
     }
 
+    private static string? Extensions => OperatingSystem.IsWindows() ? ".EXE;.CMD" : null;
+
+    private string Home => Path.Join(_temp.Path, "home");
+
+    private string ShimFolder => Path.GetDirectoryName(RigShim.PathFor(Home, OperatingSystem.IsWindows()))!;
+
+    // The shim, written as install writes it, so the check finds it.
+    private string Shim()
+    {
+        var shim = RigShim.PathFor(Home, OperatingSystem.IsWindows());
+        _ = RigShim.Install(shim, Root, OperatingSystem.IsWindows());
+        return shim;
+    }
+
+    // The incident: the old Python rig's venv, its Scripts folder holding a runnable rig.
+    private string VenvScripts()
+    {
+        var venv = _temp.Folder("old-rig/.venv");
+        File.WriteAllText(Path.Join(venv, "pyvenv.cfg"), string.Empty);
+        var scripts = _temp.Folder("old-rig/.venv/Scripts");
+        var rig = Path.Join(scripts, OperatingSystem.IsWindows() ? "rig.exe" : "rig");
+        File.WriteAllText(rig, string.Empty);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(rig, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        return scripts;
+    }
+
+    private RuntimeCommand Command(string? searchPath, FakeUserPath? userPath = null) =>
+        new(new RuntimeHost(Root, _temp.Path, Home, OperatingSystem.IsWindows(), new FakeProc(), TimeProvider.System, searchPath, Extensions, userPath), _out);
+
+    [Fact]
+    public void ReportCopies_without_a_path_reports_and_changes_nothing()
+    {
+        var userPath = new FakeUserPath();
+
+        Command(null, userPath).ReportCopies();
+
+        Assert.Equal(string.Empty, _out.ToString());
+        Assert.Empty(userPath.Writes);
+    }
+
+    [Fact]
+    public void ReportCopies_with_the_shim_first_and_on_the_user_path_is_silent()
+    {
+        var userPath = new FakeUserPath(ShimFolder);
+
+        Command(Path.GetDirectoryName(Shim()), userPath).ReportCopies();
+
+        Assert.Equal(string.Empty, _out.ToString());
+        Assert.Empty(userPath.Writes);
+    }
+
+    [Fact]
+    public void ReportCopies_reports_a_shadowing_venv_then_takes_it_off_the_user_path_and_adds_the_shim()
+    {
+        var scripts = VenvScripts();
+        var userPath = new FakeUserPath($"{scripts};C:\\tools");
+
+        Command(string.Join(Path.PathSeparator, scripts, Path.GetDirectoryName(Shim())), userPath).ReportCopies();
+
+        Assert.Equal([$"{ShimFolder};C:\\tools"], userPath.Writes);
+        var lines = _out.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.StartsWith("! `rig` runs ", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("! ", lines[1], StringComparison.Ordinal);
+        Assert.Contains("holds the old Python rig CLI", lines[1], StringComparison.Ordinal);
+        Assert.StartsWith("- ", lines[2], StringComparison.Ordinal);
+        Assert.Equal(
+            [
+                $"Removed {scripts.Replace('\\', '/')} from your User PATH: it holds the old Python rig CLI.",
+                $"Added {ShimFolder.Replace('\\', '/')} to the front of your User PATH, so `rig` runs the shim.",
+                "Open a new shell to pick up the new PATH.",
+            ],
+            lines[3..]);
+    }
+
+    [Fact]
+    public void ReportCopies_without_a_user_path_only_reports()
+    {
+        var scripts = VenvScripts();
+
+        Command(scripts).ReportCopies();
+
+        Assert.Contains("holds the old Python rig CLI, which no longer runs.", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("User PATH", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReportCopies_says_when_the_user_path_cannot_be_read()
+    {
+        var userPath = new FakeUserPath { Failure = new UnauthorizedAccessException("denied") };
+
+        Command(Path.GetDirectoryName(Shim()), userPath).ReportCopies();
+
+        Assert.Equal("Could not update your User PATH: denied\n", _out.ToString());
+    }
+
     /// <summary>
     /// Runs the <c>cmd /c mklink /J</c> the runtime uses for its <c>current</c> junction. The fake answers every
     /// command, so without this one's real filesystem effect a later install or rollback would see no link.

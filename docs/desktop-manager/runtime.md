@@ -102,3 +102,13 @@ as an issue when:
   fails with `ModuleNotFoundError`; delete the virtualenv or take its folder off `PATH`.
 
 Other copies further down, such as a `bin/Debug` build, are listed for information only.
+
+`rig runtime install` runs the same check after it writes the shim and prints its findings. On
+Windows it then fixes the **User** PATH (`HKCU\Environment\Path`), and nothing else:
+
+- it removes entries that are a Python virtualenv's `Scripts` folder holding a `rig`;
+- when neither `~/.local/bin` nor `current`'s `rig` folder is on it, it puts `~/.local/bin` first.
+
+Other entries keep their `%VARIABLE%`s, because the value is read and written unexpanded. The
+Machine PATH, shell profile lines and other builds are reported, never changed; off Windows install
+only reports. Open a new shell to pick up a changed PATH.
