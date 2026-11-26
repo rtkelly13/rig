@@ -360,8 +360,16 @@
       "allowed_owners": [
         "Resultful"
       ],
+      "environments": {
+        "release": {
+          "wait_timer": 0,
+          "reviewers": [
+            "rtkelly13"
+          ]
+        }
+      },
       "required_checks": [
-        "build"
+        "ci"
       ]
     },
     "Union.Assertions": {
