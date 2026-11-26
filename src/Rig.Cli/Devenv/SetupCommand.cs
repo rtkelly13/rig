@@ -73,7 +73,7 @@ internal sealed class SetupCommand(DevenvHost host, TextWriter output, TextWrite
             run => [["devenv", "git", .. run.Common, "--mode", run.Mode]]),
         new(
             "GitHub CLI Scopes",
-            "Install the personal gh scope overlay read by the workspace devenv",
+            "Install the personal gh scope overlay read by the workspace devenv, and the required gh extensions",
             "Would you like to install the gh scope overlay?",
             true,
             run => [["devenv", "gh", .. run.Common]]),

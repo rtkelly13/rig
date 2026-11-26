@@ -24,19 +24,31 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
         var mode = new Option<string>("--mode") { Description = "full installs every missing tool; express and agent only the required ones.", DefaultValueFactory = _ => "full" };
         mode.AcceptOnlyFromAmong(Modes);
         var check = new Option<bool>("--check") { Description = "List each tool and whether it is installed, changing nothing; exit 1 when a required one is missing." };
-        var upgrade = new Option<bool>("--update", "-u") { Description = "Also upgrade every package the platform package manager owns (brew upgrade / winget upgrade --all)." };
-        var tools = new Command("tools", "Check the developer tool catalog and install the missing tools.") { dryRun, home, mode, interactive, check, upgrade };
+        var outdated = new Option<bool>("--outdated")
+        {
+            Description = "With --check, also ask the package manager (brew outdated / winget upgrade) which installed catalog tools have a newer version, and compare every installed gh extension with its latest GitHub release (needs the network). Informational: an outdated tool or extension does not change the exit code.",
+        };
+        var upgrade = new Option<bool>("--update", "-u") { Description = "Also upgrade every package the platform package manager owns (brew upgrade / winget upgrade --all), then every gh extension." };
+        var tools = new Command("tools", "Check the developer tool catalog and install the missing tools.") { dryRun, home, mode, interactive, check, outdated, upgrade };
+        tools.Validators.Add(result =>
+        {
+            if (result.GetValue(outdated) && !result.GetValue(check))
+            {
+                result.AddError("--outdated needs --check.");
+            }
+        });
         tools.SetAction((parsed, cancellationToken) => ToolsAsync(
             parsed.GetValue(home)!,
             parsed.GetValue(mode)!,
             parsed.GetValue(dryRun),
             !parsed.GetValue(interactive),
             parsed.GetValue(check),
+            parsed.GetValue(outdated),
             parsed.GetValue(upgrade),
             cancellationToken));
         var runtimes = new Command("runtimes", "Install uv and fnm, then the folder's Python through uv and the Node LTS through fnm.") { dryRun, interactive };
         runtimes.SetAction((parsed, cancellationToken) => RuntimesAsync(parsed.GetValue(dryRun), !parsed.GetValue(interactive), cancellationToken));
-        var update = new Command("update", "Upgrade every package the platform package manager owns. Skills are updated by `rig skills update`.");
+        var update = new Command("update", "Upgrade every package the platform package manager owns, then every gh extension (gh extension upgrade --all). Skills are updated by `rig skills update`.");
         update.SetAction((_, cancellationToken) => UpdateAsync(cancellationToken));
         return [tools, runtimes, update];
     }
@@ -45,7 +57,7 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
 
     private DevTools Tools() => new(PackageManager.For(host.Windows, host.Find, proc), host.Find);
 
-    private async Task<int> ToolsAsync(string home, string mode, bool dryRun, bool quiet, bool check, bool upgrade, CancellationToken cancellationToken)
+    private async Task<int> ToolsAsync(string home, string mode, bool dryRun, bool quiet, bool check, bool outdated, bool upgrade, CancellationToken cancellationToken)
     {
         IReadOnlyList<DevTool> catalog;
         try
@@ -60,19 +72,22 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
 
         var tools = Tools();
         var missing = new List<DevTool>();
+        var present = new List<DevTool>();
         await output.WriteLineAsync("Development tools:", cancellationToken).ConfigureAwait(false);
         foreach (var tool in catalog)
         {
             var installed = await tools.IsInstalledAsync(tool, cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync($"  {tool.Name,-28} {tool.Category,-10} {(installed ? "installed" : tool.Required ? "missing (required)" : "missing"),-18} {tool.Description}", cancellationToken).ConfigureAwait(false);
-            if (!installed)
-            {
-                missing.Add(tool);
-            }
+            (installed ? present : missing).Add(tool);
         }
 
         if (check)
         {
+            if (outdated)
+            {
+                await ReportOutdatedAsync(tools, present, cancellationToken).ConfigureAwait(false);
+            }
+
             return missing.Any(tool => tool.Required) ? 1 : 0;
         }
 
@@ -131,6 +146,60 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
         return failed;
     }
 
+    // Catalog tools through the package manager, then every installed gh extension against its latest release.
+    private async Task ReportOutdatedAsync(DevTools tools, List<DevTool> present, CancellationToken cancellationToken)
+    {
+        await ReportOutdatedToolsAsync(tools, present, cancellationToken).ConfigureAwait(false);
+        await ReportOutdatedExtensionsAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // Only installed tools are asked about; a lookup that fails is said, so it never reads as up to date.
+    private async Task ReportOutdatedToolsAsync(DevTools tools, List<DevTool> present, CancellationToken cancellationToken)
+    {
+        await output.WriteLineAsync("Outdated tools:", cancellationToken).ConfigureAwait(false);
+        if (tools.Manager is null)
+        {
+            await output.WriteLineAsync($"  ? Could not check: {(host.Windows ? "winget" : "brew")} is not on the PATH.", cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (await tools.OutdatedAsync(present, cancellationToken).ConfigureAwait(false) is not { } outdated)
+        {
+            await output.WriteLineAsync($"  ? Could not check: {tools.Manager.Name} did not list its upgrades.", cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        foreach (var (tool, package) in outdated)
+        {
+            await output.WriteLineAsync($"  {tool.Name,-28} {package.Installed} -> {package.Available}", cancellationToken).ConfigureAwait(false);
+        }
+
+        await output.WriteLineAsync(
+            outdated.Count > 0 ? $"  {outdated.Count} tool(s) can be upgraded. Run 'rig devenv update' to upgrade them." : "  ✓ Every installed catalog tool is up to date.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ReportOutdatedExtensionsAsync(CancellationToken cancellationToken)
+    {
+        await GhExtensionReleaseReport.HeaderAsync(output, cancellationToken).ConfigureAwait(false);
+        if (host.Find("gh") is null)
+        {
+            await output.WriteLineAsync("  ? Could not check: gh is not on the PATH.", cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var extensions = new GhExtensionManager(proc, new GhApi(proc));
+        var (installed, problem) = await extensions.ListAsync(cancellationToken).ConfigureAwait(false);
+        if (installed is null)
+        {
+            await output.WriteLineAsync($"  ? Could not check: gh extension list failed: {problem}", cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await GhExtensionReleaseReport.RowsAsync(output, extensions, installed, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The package manager first, then gh's extensions, which brew and winget do not own.
     private async Task<bool> UpgradeAsync(DevTools tools, bool quiet, CancellationToken cancellationToken)
     {
         if (tools.Manager is null)
@@ -145,6 +214,25 @@ internal sealed class ToolsCommands(DevenvHost host, IProc proc, TextWriter outp
             return false;
         }
 
+        return await UpgradeExtensionsAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<bool> UpgradeExtensionsAsync(CancellationToken cancellationToken)
+    {
+        if (host.Find("gh") is null)
+        {
+            await output.WriteLineAsync("- gh is not on the PATH; skipped gh extension upgrades.", cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+
+        await output.WriteLineAsync("Upgrading gh extensions...", cancellationToken).ConfigureAwait(false);
+        if (!await new GhExtensionManager(proc, new GhApi(proc)).UpgradeAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await error.WriteLineAsync("gh extension upgrade failed: gh extension upgrade --all exited non-zero.", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        await output.WriteLineAsync("✓ gh extensions are up to date.", cancellationToken).ConfigureAwait(false);
         return true;
     }
 

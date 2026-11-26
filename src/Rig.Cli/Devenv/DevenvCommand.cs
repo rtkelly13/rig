@@ -67,9 +67,24 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
         var profile = new Option<string?>("--profile") { Description = "Shell profile to add the shortcut to (default: the active one under --home)." };
         var launcher = new Command("agent-launcher", "Write the agent launcher shim to the code root and the `agent` shortcut to the shell profile.") { dryRun, home, root, profile };
         launcher.SetAction(parsed => Launcher(parsed.GetValue(dryRun), parsed.GetValue(root)!, parsed.GetValue(profile) ?? DefaultProfile(parsed.GetValue(home)!)));
-        var ghCheck = new Option<bool>("--check") { Description = "Report whether the gh scope overlay is installed and current, changing nothing; exit 1 when it is not." };
-        var gh = new Command("gh", "Install the personal gh token scope overlay that the workspace devenv merges in.") { dryRun, home, ghCheck };
-        gh.SetAction(parsed => Gh(parsed.GetValue(dryRun), parsed.GetValue(ghCheck), parsed.GetValue(home)!));
+        var ghCheck = new Option<bool>("--check")
+        {
+            Description = "Report whether the gh scope overlay is current and every required gh extension is installed, changing nothing; exit 1 when either is not, or gh is not on the PATH.",
+        };
+        var ghOutdated = new Option<bool>("--outdated")
+        {
+            Description = "With --check, also compare every installed gh extension with its latest GitHub release (needs the network). Informational: an outdated extension does not change the exit code.",
+        };
+        var gh = new Command("gh", "Install the personal gh token scope overlay that the workspace devenv merges in, and the required gh extensions.") { dryRun, home, ghCheck, ghOutdated };
+        gh.Validators.Add(result =>
+        {
+            if (result.GetValue(ghOutdated) && !result.GetValue(ghCheck))
+            {
+                result.AddError("--outdated needs --check.");
+            }
+        });
+        gh.SetAction((parsed, cancellationToken) =>
+            GhAsync(parsed.GetValue(dryRun), parsed.GetValue(ghCheck), parsed.GetValue(ghOutdated), parsed.GetValue(home)!, cancellationToken));
         var fontsCheck = new Option<bool>("--check") { Description = "Report which Nerd Fonts are installed, changing nothing; exit 1 when one is missing." };
         var fontsCommand = new Command("fonts", "Download and install the developer Nerd Fonts (JetBrainsMono, CascadiaCode, FiraCode).") { dryRun, home, fontsCheck };
         fontsCommand.SetAction((parsed, cancellationToken) =>
@@ -126,39 +141,144 @@ internal sealed class DevenvCommand(DevenvHost host, ObsidianPlugins plugins, Ne
     }
 
     // The overlay goes where the workspace devenv reads it. XDG_CONFIG_HOME applies only to the default home, so a
-    // temporary --home never writes into the real config folder.
-    private int Gh(bool dryRun, bool check, string home)
+    // temporary --home never writes into the real config folder. The required extensions follow it.
+    private async Task<int> GhAsync(bool dryRun, bool check, bool outdated, string home, CancellationToken cancellationToken)
     {
         var target = GhScopes.Target(home, home == host.Home ? host.ConfigHome : null);
-        var scopes = string.Join(", ", GhScopes.Required);
+        var overlay = check ? CheckOverlay(target) : WriteOverlay(target, dryRun);
+        var extensions = check
+            ? await CheckExtensionsAsync(outdated, cancellationToken).ConfigureAwait(false)
+            : await InstallExtensionsAsync(dryRun, cancellationToken).ConfigureAwait(false);
+        return overlay && extensions ? 0 : 1;
+    }
+
+    private bool CheckOverlay(string target)
+    {
         var state = GhScopes.State(target);
-        if (check)
+        output.WriteLine($"gh scope overlay ({target}): {state.Describe()}");
+        if (state != OverlayState.InSync)
         {
-            output.WriteLine($"gh scope overlay ({target}): {state.Describe()}");
-            return state == OverlayState.InSync ? 0 : 1;
+            output.WriteLine("  Run 'rig devenv gh' to install it.");
         }
 
-        if (state == OverlayState.InSync)
+        return state == OverlayState.InSync;
+    }
+
+    private bool WriteOverlay(string target, bool dryRun)
+    {
+        var scopes = string.Join(", ", GhScopes.Required);
+        if (GhScopes.State(target) == OverlayState.InSync)
         {
             output.WriteLine($"✓ gh scope overlay is installed ({scopes}).");
         }
         else if (dryRun)
         {
             output.WriteLine($"Would write gh scope overlay ({scopes}) to {target}");
-            return 0;
+            return true;
         }
         else
         {
             if (!Attempt("Failed to write the gh scope overlay", () => Put(target, GhScopes.Overlay)))
             {
-                return 1;
+                return false;
             }
 
             output.WriteLine($"✓ Wrote gh scope overlay ({scopes}) to {target}");
         }
 
         output.WriteLine("  Check and reconcile the token with: devenv doctor git auth (workspace)");
-        return 0;
+        return true;
+    }
+
+    private GhExtensionManager Extensions() => new(proc, new GhApi(proc));
+
+    // Exit 1 when gh is absent, its extensions cannot be listed, or a required one is missing. Outdated is informational.
+    private async Task<bool> CheckExtensionsAsync(bool outdated, CancellationToken cancellationToken)
+    {
+        await output.WriteLineAsync("gh extensions:", cancellationToken).ConfigureAwait(false);
+        if (host.Find("gh") is null)
+        {
+            await output.WriteLineAsync("  ✗ gh is not on the PATH. Install it with 'rig devenv tools', then run 'rig devenv gh'.", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        var extensions = Extensions();
+        var (installed, problem) = await extensions.ListAsync(cancellationToken).ConfigureAwait(false);
+        if (installed is null)
+        {
+            await output.WriteLineAsync($"  ✗ Could not list gh extensions: {problem}", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        var versions = installed.GroupBy(extension => extension.Repo, StringComparer.OrdinalIgnoreCase).ToDictionary(group => group.Key, group => group.First().Version, StringComparer.OrdinalIgnoreCase);
+        foreach (var required in GhExtensions.Required)
+        {
+            var row = versions.TryGetValue(required.Repo, out var version)
+                ? $"installed{(version.Length > 0 ? $" {version}" : string.Empty)}"
+                : $"missing (required): gh extension install {required.Repo}";
+            await output.WriteLineAsync($"  {required.Repo,-28} {row}", cancellationToken).ConfigureAwait(false);
+        }
+
+        var missing = GhExtensions.Missing(installed);
+        if (missing.Count > 0)
+        {
+            await output.WriteLineAsync($"  Run 'rig devenv gh' to install {missing.Count} missing gh extension(s).", cancellationToken).ConfigureAwait(false);
+        }
+
+        if (outdated)
+        {
+            await GhExtensionReleaseReport.HeaderAsync(output, cancellationToken).ConfigureAwait(false);
+            await GhExtensionReleaseReport.RowsAsync(output, extensions, installed, cancellationToken).ConfigureAwait(false);
+        }
+
+        return missing.Count == 0;
+    }
+
+    // gh may not be installed yet: setup runs this step before the tools step, so a missing gh is named, not failed.
+    private async Task<bool> InstallExtensionsAsync(bool dryRun, CancellationToken cancellationToken)
+    {
+        if (host.Find("gh") is null)
+        {
+            await output.WriteLineAsync("- gh is not on the PATH, so the required gh extensions were skipped. Install it with 'rig devenv tools', then rerun 'rig devenv gh'.", cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+
+        var extensions = Extensions();
+        var (installed, problem) = await extensions.ListAsync(cancellationToken).ConfigureAwait(false);
+        if (installed is null)
+        {
+            await error.WriteLineAsync($"Could not list gh extensions: {problem}", cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        var missing = GhExtensions.Missing(installed);
+        if (missing.Count == 0)
+        {
+            await output.WriteLineAsync($"✓ Required gh extensions are installed ({string.Join(", ", GhExtensions.Required.Select(extension => extension.Repo))}).", cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+
+        if (dryRun)
+        {
+            await output.WriteLineAsync($"Would install gh extension(s): {string.Join(", ", missing.Select(extension => extension.Repo))}", cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+
+        var failed = false;
+        foreach (var extension in missing)
+        {
+            if (await extensions.InstallAsync(extension.Repo, cancellationToken).ConfigureAwait(false) is { } reason)
+            {
+                await error.WriteLineAsync($"! Failed to install gh extension {extension.Repo}: {reason}", cancellationToken).ConfigureAwait(false);
+                failed = true;
+            }
+            else
+            {
+                await output.WriteLineAsync($"✓ Installed gh extension {extension.Repo}", cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return !failed;
     }
 
     private string DefaultProfile(string home) => host.Windows ? LauncherShim.PowerShellProfile(home) : LauncherShim.PosixProfile(home, host.Shell);

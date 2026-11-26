@@ -17,6 +17,7 @@ public sealed class DevenvCommandTests : IDisposable
     private readonly PluginServer _server = new();
     private readonly FontServer _fonts = new();
     private readonly FakeProc _proc = new();
+    private readonly HashSet<string> _onPath = new(StringComparer.Ordinal) { "claude" };
 
     public void Dispose()
     {
@@ -31,7 +32,7 @@ public sealed class DevenvCommandTests : IDisposable
 
     private Command Build(TextWriter output, TextWriter error, string? policy = null) =>
         new DevenvCommand(
-            new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false, Checkout, Path.Join(_home.Path, "not-this-root"), "/bin/zsh", p => p == "claude" ? "/bin/claude" : null),
+            new DevenvHost(Path.Join(_home.Path, "not-this-home"), policy ?? PolicyFiles.Real, false, Checkout, Path.Join(_home.Path, "not-this-root"), "/bin/zsh", p => _onPath.Contains(p) ? $"/bin/{p}" : null),
             _server.Plugins,
             _fonts.Fonts,
             _proc,
@@ -487,26 +488,105 @@ public sealed class DevenvCommandTests : IDisposable
 
     private string Overlay => GhScopes.Target(_home.Path, null);
 
+    private const string NoGh = "- gh is not on the PATH, so the required gh extensions were skipped. Install it with 'rig devenv tools', then rerun 'rig devenv gh'.\n";
+
+    // gh is on the PATH and lists these extensions.
+    private void Gh(string listed)
+    {
+        _ = _onPath.Add("gh");
+        _ = _proc.Answer(new(0, listed, string.Empty), "gh", "extension", "list");
+    }
+
     [Fact]
     public async Task Gh_installs_the_overlay_then_reports_it_installed()
     {
         var (missing, report, _) = await InvokeAsync(null, ["gh", "--check"]);
 
         Assert.Equal(1, missing);
-        Assert.Equal($"gh scope overlay ({Overlay}): not installed\n", report);
+        Assert.Equal(
+            $"gh scope overlay ({Overlay}): not installed\n  Run 'rig devenv gh' to install it.\ngh extensions:\n"
+            + "  ✗ gh is not on the PATH. Install it with 'rig devenv tools', then run 'rig devenv gh'.\n",
+            report);
 
         var (code, output, error) = await InvokeAsync(null, ["gh"]);
 
         Assert.Equal(0, code);
         Assert.Empty(error);
-        Assert.Equal($"✓ Wrote gh scope overlay (admin:org, read:user) to {Overlay}\n  Check and reconcile the token with: devenv doctor git auth (workspace)\n", output);
+        Assert.Equal($"✓ Wrote gh scope overlay (admin:org, read:user) to {Overlay}\n  Check and reconcile the token with: devenv doctor git auth (workspace)\n{NoGh}", output);
         Assert.Equal(GhScopes.Overlay, await File.ReadAllTextAsync(Overlay, TestContext.Current.CancellationToken));
 
         var (again, second, _) = await InvokeAsync(null, ["gh"]);
 
         Assert.Equal(0, again);
         Assert.StartsWith("✓ gh scope overlay is installed (admin:org, read:user).\n", second, StringComparison.Ordinal);
-        Assert.Equal(0, (await InvokeAsync(null, ["gh", "--check"])).Code);
+
+        Gh("gh stack\tgithub/gh-stack\tv0.3.0\n");
+        var (healthy, checkedOut, _) = await InvokeAsync(null, ["gh", "--check"]);
+
+        Assert.Equal(0, healthy);
+        Assert.Equal($"gh scope overlay ({Overlay}): in sync\ngh extensions:\n  github/gh-stack              installed v0.3.0\n", checkedOut);
+        Assert.DoesNotContain(_proc.Requests, request => request.Argv is [_, "api", ..]);
+    }
+
+    [Fact]
+    public async Task Gh_check_names_a_missing_extension_and_how_to_install_it()
+    {
+        _ = await InvokeAsync(null, ["gh"]);
+        Gh("gh aw\tgithub/gh-aw\tv0.77.5\n");
+
+        var (code, output, _) = await InvokeAsync(null, ["gh", "--check"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains("  github/gh-stack              missing (required): gh extension install github/gh-stack\n", output, StringComparison.Ordinal);
+        Assert.EndsWith("  Run 'rig devenv gh' to install 1 missing gh extension(s).\n", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Gh_check_fails_when_gh_cannot_list_its_extensions()
+    {
+        _ = await InvokeAsync(null, ["gh"]);
+        _ = _onPath.Add("gh");
+        _ = _proc.Answer(new(1, string.Empty, "gh: To get started with GitHub CLI, please run:  gh auth login\n"), "gh", "extension", "list");
+
+        var (code, output, _) = await InvokeAsync(null, ["gh", "--check"]);
+        var (installed, _, error) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(1, code);
+        Assert.EndsWith("  ✗ Could not list gh extensions: gh: To get started with GitHub CLI, please run:  gh auth login\n", output, StringComparison.Ordinal);
+        Assert.Equal(1, installed);
+        Assert.Equal("Could not list gh extensions: gh: To get started with GitHub CLI, please run:  gh auth login\n", error);
+    }
+
+    [Fact]
+    public async Task Gh_installs_each_missing_extension()
+    {
+        Gh(string.Empty);
+        _ = _proc.Answer(new(0, string.Empty, string.Empty), "gh", "extension", "install");
+
+        var (code, output, error) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        Assert.EndsWith("✓ Installed gh extension github/gh-stack\n", output, StringComparison.Ordinal);
+        Assert.Contains(_proc.Requests, request => request.Argv.SequenceEqual(["gh", "extension", "install", "github/gh-stack"]));
+
+        Gh("gh stack\tgithub/gh-stack\tv0.3.0\n");
+        var (again, second, _) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(0, again);
+        Assert.EndsWith("✓ Required gh extensions are installed (github/gh-stack).\n", second, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Gh_reports_an_extension_that_fails_to_install()
+    {
+        Gh(string.Empty);
+        _ = _proc.Answer(new(1, string.Empty, "X Could not find a release of github/gh-stack\n"), "gh", "extension", "install");
+
+        var (code, _, error) = await InvokeAsync(null, ["gh"]);
+
+        Assert.Equal(1, code);
+        Assert.Equal("! Failed to install gh extension github/gh-stack: X Could not find a release of github/gh-stack\n", error);
     }
 
     [Fact]
@@ -515,8 +595,65 @@ public sealed class DevenvCommandTests : IDisposable
         var (code, output, _) = await InvokeAsync(null, ["gh", "--dry-run"]);
 
         Assert.Equal(0, code);
-        Assert.Equal($"Would write gh scope overlay (admin:org, read:user) to {Overlay}\n", output);
+        Assert.Equal($"Would write gh scope overlay (admin:org, read:user) to {Overlay}\n{NoGh}", output);
         Assert.False(File.Exists(Overlay));
+
+        Gh(string.Empty);
+        var (dry, named, _) = await InvokeAsync(null, ["gh", "--dry-run"]);
+
+        Assert.Equal(0, dry);
+        Assert.EndsWith("Would install gh extension(s): github/gh-stack\n", named, StringComparison.Ordinal);
+        Assert.DoesNotContain(_proc.Requests, request => request.Argv is [_, _, "install", ..]);
+    }
+
+    [Fact]
+    public async Task Gh_check_outdated_compares_every_installed_extension_with_its_latest_release()
+    {
+        _ = await InvokeAsync(null, ["gh"]);
+        Gh("gh aw\tgithub/gh-aw\tv0.77.5\ngh stack\tgithub/gh-stack\tv0.1.0\ngh local\towner/gh-local\t\n");
+        _ = _proc
+            .Answer(new(0, """{"tag_name": "v0.77.5"}""", string.Empty), "gh", "api", "repos/github/gh-aw/releases/latest")
+            .Answer(new(0, """{"tag_name": "v0.3.0"}""", string.Empty), "gh", "api", "repos/github/gh-stack/releases/latest");
+
+        var (code, output, _) = await InvokeAsync(null, ["gh", "--check", "--outdated"]);
+
+        Assert.Equal(0, code);
+        Assert.EndsWith(
+            "gh extension releases:\n"
+            + "  github/gh-aw                 ✓ v0.77.5 (latest)\n"
+            + "  github/gh-stack              ! v0.1.0 -> v0.3.0\n"
+            + "  owner/gh-local               ? installed locally, not from a release\n"
+            + "  1 gh extension(s) can be upgraded. Run 'rig devenv update' to upgrade them.\n",
+            output,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Gh_check_outdated_with_nothing_newer_or_nothing_installed_says_so()
+    {
+        _ = await InvokeAsync(null, ["gh"]);
+        Gh("gh stack\tgithub/gh-stack\tv0.3.0\n");
+        _ = _proc.Answer(new(0, """{"tag_name": "v0.3.0"}""", string.Empty), "gh", "api");
+
+        var (_, current, _) = await InvokeAsync(null, ["gh", "--check", "--outdated"]);
+
+        Assert.EndsWith("  ✓ No gh extension upgrades found.\n", current, StringComparison.Ordinal);
+
+        Gh(string.Empty);
+        var (code, none, _) = await InvokeAsync(null, ["gh", "--check", "--outdated"]);
+
+        Assert.Equal(1, code);
+        Assert.EndsWith("gh extension releases:\n  - No gh extensions installed.\n", none, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Gh_outdated_needs_check()
+    {
+        var (code, _, error) = await InvokeAsync(null, ["gh", "--outdated"]);
+
+        Assert.Equal(1, code);
+        Assert.Contains("--outdated needs --check.", error, StringComparison.Ordinal);
+        Assert.Empty(_proc.Requests);
     }
 
     [Fact]

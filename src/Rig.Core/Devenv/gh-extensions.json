@@ -1,0 +1,5 @@
+{
+  "required": [
+    {"repo": "github/gh-stack", "rationale": "Stacked pull requests: create, rebase and land a stack of dependent PRs."}
+  ]
+}
