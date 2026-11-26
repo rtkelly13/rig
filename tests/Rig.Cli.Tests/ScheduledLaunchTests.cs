@@ -15,6 +15,25 @@ public sealed class ScheduledLaunchTests
         Assert.Equal(detach, split.Detach);
     }
 
+    [Fact]
+    public void The_parent_pid_is_taken_out_of_the_environment_so_children_do_not_inherit_it()
+    {
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal) { [ScheduledLaunch.ParentVariable] = "16040" };
+
+        var pid = ScheduledLaunch.TakeParent(name => environment.GetValueOrDefault(name), (name, value) => environment[name] = value);
+
+        Assert.Equal("16040", pid);
+        Assert.Null(environment[ScheduledLaunch.ParentVariable]);
+    }
+
+    [Fact]
+    public void Without_a_parent_pid_the_environment_is_left_alone()
+    {
+        var writes = 0;
+        Assert.Null(ScheduledLaunch.TakeParent(_ => null, (_, _) => writes++));
+        Assert.Equal(0, writes);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

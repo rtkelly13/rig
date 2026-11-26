@@ -70,7 +70,8 @@ A console program started by Task Scheduler gets a console window. `--launcher` 
 The `pythonw` wrapper is a one-line program in the task's arguments (`JobsInstallTarget.Wrapper`), so no script
 ships with rig. It starts rig with `CREATE_NO_WINDOW`, passes rig's exit code back, and sets `RIG_PARENT_PID` so
 rig exits when the wrapper does: Task Scheduler stops only the process it started, so without it, stopping or
-reinstalling the Display Guard would leave the old guard running. `--pythonw <path>` picks the interpreter;
+reinstalling the Display Guard would leave the old guard running. Rig removes the variable from its own environment once
+it has read it, so the terminals and agents a logon run opens do not hand a dead PID to every rig they start later. `--pythonw <path>` picks the interpreter;
 otherwise `uv python find --managed-python --no-project` names it, whose minor-version folder outlives patch
 upgrades. `--detach-console` must come first; rig frees its console before anything else runs. `rig tools install`
 takes the same two options for the dashboard's and the collector's logon tasks.

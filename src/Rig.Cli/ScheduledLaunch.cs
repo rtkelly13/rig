@@ -29,8 +29,27 @@ internal static partial class ScheduledLaunch
             _ = FreeConsole();
         }
 
-        _ = WatchParent(Environment.GetEnvironmentVariable(ParentVariable), () => Environment.Exit(ParentGoneExit));
+        _ = WatchParent(TakeParent(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable), () => Environment.Exit(ParentGoneExit));
         return rest;
+    }
+
+    /// <summary>
+    /// Reads <see cref="ParentVariable"/> and removes it from this process's environment, so nothing rig starts
+    /// inherits it. Otherwise a terminal or agent the logon run opened would pass the wrapper's PID to every rig it
+    /// later starts, and each would exit <see cref="ParentGoneExit"/> silently once that wrapper had gone.
+    /// </summary>
+    /// <param name="read">Reads an environment variable.</param>
+    /// <param name="write">Sets an environment variable; null removes it.</param>
+    /// <returns>The parent's PID as set, or null.</returns>
+    internal static string? TakeParent(Func<string, string?> read, Action<string, string?> write)
+    {
+        var pid = read(ParentVariable);
+        if (pid is not null)
+        {
+            write(ParentVariable, null);
+        }
+
+        return pid;
     }
 
     /// <summary>The arguments without a leading <see cref="DetachFlag"/>, and whether it was there.</summary>
