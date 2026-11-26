@@ -26,6 +26,7 @@
     <InternalsVisibleTo Include="Rig.Image.Tests" />
     <InternalsVisibleTo Include="Rig.Image.BrowserTests" />
     <InternalsVisibleTo Include="Rig.Cli.Tests" />
+    <InternalsVisibleTo Include="rig" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
