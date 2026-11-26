@@ -64,6 +64,7 @@ convention (`Rig.Core.Roots.EstateScopes`):
 | `estate downloads` | `~/Downloads` triage: categorizes large files & flags Google Drive duplicates |  |
 | `estate doctor` | one clone, every finding, each with its fix. Defaults to the cwd's repo |  |
 | `estate sync` | `fetch --prune` everywhere, so `tidy` tells the truth about gone upstreams |  |
+| `estate ff` | fast-forward clean root checkouts on the remote default branch. Refuses dirty, detached, diverged or mid-operation checkouts |  |
 | `estate clones` | the cached clone list and its age |  |
 | `estate prune-caches` | the tool caches that refill themselves: uv, pnpm, NuGet http, Claude temp, Docker build | [→](./caches.md) |
 | `estate decisions` | what only a human can decide: dubious ownership, unpushed or PR-less idle worktrees, leftovers | [→](./decisions.md) |
@@ -74,7 +75,7 @@ convention (`Rig.Core.Roots.EstateScopes`):
 | `estate shelve` | resolve a worktree `tidy` refuses: push its unpushed work to `shelved/<user>/<name>`, verify, remove | [→](./shelving.md) |
 | `estate unshelve` / `shelved` | restore a shelf as a worktree; list shelves and `--prune` the ones that landed | [→](./shelving.md) |
 
-Read-only by default. `reclaim`, `trim`, `tidy`, `prune-caches`, `shelve` and `wrapup` need `--apply`.
+Read-only by default. `ff`, `reclaim`, `trim`, `tidy`, `prune-caches`, `shelve` and `wrapup` need `--apply`.
 `decisions` never changes anything; each entry carries the command that would.
 `wrapup` without `--apply` still records the verdicts it reads, in each worktree's gitignored
 `temp/.rig/wrapup.json`; see [Wrap-up](./wrapup.md#the-state-file).

@@ -4,8 +4,10 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Rig.Cli.Rendering;
 using Rig.Cli.Workspace;
+using Rig.Core;
 using Rig.Core.Estate;
 using Rig.Core.Processes;
+using Rig.Core.Reconciliation;
 using Rig.Core.Roots;
 using Rig.Core.Text;
 using Rig.Core.Worktrees;
@@ -75,6 +77,7 @@ internal sealed class EstateCommand(
         estate.Subcommands.Add(Risk());
         estate.Subcommands.Add(Doctor());
         estate.Subcommands.Add(Sync());
+        estate.Subcommands.Add(FastForwardCheckouts());
         estate.Subcommands.Add(Clones());
         estate.Subcommands.Add(ReclaimCommand());
         estate.Subcommands.Add(TrimCommand());
@@ -157,6 +160,36 @@ internal sealed class EstateCommand(
         };
         sync.SetAction((parsed, cancellationToken) => SyncAsync(parsed.GetValue(root), parsed.GetValue(refresh), cancellationToken));
         return sync;
+    }
+
+    private Command FastForwardCheckouts()
+    {
+        var root = RootOption();
+        var repos = new Option<string[]>("--repo")
+        {
+            Description = "Only this root checkout: a path to a checkout, or a clone's folder name under --root. Repeatable.",
+        };
+        var dryRun = new Option<bool>("--dry-run") { Description = "Report what would fast-forward without touching a checkout." };
+        var apply = new Option<bool>("--apply") { Description = "Fast-forward clean root checkouts to origin's default branch." };
+        var json = JsonOption();
+        var refresh = RefreshOption();
+        var ff = new Command(
+            "ff",
+            "Fast-forward clean root checkouts to origin's default branch. Fetch --prune runs first; the merge is "
+            + "--ff-only. A dirty, detached, diverged or mid-operation checkout, a linked worktree, and anything under an "
+            + "untrusted folder are refused with the reason. Dry run unless --apply.")
+        {
+            root, repos, dryRun, apply, json, refresh,
+        };
+        ff.SetAction((parsed, cancellationToken) => FastForwardAsync(
+            parsed.GetValue(root),
+            parsed.GetValue(repos) ?? [],
+            parsed.GetValue(dryRun),
+            parsed.GetValue(apply),
+            parsed.GetValue(json),
+            parsed.GetValue(refresh),
+            cancellationToken));
+        return ff;
     }
 
     private Command Clones()
@@ -734,6 +767,46 @@ internal sealed class EstateCommand(
         }
 
         return 0;
+    }
+
+    private async Task<int> FastForwardAsync(
+        string? root,
+        string[] repos,
+        bool dryRun,
+        bool apply,
+        bool json,
+        bool refresh,
+        CancellationToken cancellationToken)
+    {
+        if (dryRun && apply)
+        {
+            await error.WriteLineAsync("--dry-run and --apply are opposites.".AsMemory(), cancellationToken).ConfigureAwait(false);
+            return (int)ExitCode.Error;
+        }
+
+        var scanRoot = CodeRoot(root);
+        IReadOnlyList<string> clones;
+        if (repos.Length > 0)
+        {
+            if (await SelectedClonesAsync(scanRoot, repos, refresh, cancellationToken).ConfigureAwait(false) is not { } selected)
+            {
+                return (int)ExitCode.Error;
+            }
+
+            clones = selected;
+        }
+        else
+        {
+            clones = await ClonesAsync(scanRoot, refresh, quiet: json, cancellationToken).ConfigureAwait(false);
+        }
+
+        var run = await ReconciliationRunner.RunAsync(
+            new FastForward(git),
+            new FastForwardTarget(clones),
+            ReconciliationOptions.For(apply, json),
+            output,
+            cancellationToken).ConfigureAwait(false);
+        return run.ExitCode;
     }
 
     private CloneDiscovery Discovery() => new(host.CacheFile, time);
