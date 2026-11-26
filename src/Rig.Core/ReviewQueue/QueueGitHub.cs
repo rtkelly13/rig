@@ -183,7 +183,14 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
 
     private async Task<JsonObject> RepositoryAsync(ApiRequest request, string reference, CancellationToken cancellationToken)
     {
-        var root = JsonShape.Object(JsonNode.Parse(await CallAsync(request, cancellationToken).ConfigureAwait(false)));
+        cancellationToken.ThrowIfCancellationRequested();
+        var ran = await github.CallAsync(request, cancellationToken).ConfigureAwait(false);
+        if (RepositoryNotFound(ran.Out))
+        {
+            throw new MissingRepositoryException($"{reference} does not resolve on GitHub: deleted, renamed or not visible to this login");
+        }
+
+        var root = JsonShape.Object(JsonNode.Parse(ran.Code == 0 ? ran.Out : throw Failed(ran)));
         if (root.ContainsKey("errors") && JsonShape.Field(root, "errors") is not JsonArray { Count: 0 })
         {
             throw new GhException($"Incomplete GitHub response for {reference}");
@@ -196,7 +203,30 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
     {
         cancellationToken.ThrowIfCancellationRequested();
         var ran = await github.CallAsync(request, cancellationToken).ConfigureAwait(false);
-        return ran.Code == 0 ? ran.Out : throw new GhException(ran.Err.Trim().Length > 0 ? ran.Err.Trim() : $"gh exited {ran.Code}");
+        return ran.Code == 0 ? ran.Out : throw Failed(ran);
+    }
+
+    private static GhException Failed(Ran ran) =>
+        new(ran.Err.Trim().Length > 0 ? ran.Err.Trim() : $"gh exited {ran.Code}");
+
+    // Only GitHub's own answer counts: a null repository with a NOT_FOUND error on exactly that path. Network, auth
+    // and rate-limit failures carry no such body, so they still fail the whole refresh.
+    private static bool RepositoryNotFound(string output)
+    {
+        JsonObject? root;
+        try
+        {
+            root = JsonShape.AsObject(JsonNode.Parse(output));
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        var errors = JsonShape.AsArray(JsonShape.Field(root, "errors")) ?? [];
+        return JsonShape.FieldObject(root, "data") is { } data && JsonShape.Field(data, "repository") is null
+            && errors.Select(JsonShape.AsObject).Any(error => JsonShape.FieldText(error, "type") == "NOT_FOUND"
+                && JsonShape.AsArray(JsonShape.Field(error, "path")) is [var step] && JsonShape.AsText(step) == "repository");
     }
 
     [method: JsonConstructor]

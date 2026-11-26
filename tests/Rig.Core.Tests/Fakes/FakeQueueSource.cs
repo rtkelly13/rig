@@ -11,6 +11,7 @@ public sealed class FakeQueueSource : IQueueSource
     public Dictionary<string, IReadOnlyList<QueueActivity>> Discussions { get; } = new(StringComparer.Ordinal);
     public List<string> Calls { get; } = [];
     public string? FailAt { get; set; }
+    public HashSet<string> Missing { get; } = new(StringComparer.Ordinal);
 
     public IReadOnlyList<string> Repositories(string registry)
     {
@@ -22,6 +23,11 @@ public sealed class FakeQueueSource : IQueueSource
     {
         cancellationToken.ThrowIfCancellationRequested();
         Call($"fetch:{repo}:{kind}");
+        if (Missing.Contains(repo))
+        {
+            throw new MissingRepositoryException($"{repo} does not resolve");
+        }
+
         return Task.FromResult<IReadOnlyList<QueueItem>>([.. Items.Where(item => item.Repo == repo && item.Kind == kind && item.State == "OPEN")]);
     }
 

@@ -90,6 +90,28 @@ public sealed class QueueGitHubTests : IDisposable
         Assert.Equal(2, repeated.Calls.Count);
     }
 
+    [Fact]
+    public async Task A_repository_github_cannot_resolve_is_reported_as_missing()
+    {
+        const string body = "{\"data\":{\"repository\":null},\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\"],"
+            + "\"message\":\"Could not resolve to a Repository with the name 'owner/gone'.\"}]}";
+        var github = new FakeGitHub().Fail("POST", "graphql", body, "gh: Could not resolve to a Repository with the name 'owner/gone'.");
+        var error = await Assert.ThrowsAsync<MissingRepositoryException>(() => new QueueGitHub(github).FetchAsync("owner/gone", "pr", TestContext.Current.CancellationToken));
+        Assert.Contains("owner/gone", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("{\"data\":{\"repository\":{}},\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\",\"items\"]}]}")]
+    [InlineData("{\"data\":{\"repository\":null},\"errors\":[{\"type\":\"FORBIDDEN\",\"path\":[\"repository\"]}]}")]
+    [InlineData("{\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\"]}]}")]
+    [InlineData("not json")]
+    [InlineData("")]
+    public async Task Other_failures_still_fail_the_fetch_rather_than_skip_the_repository(string body)
+    {
+        var github = new FakeGitHub().Fail("POST", "graphql", body, "gh: failed");
+        await Assert.ThrowsAsync<GhException>(() => new QueueGitHub(github).FetchAsync("owner/repo", "pr", TestContext.Current.CancellationToken));
+    }
+
     [Theory]
     [InlineData("{}")]
     [InlineData("null")]

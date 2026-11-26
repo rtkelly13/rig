@@ -417,16 +417,6 @@
       }
     },
     {
-      "name": "diffra-pro",
-      "repo": "git@github.com:rtkelly-labs/diffra-pro.git",
-      "description": "Diffra server implementations, hosted service, identity and commercial work (private while experimenting).",
-      "domain": "Developer Tooling & Quality",
-      "stack": ".NET 10 / C#",
-      "orca": {
-        "group": "rtkelly-labs"
-      }
-    },
-    {
       "name": "Arrow.SourceGenerator",
       "repo": "git@github.com:rtkelly-labs/Arrow.SourceGenerator.git",
       "description": "Compile-time, reflection-free mapping between ordinary .NET models and Apache Arrow.",

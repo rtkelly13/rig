@@ -59,7 +59,11 @@ export function useQueue() {
           setChecked(new Date().toISOString());
           setCheckedScope(path === '/refresh' ? 'estate' : 'selected');
         }
-        setNotice(message);
+        setNotice(
+          data.skipped?.length
+            ? [message, `Skipped ${data.skipped.join(', ')}: not found on GitHub.`].filter(Boolean).join(' ')
+            : message,
+        );
       }
       return true;
     } catch (error) {

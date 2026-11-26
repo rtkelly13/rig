@@ -33,12 +33,44 @@ public sealed class QueueServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_repository_missing_on_github_is_skipped_and_the_rest_refresh()
+    {
+        Seed();
+        Store.Update(writer => writer.Interact(new QueueInteraction("owner/repo", 1, "note", Item().Head, "Keep this")));
+        _source.Repos.Add("owner/other");
+        _source.Items.Add(Item() with { Repo = "owner/other", Title = "Fresh" });
+        _source.Missing.Add("owner/repo");
+        using var service = Service;
+        var refreshed = await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken);
+        Assert.Equal(["owner/repo"], refreshed.Skipped);
+        var gone = Assert.Single(refreshed.Entries, entry => entry.Item.Repo == "owner/repo");
+        Assert.False(gone.Item.InScope);
+        Assert.Equal("Keep this", gone.Events[1].Note);
+        Assert.True(Assert.Single(refreshed.Entries, entry => entry.Item.Repo == "owner/other").Item.InScope);
+        Assert.DoesNotContain($"observe:{Item().Reference}", _source.Calls);
+        Assert.DoesNotContain("fetch:owner/repo:issue", _source.Calls);
+    }
+
+    [Fact]
+    public async Task When_no_repository_resolves_the_refresh_fails_and_changes_nothing()
+    {
+        Seed();
+        var before = await File.ReadAllBytesAsync(Output, TestContext.Current.CancellationToken);
+        _source.Missing.Add("owner/repo");
+        using var service = Service;
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => service.RefreshAsync("managed.json", TestContext.Current.CancellationToken));
+        Assert.Contains("gh login", error.Message, StringComparison.Ordinal);
+        Assert.True(Assert.Single(Store.Read()).Item.InScope);
+        Assert.Equal(before, await File.ReadAllBytesAsync(Output, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Missing_open_items_are_observed_and_kept_in_history_after_merge()
     {
         Seed();
         _source.Observed[Item().Reference] = Item() with { State = "MERGED" };
         using var service = Service;
-        var entry = Assert.Single(await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken));
+        var entry = Assert.Single((await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken)).Entries);
         Assert.Equal("MERGED", entry.Item.State);
         Assert.Equal(2, entry.Events.Count);
         Assert.DoesNotContain(Item().Reference, await File.ReadAllTextAsync(Output, TestContext.Current.CancellationToken), StringComparison.Ordinal);
@@ -52,7 +84,7 @@ public sealed class QueueServiceTests : IDisposable
         _source.Repos.Clear();
         _source.Repos.Add("owner/other");
         using var service = Service;
-        var entry = Assert.Single(await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken));
+        var entry = Assert.Single((await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken)).Entries);
         Assert.False(entry.Item.InScope);
         Assert.Equal("Keep this", entry.Events[1].Note);
         Assert.DoesNotContain(Item().Reference, await File.ReadAllTextAsync(Output, TestContext.Current.CancellationToken), StringComparison.Ordinal);
@@ -70,10 +102,10 @@ public sealed class QueueServiceTests : IDisposable
         _source.Items.Add(Item());
         _source.Discussions[Item().Reference] = [new("reply/1", "2099-01-01T00:00:00Z", "reviewer", "github:commented", "", "Please revisit")];
         using var service = Service;
-        var refreshed = Assert.Single(await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken));
+        var refreshed = Assert.Single((await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken)).Entries);
         Assert.False(refreshed.Archived);
         Assert.Contains(refreshed.Events, e => e.Note == "Please revisit");
-        var repeated = Assert.Single(await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken));
+        var repeated = Assert.Single((await service.RefreshAsync("managed.json", TestContext.Current.CancellationToken)).Entries);
         Assert.Equal(refreshed.Events.Count, repeated.Events.Count);
         var before = await File.ReadAllBytesAsync(Output, TestContext.Current.CancellationToken);
         _source.FailAt = $"activity:{Item().Reference}";
