@@ -251,7 +251,8 @@ public sealed class ChromeExtensionTests
     [Fact]
     public void Presence_is_always_long_away_and_unlocked()
     {
-        var presence = new AwayPresence(TimeProvider.System);
+        // A frozen clock: on the real one the millisecond can tick between the two NowTick reads, leaving the gap one short.
+        var presence = new AwayPresence(new FrozenTimestamp());
 
         Assert.True(unchecked(presence.NowTick() - presence.LastInputTick()) >= uint.MaxValue / 2);
         Assert.False(presence.SessionLocked());
@@ -299,5 +300,10 @@ public sealed class ChromeExtensionTests
 
         public System.Text.Json.Nodes.JsonNode? Send(ExtensionConnection connection, string command, System.Text.Json.Nodes.JsonObject? args = null) =>
             throw new ExtensionCallException("windows: the host went away");
+    }
+
+    private sealed class FrozenTimestamp : TimeProvider
+    {
+        public override long GetTimestamp() => 123_456_789;
     }
 }
