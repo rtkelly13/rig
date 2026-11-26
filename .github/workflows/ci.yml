@@ -17,6 +17,11 @@ concurrency:
 
 permissions: {}
 
+# Rig.Web's build runs pnpm to produce the SPA bundle and the C4 stylesheet (they are gitignored). Only jobs that
+# serve the real assets turn it on and set up Node; every other build uses fake trees or none.
+env:
+  BuildWebAssets: "false"
+
 jobs:
   # Docs-only changes skip the heavy jobs here rather than through paths-ignore:
   # a workflow that never starts never reports the required `ci` check, so a
@@ -172,9 +177,8 @@ jobs:
       # Offline audits only, so no token and no network beyond the install.
       - name: zizmor (workflow audit)
         run: uvx zizmor@1.31.1 --offline --format github .
-      # The web assets (SPA bundle, every Tailwind stylesheet) are committed,
-      # so rig can run without Node. Verify the
-      # committed copies still match their sources rather than trusting them.
+      # The image-drift gallery stylesheet is committed because that Python tool
+      # reads it without Node. Verify it still matches its source.
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -342,6 +346,8 @@ jobs:
       DOTNET_NOLOGO: "true"
       DOTNET_CLI_TELEMETRY_OPTOUT: "true"
       PROJECTS: ${{ matrix.projects }}
+      # The browser tests serve the real SPA, so that shard builds it (Rig.Web's RigBuildWebAssets target).
+      BuildWebAssets: ${{ matrix.shard == 'browser' }}
     strategy:
       fail-fast: false
       matrix:
@@ -376,6 +382,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        if: matrix.shard == 'browser'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: matrix.shard == 'browser'
+        with:
+          node-version: 22
+          cache: pnpm
       # Restore only: `analyze` alone saves, on main, so a PR never writes a 1 GB entry no other branch can read.
       # paket.lock fixes every package (ADR 0025), so project files stay out of the key. Linux builds copy only
       # the linux-x64 Playwright driver, so `analyze` deletes the other platforms' (~460 MB) before it saves.
@@ -652,6 +665,8 @@ jobs:
     env:
       DOTNET_NOLOGO: "true"
       DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      # The whole solution's tests run here, the SPA browser tests among them.
+      BuildWebAssets: "true"
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -659,6 +674,11 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
       - name: Restore .NET tools (Paket)
         run: dotnet tool restore
       - name: Build

@@ -68,7 +68,7 @@ TODO.md
 coverage.json
 coverage_summary.md
 
-# Node modules for the Tailwind build (the compiled CSS is committed).
+# Node modules for the web build.
 node_modules/
 desktop-manager/logs/
 .worktrees/
@@ -81,3 +81,7 @@ TestResults/
 
 # Reqnroll's generated code-behind files (issue #237); the .feature files are the source.
 *.feature.cs
+
+# Built by Rig.Web's RigBuildWebAssets target (pnpm + scripts/build-web.mjs) on every dotnet build.
+src/Rig.Web/templates/app_assets/
+src/Rig.Web/C4/static/c4.css

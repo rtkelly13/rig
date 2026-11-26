@@ -4,9 +4,6 @@
 src/Rig.Core/Governance/Templates/** text eol=lf
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
 *.svg -text
-# Compiled rig SPA artifacts are committed so the Python server needs no Node runtime.
-src/Rig.Web/templates/app_assets/*.js -text linguist-generated=true
-src/Rig.Web/templates/app_assets/*.css -text linguist-generated=true
-# Compiled Tailwind stylesheets, built from styles/*.src.css by `pnpm css:build`.
+# The image-drift gallery stylesheet, compiled by `pnpm css:build` and committed because that Python tool reads it
+# at runtime. Rig.Web's SPA bundle and C4 stylesheet are built by `dotnet build` and gitignored.
 tools/image-drift/src/image_drift/templates/gallery.css -text linguist-generated=true
-src/Rig.Web/C4/static/c4.css -text linguist-generated=true
