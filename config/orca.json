@@ -123,6 +123,12 @@
       "color": "#ef4444",
       "icon": "emoji:🔥"
     },
+    "experiments": {
+      "path": "~/code/personal/experiments",
+      "base_ref": "origin/main",
+      "color": "#0ea5e9",
+      "icon": "emoji:🧪"
+    },
     "MySQLEFConcurrencyBug": {
       "path": "~/code/personal/MySQLEFConcurrencyBug",
       "base_ref": "origin/main",
