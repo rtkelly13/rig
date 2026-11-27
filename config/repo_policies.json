@@ -210,8 +210,7 @@
       "repos": [
         "obsidian-vault",
         "rig",
-        "hearth",
-        "experiments"
+        "hearth"
       ]
     },
     "documentation_portal": {
@@ -239,6 +238,15 @@
       ],
       "repos": [
         "docs"
+      ]
+    },
+    "private_experiments": {
+      "description": "Private experiment repos with no CI. Merge settings and the main ruleset (linear history, PR required, no force-push or deletion) apply; no required checks are declared because no workflow would report them.",
+      "policies": [
+        "squash_merge_only"
+      ],
+      "repos": [
+        "experiments"
       ]
     },
     "demos_experiments": {
@@ -324,9 +332,6 @@
     "rtkelly-labs": "rtkelly_labs"
   },
   "repo_overrides": {
-    "experiments": {
-      "required_checks": []
-    },
     "rig": {
       "script_ban": {
         "allowed_exceptions": [
