@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Linq;
 using Rig.Core.Jobs;
@@ -60,7 +61,7 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc().Answer(new Ran(git ? 0 : 1, Path.Join(root, ".git"), ""), "git");
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(root, Path.Join(_temp.Path, "app"), plan, proc, JobsLauncher.Direct, null, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Equal(root, Assert.Single(proc.Requests).WorkingDirectory);
     }
 
@@ -75,7 +76,7 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc();
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(Path.Join(app, "runtime", copy), app, "ignored", proc, JobsLauncher.Pythonw, target.Pythonw, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Empty(proc.Requests);
     }
 
@@ -83,7 +84,7 @@ public sealed class JobsInstallTests : IDisposable
     public async Task Linked_worktrees_are_refused_before_checking_or_changing_targets()
     {
         var proc = new FakeProc().Answer(new Ran(0, Path.Join(_temp.Path, "main", ".git"), ""), "git");
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", proc, JobsLauncher.Direct, null, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Contains("not a worktree", error.Message, StringComparison.Ordinal);
     }
 
@@ -91,7 +92,7 @@ public sealed class JobsInstallTests : IDisposable
     public async Task A_git_failure_cannot_hide_a_linked_worktree()
     {
         await File.WriteAllTextAsync(Path.Join(_temp.Path, ".git"), "gitdir: elsewhere", TestContext.Current.CancellationToken);
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), JobsLauncher.Direct, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", "plan", new FakeProc(), JobsLauncher.Direct, null, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Contains("Cannot verify the main checkout", error.Message, StringComparison.Ordinal);
     }
 
@@ -106,7 +107,7 @@ public sealed class JobsInstallTests : IDisposable
         var path = new[] { target.Rig, target.Plan, target.Pythonw! }[missing];
         File.Delete(path);
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), JobsLauncher.Pythonw, target.Pythonw, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, new FakeProc(), JobsLauncher.Pythonw, target.Pythonw, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Contains(path, error.Message, StringComparison.Ordinal);
     }
 
@@ -159,7 +160,7 @@ public sealed class JobsInstallTests : IDisposable
         var app = Path.Join(_temp.Path, "app");
         var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(0, Path.Join(_temp.Path, "py", "python.exe") + "\n", ""), "uv");
 
-        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(_temp.Path, app, target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        Assert.Equal(target, await JobsInstallTarget.ResolveAsync(_temp.Path, app, target.Plan, proc, JobsLauncher.Pythonw, null, OSPlatform.Windows, TestContext.Current.CancellationToken));
         var uv = proc.Requests[^1];
         Assert.Equal(["uv", "python", "find", "--managed-python", "--no-project"], uv.Argv);
         Assert.Equal(app, uv.WorkingDirectory);
@@ -172,7 +173,7 @@ public sealed class JobsInstallTests : IDisposable
         Targets(target);
         var proc = new FakeProc().Answer(new Ran(0, "", ""), "git").Answer(new Ran(2, "", "no python"), "uv");
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, proc, JobsLauncher.Pythonw, null, TestContext.Current.CancellationToken));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => JobsInstallTarget.ResolveAsync(_temp.Path, "app", target.Plan, proc, JobsLauncher.Pythonw, null, OSPlatform.Windows, TestContext.Current.CancellationToken));
         Assert.Contains("--pythonw", error.Message, StringComparison.Ordinal);
         Assert.Contains("--launcher direct", error.Message, StringComparison.Ordinal);
     }

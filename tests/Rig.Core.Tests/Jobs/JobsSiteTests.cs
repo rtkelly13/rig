@@ -36,6 +36,8 @@ public sealed class JobsSiteTests : IDisposable
 
         Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder) + Path.DirectorySeparatorChar, AppData));
         Assert.Equal(folder, JobsSite.CopyOf(Path.Join(folder, JobsSite.PublishFolder), AppData));
+        var executable = OperatingSystem.IsWindows() ? "rig.exe" : "rig";
+        Assert.Equal(Path.Join(AppData, "runtime", "current", "rig", executable), JobsSite.StablePublishedRig(Path.Join(folder, JobsSite.PublishFolder), AppData));
     }
 
     [Theory]
@@ -47,6 +49,7 @@ public sealed class JobsSiteTests : IDisposable
     public void A_rig_anywhere_else_is_no_runtime_copy(string relative)
     {
         Assert.Null(JobsSite.CopyOf(Path.Join(_temp.Path, relative), AppData));
+        Assert.Null(JobsSite.StablePublishedRig(Path.Join(_temp.Path, relative), AppData));
     }
 
     [Fact]
@@ -60,7 +63,7 @@ public sealed class JobsSiteTests : IDisposable
     }
 
     [Fact]
-    public void A_runtime_copy_uses_its_bundled_plan_the_source_checkouts_parent_and_logs_outside_every_copy()
+    public void A_runtime_copy_uses_its_bundled_plan_and_the_resolved_estate_even_when_installed_elsewhere()
     {
         var runtime = Path.Join(AppData, JobsSite.RuntimeFolder);
         Directory.CreateDirectory(runtime);
@@ -70,7 +73,7 @@ public sealed class JobsSiteTests : IDisposable
         var site = JobsSite.Locate(Path.Join(runtime, "abc123def456"), AppData, UserPlan, Personal);
 
         Assert.Equal(Path.Join(runtime, "current", "desktop-manager", "workspace-plan.bundle.json"), site.Plan);
-        Assert.Equal(Path.Join(_temp.Path, "elsewhere", "personal"), site.PersonalRoot);
+        Assert.Equal(Personal, site.PersonalRoot);
         Assert.Equal(Path.Join(AppData, "workspace-restore", "logs"), site.Environment[JobsSite.LogDirVariable]);
         Assert.Equal(Path.Join(AppData, "traces"), site.Environment[JobsSite.TraceHomeVariable]);
     }

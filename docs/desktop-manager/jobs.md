@@ -1,5 +1,7 @@
 # Machine jobs (`rig jobs`)
 
+The Windows task registration below has a [macOS launchd counterpart](macos-jobs.md).
+
 Everything that keeps this machine aligned runs from one registry
 (`src/Rig.Core/Jobs/JobRegistry.cs`). Two scheduled tasks drive it, so there
 is one place to see what runs at logon, what runs every 15 minutes, and what runs

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -298,8 +299,8 @@ public sealed class JobsOracleTests : IDisposable
             Text("personal_root"),
             [.. env.GetProperty("work_roots").EnumerateArray().Select(root => root.GetString()!)],
             Text("decisions_feed"),
-            Text("orca_user_data"),
-            OperatingSystem.IsWindows());
+            Text("orca_user_data"))
+        { Platform = OperatingSystem.IsWindows() ? OSPlatform.Windows : OSPlatform.Linux };
     }
 
     private static JsonObject Record(Job job) => new()

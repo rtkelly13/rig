@@ -1,5 +1,7 @@
 # Windows Workspace (desktop-manager)
 
+For macOS Chrome, web and estate scheduling, see [Mac background jobs](macos-jobs.md).
+
 `rig desktop workspace` captures and restores a Windows virtual-desktop setup:
 it recreates the planned desktops, reuses or launches each planned window, and
 places it on the right monitor.
