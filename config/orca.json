@@ -2,22 +2,17 @@
   "agent_args": {
     "claude": "",
     "claude-agent-teams": "",
+    "codex": "",
     "openclaude": "",
     "opencode2": "--auto",
     "antigravity": ""
   },
   "agent_permissions": {
-    "default": "own",
-    "agents": {
-      "claude": "auto",
-      "claude-agent-teams": "auto",
-      "antigravity": "full-access",
-      "openclaude": "own",
-      "codex": "auto"
-    }
+    "default": "auto",
+    "fallback": "full-access"
   },
   "workspace_dir": "~/orca/workspaces",
-  "agent_sleep": { "enabled": true, "idle_minutes": 30 },
+  "agent_sleep": { "enabled": true, "idle_minutes": 30, "platforms": ["macos"] },
   "repos": {
     "rig": {
       "path": "~/code/personal/rig",

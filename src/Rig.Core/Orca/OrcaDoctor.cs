@@ -159,9 +159,9 @@ public static class OrcaDoctor
                 ok ? "" : $"Orca Settings: set the workspace folder to {want}"));
         }
 
-        if (policy.AgentSleep is not null)
+        if (policy.AgentSleepOn(AgentSleepPolicy.CurrentPlatform) is { } sleep)
         {
-            var check = AgentSleepCheck.Of(policy.AgentSleep, copy.Settings.AgentSleep, copy.Settings.AgentSleepIdleMs);
+            var check = AgentSleepCheck.Of(sleep, copy.Settings.AgentSleep, copy.Settings.AgentSleepIdleMs);
             findings.Add(check.Ok
                 ? new("settings", "agent sleep", CheckStatus.Ok, check.Have)
                 : new("settings", "agent sleep", CheckStatus.Fail, $"{check.Have}, want {check.Want}", check.Fix));

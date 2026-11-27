@@ -58,8 +58,25 @@ public static class AgentPermissions
         "devin", "ante", "trae", "droid", "goose",
     };
 
+    // Every agent rig knows any mode's flags for.
+    private static readonly string[] Known = [.. Flags.Values.SelectMany(agents => agents.Keys).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// The agents the policy's fallback moves off its default: configurable agents rig knows flags for whose default
+    /// mode Orca does not offer. They need no override or custom arguments in the policy to be checked and synced.
+    /// </summary>
+    public static IEnumerable<string> FallbackAgents(AgentPermissionsPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        return policy.Fallback is null ? [] : Known.Where(agent => IsConfigurable(agent) && policy.Wanted(agent) != policy.Default);
+    }
+
     /// <summary>Whether Orca offers <paramref name="agent"/> a permission mode at all.</summary>
     public static bool IsConfigurable(string agent) => Configurable.Contains(agent);
+
+    /// <summary>Whether Orca gives <paramref name="agent"/> flags for <paramref name="mode"/>; <c>own</c> needs none.</summary>
+    public static bool Offers(string mode, string agent) =>
+        mode == "own" || (Flags.TryGetValue(mode, out var agents) && agents.ContainsKey(agent));
 
     /// <summary>The flags Orca adds to <paramref name="agent"/>'s launch line in <paramref name="mode"/>, or null when rig does not know them.</summary>
     public static string? FlagsFor(string mode, string agent) =>
@@ -92,7 +109,7 @@ public static class AgentPermissions
         [
             new("settings", "permission default", fallback, policy.Default, $"Orca Settings → Agents: set the default permission to {Label(policy.Default)}"),
         ];
-        foreach (var agent in agents.Concat(policy.Agents.Keys).Where(IsConfigurable).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+        foreach (var agent in agents.Concat(policy.Agents.Keys).Concat(FallbackAgents(policy)).Where(IsConfigurable).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
         {
             var want = policy.Wanted(agent);
             var have = overrides?.GetValueOrDefault(agent) ?? fallback;
@@ -142,7 +159,7 @@ public static class AgentPermissions
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(customArgs);
         var lines = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var agent in customArgs.Keys.Concat(policy.Agents.Keys).Distinct(StringComparer.Ordinal))
+        foreach (var agent in customArgs.Keys.Concat(policy.Agents.Keys).Concat(FallbackAgents(policy)).Distinct(StringComparer.Ordinal))
         {
             var added = IsConfigurable(agent) ? FlagsFor(policy.Wanted(agent), agent) : "";
             if (added is not null)

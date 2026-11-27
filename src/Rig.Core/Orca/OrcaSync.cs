@@ -95,13 +95,13 @@ public static class OrcaSync
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(snapshot);
-        if (policy.AgentSleep is null || snapshot.Settings is null)
+        if (policy.AgentSleepOn(AgentSleepPolicy.CurrentPlatform) is not { } sleep || snapshot.Settings is null)
         {
             return [];
         }
 
         var settings = snapshot.Settings.Settings;
-        var check = AgentSleepCheck.Of(policy.AgentSleep, settings.AgentSleep, settings.AgentSleepIdleMs);
+        var check = AgentSleepCheck.Of(sleep, settings.AgentSleep, settings.AgentSleepIdleMs);
         return check.Ok ? [] : [new("settings", "manual", "agent sleep", check.Have, check.Want, false, check.Fix)];
     }
 
