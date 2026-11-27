@@ -104,6 +104,8 @@ public sealed class QueueGitHubTests : IDisposable
     [InlineData("{\"data\":{\"repository\":{}},\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\",\"items\"]}]}")]
     [InlineData("{\"data\":{\"repository\":null},\"errors\":[{\"type\":\"FORBIDDEN\",\"path\":[\"repository\"]}]}")]
     [InlineData("{\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\"]}]}")]
+    [InlineData("{\"data\":{\"repository\":null},\"errors\":[{\"type\":\"NOT_FOUND\",\"path\":[\"repository\"]},{\"type\":\"FORBIDDEN\",\"path\":[\"repository\"]}]}")]
+    [InlineData("{\"data\":{\"repository\":null},\"errors\":[]}")]
     [InlineData("not json")]
     [InlineData("")]
     public async Task Other_failures_still_fail_the_fetch_rather_than_skip_the_repository(string body)

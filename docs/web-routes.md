@@ -34,8 +34,9 @@ the routes are deleted.
 | GET | `/static/...` | files under `src/Rig.Web/templates` | C# `Rig.Web.FrontendRoutes` |
 | GET | `/media/assets/...` | read-only brand assets | C# `Rig.Web.FrontendRoutes` |
 | POST | `/api/db/backup` | `{status, backup_file}` | C# `Rig.Web.HostRoutes` |
-| GET | `/api/triage` | `{entries, queue_path, skipped}`; `skipped` lists repositories a refresh found missing on GitHub | C# `Rig.Web.TriageRoutes` |
-| POST | `/api/triage/refresh`, `/api/triage/watch`, `/api/triage/interact` | the queue again | C# `Rig.Web.TriageRoutes` |
+| GET | `/api/triage` | `{entries, queue_path, skipped}`; `skipped` is always empty here | C# `Rig.Web.TriageRoutes` |
+| POST | `/api/triage/refresh` | the queue again; `skipped` lists repositories the refresh found missing on GitHub | C# `Rig.Web.TriageRoutes` |
+| POST | `/api/triage/watch`, `/api/triage/interact` | the queue again; 404 `{error}` when the item's repository no longer resolves on GitHub | C# `Rig.Web.TriageRoutes` |
 | GET | `/c4`, `/c4/`, `/c4/static/...` | the C4 viewer | C# `Rig.Web.C4.C4Routes` |
 | GET | `/api/c4/bundle`, `/api/c4/concept`, `/api/c4/expand` | C4 bundle JSON | C# `Rig.Web.C4.C4Routes` |
 | GET | `/api/ops/decisions`, `/api/ops/estate/disk`, `/api/ops/estate/trim` | decisions feed, disk usage, trim scan | C# `Rig.Web.EstateOpsRoutes` |

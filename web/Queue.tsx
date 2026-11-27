@@ -108,9 +108,9 @@ export function Queue({ route, state }: { route: Route; state: QueueState }) {
       head: current.head,
       action: 'opened',
       note: '',
-    }).then((saved) => {
+    }, '', true).then((saved) => {
       if (saved && selectedRef.current && ref(selectedRef.current) === selectedKey) {
-        void perform('/watch', { repo: current.repo, number: current.number });
+        void perform('/watch', { repo: current.repo, number: current.number }, '', true);
       }
     });
   }, [selectedKey, perform, state.pending]);
@@ -118,7 +118,7 @@ export function Queue({ route, state }: { route: Route; state: QueueState }) {
     const timer = setInterval(() => {
       const current = selectedRef.current;
       if (!document.hidden && current && current.state === 'OPEN')
-        void perform('/watch', { repo: current.repo, number: current.number });
+        void perform('/watch', { repo: current.repo, number: current.number }, '', true);
     }, 30000);
     return () => clearInterval(timer);
   }, [perform]);

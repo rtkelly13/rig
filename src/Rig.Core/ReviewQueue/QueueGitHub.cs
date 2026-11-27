@@ -209,8 +209,9 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
     private static GhException Failed(Ran ran) =>
         new(ran.Err.Trim().Length > 0 ? ran.Err.Trim() : $"gh exited {ran.Code}");
 
-    // Only GitHub's own answer counts: a null repository with a NOT_FOUND error on exactly that path. Network, auth
-    // and rate-limit failures carry no such body, so they still fail the whole refresh.
+    // Only GitHub's own answer counts: a null repository and every error a NOT_FOUND on exactly that path. Network,
+    // auth and rate-limit failures carry no such body, and a mixed answer (NOT_FOUND beside FORBIDDEN) may be a
+    // permission problem, so both still fail the whole refresh.
     private static bool RepositoryNotFound(string output)
     {
         JsonObject? root;
@@ -225,7 +226,7 @@ public sealed class QueueGitHub(IGitHubApi github) : IQueueSource
 
         var errors = JsonShape.AsArray(JsonShape.Field(root, "errors")) ?? [];
         return JsonShape.FieldObject(root, "data") is { } data && JsonShape.Field(data, "repository") is null
-            && errors.Select(JsonShape.AsObject).Any(error => JsonShape.FieldText(error, "type") == "NOT_FOUND"
+            && errors.Count > 0 && errors.Select(JsonShape.AsObject).All(error => JsonShape.FieldText(error, "type") == "NOT_FOUND"
                 && JsonShape.AsArray(JsonShape.Field(error, "path")) is [var step] && JsonShape.AsText(step) == "repository");
     }
 
