@@ -138,7 +138,7 @@ public sealed class PresenceTests
     [InlineData("Meet – abc-defg-hij - Desktop content shared - Memory usage - 300 MB", "desktop content shared")]
     [InlineData("Meet – abc-defg-hij – Microphone recording", "microphone recording")]
     [InlineData("Quarterly review - Google Slides - Tab content shared", "tab content shared")]
-    [InlineData("Meet – abc-defg-hij - Audio playing", "a call is live (Meet")]
+    [InlineData("Meet – abc-defg-hij - Audio playing", "a call is live: audio playing in a meeting (Meet")]
     public void A_recording_sharing_or_audible_call_tab_is_live(string name, string says)
     {
         var live = Unattended.LiveCall(new FakePresence(), [Window("Inbox - Gmail", name)]);
@@ -155,6 +155,37 @@ public sealed class PresenceTests
         };
 
     private static ChromeWindow WindowOf(params ChromeTab[] tabs) => new(1, "w", null, null, 1, false, null, tabs);
+
+    // A tab with native evidence and its address, as the macOS read gives one.
+    private static ChromeTab Known(string name, string address)
+    {
+        var parsed = TabNames.Parse(name);
+        return new ChromeTab(new RuntimeId([42, 1, 0]), 1, 0, name, parsed.Title, false, false, parsed.Loaded, parsed.Audible)
+        {
+            Alerts = parsed.Alerts,
+            Url = new Uri(address),
+        };
+    }
+
+    // The 23 Nov regression: the Meet home page carried an audio alert, and every scheduled tidy skipped for days.
+    [Theory]
+    [InlineData("Google Meet - Audio playing", "https://meet.google.com/home?authuser=0")]
+    [InlineData("Google Meet - Audio muted", "https://meet.google.com/landing")]
+    [InlineData("Zoom - Audio playing", "https://zoom.us/profile")]
+    public void An_audible_call_site_that_is_not_a_meeting_is_not_live(string name, string address) =>
+        Assert.Null(Unattended.LiveCall(new FakePresence(), [WindowOf(Known(name, address))]));
+
+    [Fact]
+    public void An_audible_meeting_room_is_live() =>
+        Assert.Equal(
+            "a call is live: audio playing in a meeting (Meet – abc-defg-hij, meet.google.com/abc-defg-hij)",
+            Unattended.LiveCall(new FakePresence(), [WindowOf(Known("Meet – abc-defg-hij - Audio playing", "https://meet.google.com/abc-defg-hij?authuser=0"))]));
+
+    [Fact]
+    public void A_recording_tab_is_live_wherever_it_is_and_names_its_address() =>
+        Assert.Equal(
+            "a call is live: microphone recording (Google Meet, meet.google.com/home)",
+            Unattended.LiveCall(new FakePresence(), [WindowOf(Known("Google Meet - Microphone recording", "https://meet.google.com/home"))]));
 
     [Fact]
     public void A_call_sites_home_page_with_unknown_audio_is_not_live() =>

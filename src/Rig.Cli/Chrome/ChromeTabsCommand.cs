@@ -204,7 +204,7 @@ internal sealed class ChromeTabsCommand(
             + "joining an open group never saves a duplicate. A consolidation that failed or deleted anything is looked at "
             + "again next run, since a delete can bring chips out of the overflow.\n\n"
             + "`--unattended` is what the scheduled job runs. It does nothing at all while a call is live: a tab recording or "
-            + "sharing the screen, an audible call site, or Chrome holding the microphone or camera. A tab whose audio is "
+            + "sharing the screen, audio in a meeting room (not a call site's home page), or Chrome holding the microphone or camera. A tab whose audio is "
             + "unknown never counts; an open meeting page of that kind holds back grouping only. Grouping then waits, for "
             + "up to `--wait-minutes`, until the machine has been idle for `--idle-minutes` and is not locked or on a call. "
             + "Grouping stops at the first key press or mouse move, opens a note, and goes again once the machine has been "
