@@ -240,6 +240,15 @@
         "docs"
       ]
     },
+    "private_experiments": {
+      "description": "Private experiment repos with no CI. Merge settings and the main ruleset (linear history, PR required, no force-push or deletion) apply; no required checks are declared because no workflow would report them.",
+      "policies": [
+        "squash_merge_only"
+      ],
+      "repos": [
+        "experiments"
+      ]
+    },
     "demos_experiments": {
       "description": "Demos, bug reproductions and experiments. Tracked here so their exclusion is deliberate, but no conventions, branch protection or rulesets apply.",
       "repo_selection": {
