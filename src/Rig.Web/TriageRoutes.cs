@@ -33,7 +33,8 @@ internal static class TriageRoutes
         routes.MapPost($"{Prefix}/refresh", Handler(context => OpsJson.Run(async () =>
         {
             _ = await OpsJson.BodyAsync(context).ConfigureAwait(false);
-            return OpsJson.Ok(context, Answer(await inbox.RefreshAsync(registry, context.RequestAborted).ConfigureAwait(false), inbox));
+            var (entries, skipped) = await inbox.RefreshAsync(registry, context.RequestAborted).ConfigureAwait(false);
+            return OpsJson.Ok(context, new TriageAnswer(entries, inbox.QueuePath, skipped));
         })));
         routes.MapPost($"{Prefix}/watch", Handler(context => OpsJson.Run(async () =>
         {
@@ -52,7 +53,7 @@ internal static class TriageRoutes
 
     private static Task<IResult> Unknown() => OpsJson.Run(() => Task.FromResult(OpsJson.Error(StatusCodes.Status400BadRequest, "Unknown triage operation")));
 
-    private static TriageAnswer Answer(IReadOnlyList<TriageEntry> entries, TriageInbox inbox) => new(entries, inbox.QueuePath);
+    private static TriageAnswer Answer(IReadOnlyList<TriageEntry> entries, TriageInbox inbox) => new(entries, inbox.QueuePath, []);
 
     // The typed delegate selects the route-handler overload, not RequestDelegate, so its IResult is written.
     private static Delegate Handler(Func<HttpContext, Task<IResult>> handler) => handler;
@@ -61,4 +62,5 @@ internal static class TriageRoutes
 /// <summary>The answer to every triage route.</summary>
 /// <param name="Entries">Every tracked item, in the versioned order.</param>
 /// <param name="QueuePath">The Markdown projection the queue was exported to.</param>
-public sealed record TriageAnswer(IReadOnlyList<TriageEntry> Entries, string QueuePath);
+/// <param name="Skipped">Managed repositories a refresh found missing on GitHub; empty for every other route.</param>
+public sealed record TriageAnswer(IReadOnlyList<TriageEntry> Entries, string QueuePath, IReadOnlyList<string> Skipped);

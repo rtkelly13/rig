@@ -73,8 +73,13 @@ internal sealed class TriageCommand(TriageHost host, IQueueSource source, TextWr
             try
             {
                 using var service = new QueueService(new QueueStore(db), source, queue);
-                var entries = await service.RefreshAsync(Registry ?? host.Registry, cancellationToken).ConfigureAwait(false);
-                await output.WriteLineAsync($"Tracked {entries.Count} items; queue: {queue}").ConfigureAwait(false);
+                var refreshed = await service.RefreshAsync(Registry ?? host.Registry, cancellationToken).ConfigureAwait(false);
+                foreach (var repo in refreshed.Skipped)
+                {
+                    await error.WriteLineAsync($"Skipped {repo}: not found on GitHub (deleted, renamed or not visible); its items are out of scope.").ConfigureAwait(false);
+                }
+
+                await output.WriteLineAsync($"Tracked {refreshed.Entries.Count} items; queue: {queue}").ConfigureAwait(false);
                 return (int)ExitCode.Clean;
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or FormatException or JsonException or SqliteException or GhException

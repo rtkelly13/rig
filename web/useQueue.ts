@@ -45,12 +45,14 @@ export function useQueue() {
     };
   }, []);
 
-  const perform = useCallback(async (path: string, body: object, message = ''): Promise<boolean> => {
+  // A background call (the poll, the automatic check on opening an item) keeps the notice a person's action left,
+  // such as the repositories a refresh skipped; it still reports its own errors.
+  const perform = useCallback(async (path: string, body: object, message = '', background = false): Promise<boolean> => {
     if (busy.current) return false;
     busy.current = true;
     setPending(path);
     setError('');
-    setNotice('');
+    if (!background) setNotice('');
     try {
       const data = await request(path, body);
       if (mounted.current) {
@@ -59,7 +61,12 @@ export function useQueue() {
           setChecked(new Date().toISOString());
           setCheckedScope(path === '/refresh' ? 'estate' : 'selected');
         }
-        setNotice(message);
+        if (!background)
+          setNotice(
+            data.skipped?.length
+              ? [message, `Skipped ${data.skipped.join(', ')}: not found on GitHub.`].filter(Boolean).join(' ')
+              : message,
+          );
       }
       return true;
     } catch (error) {

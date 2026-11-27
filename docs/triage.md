@@ -20,7 +20,7 @@ rig triage refresh --db temp/triage.db --output temp/queue.md
 rig triage verify temp/queue.md
 ```
 
-`--config` selects another managed-project registry. Disabled and explicitly archived entries are excluded. Fetches use `gh` authentication, cursor pagination, typed decoding and timeouts. All repository fetches must succeed before any snapshot is updated. Items missing from the open list are looked up explicitly to distinguish merged/closed from a fetch omission.
+`--config` selects another managed-project registry. Disabled and explicitly archived entries are excluded. Fetches use `gh` authentication, cursor pagination, typed decoding and timeouts. All repository fetches must succeed before any snapshot is updated, with one exception: a repository GitHub answers as not found (deleted, renamed or not visible to the login) is skipped and named on stderr and in the web notice, and its items leave scope with their notes and decisions kept, returning if it resolves again. Network, auth and rate-limit failures still abort the whole refresh, and so does every repository being missing, since that points at the wrong `gh` login rather than deletions. Items missing from the open list are looked up explicitly to distinguish merged/closed from a fetch omission.
 
 ## Inbox workflow
 

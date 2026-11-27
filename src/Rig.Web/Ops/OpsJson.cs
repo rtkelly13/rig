@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Rig.Core.GitHub;
 using Rig.Core.Otel;
+using Rig.Core.ReviewQueue;
 using Rig.Core.Text;
 
 namespace Rig.Web.Ops;
@@ -98,8 +99,8 @@ public static class OpsJson
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Options);
 
     /// <summary>
-    /// Runs an ops answer, mapping its failures to the envelope: bad input is a 400, a store or service that is down a
-    /// 503, and anything else is a bug that propagates.
+    /// Runs an ops answer, mapping its failures to the envelope: bad input is a 400, a repository GitHub cannot resolve
+    /// a 404, a store or service that is down a 503, and anything else is a bug that propagates.
     /// </summary>
     public static async Task<IResult> Run(Func<Task<IResult>> produce)
     {
@@ -115,6 +116,10 @@ public static class OpsJson
         catch (Exception error) when (error is ArgumentException or JsonException or JsonInputException or FormatException or InvalidDataException)
         {
             return Error(StatusCodes.Status400BadRequest, error.Message);
+        }
+        catch (MissingRepositoryException missing)
+        {
+            return Error(StatusCodes.Status404NotFound, missing.Message);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or SqliteException or GhException
             or ClickHouseException or HttpRequestException or Win32Exception or TimeoutException)

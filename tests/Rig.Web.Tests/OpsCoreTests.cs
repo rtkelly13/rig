@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.DependencyInjection;
 using Rig.Core.Estate;
 using Rig.Core.Otel;
 using Rig.Core.ReviewQueue;
@@ -447,6 +448,24 @@ public sealed class OpsCoreTests
         var rejected = Assert.Throws<JsonInputException>(() => OpsJson.Read<TriageWatch>("null"));
 
         Assert.Equal("request body: $: expected an object, found null", rejected.Message);
+    }
+
+    [Fact]
+    public async Task A_repository_github_cannot_resolve_answers_404_with_the_reason()
+    {
+        var result = await OpsJson.Run(() => throw new MissingRepositoryException("owner/gone does not resolve on GitHub"));
+        var context = new Microsoft.AspNetCore.Http.DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection()
+                .AddLogging().BuildServiceProvider(),
+        };
+        using var body = new MemoryStream();
+        context.Response.Body = body;
+
+        await result.ExecuteAsync(context);
+
+        Assert.Equal(404, context.Response.StatusCode);
+        Assert.Equal("owner/gone does not resolve on GitHub", (string?)JsonNode.Parse(Encoding.UTF8.GetString(body.ToArray()))!["error"]);
     }
 
     private static string Envelope(long startNs)

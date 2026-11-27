@@ -6,32 +6,39 @@ namespace Rig.Core.ReviewQueue;
 /// <param name="output">The local, regenerable Markdown queue.</param>
 public sealed class QueueService(QueueStore store, IQueueSource source, string output) : IDisposable
 {
-    private static readonly string[] Kinds = ["pr", "issue"];
     private readonly SemaphoreSlim _serial = new(1, 1);
 
     /// <inheritdoc/>
     public void Dispose() => _serial.Dispose();
 
-    /// <summary>Fetch every observation before committing; a failed GitHub read leaves snapshots and Markdown alone.</summary>
-    public async Task<IReadOnlyList<QueueEntry>> RefreshAsync(string registry, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Fetch every observation before committing; a failed GitHub read leaves snapshots and Markdown alone. A repository
+    /// GitHub answers as not found is skipped and reported instead, and its items leave scope with their history kept.
+    /// When none resolve, the login is more likely wrong than every repository gone, so that fails too.
+    /// </summary>
+    public async Task<QueueRefresh> RefreshAsync(string registry, CancellationToken cancellationToken = default)
     {
         await _serial.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // Initialize the database before observing, as the previous command did.
             store.Read();
-            var repos = source.Repositories(registry);
-            var items = new List<QueueItem>();
-            foreach (var repo in repos)
+            var managed = source.Repositories(registry);
+            var fetched = new List<(string Repo, IReadOnlyList<QueueItem>? Items)>();
+            foreach (var repo in managed)
             {
-                foreach (var kind in Kinds)
-                {
-                    foreach (var item in await source.FetchAsync(repo, kind, cancellationToken).ConfigureAwait(false))
-                    {
-                        items.Add(item);
-                    }
-                }
+                fetched.Add((repo, await FetchAllAsync(repo, cancellationToken).ConfigureAwait(false)));
             }
+
+            var skipped = fetched.Where(each => each.Items is null).Select(each => each.Repo).ToList();
+            var items = fetched.SelectMany(each => each.Items ?? []).ToList();
+
+            if (skipped.Count == managed.Count)
+            {
+                throw new InvalidDataException($"No managed repository resolves on GitHub; check the gh login: {string.Join(", ", skipped)}");
+            }
+
+            var repos = managed.Except(skipped, StringComparer.Ordinal).ToList();
 
             var found = items.Select(item => item.Reference).ToHashSet(StringComparer.Ordinal);
             var previous = store.Read();
@@ -64,7 +71,7 @@ public sealed class QueueService(QueueStore store, IQueueSource source, string o
                     writer.ImportActivity(discussion.Item, discussion.Activity);
                 }
             });
-            return Project();
+            return new QueueRefresh(Project(), skipped);
         }
         finally
         {
@@ -122,6 +129,21 @@ public sealed class QueueService(QueueStore store, IQueueSource source, string o
         finally
         {
             _serial.Release();
+        }
+    }
+
+    // Every kind of one repository, or null when GitHub says the repository does not resolve.
+    private async Task<IReadOnlyList<QueueItem>?> FetchAllAsync(string repo, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var pulls = await source.FetchAsync(repo, "pr", cancellationToken).ConfigureAwait(false);
+            var issues = await source.FetchAsync(repo, "issue", cancellationToken).ConfigureAwait(false);
+            return [.. pulls, .. issues];
+        }
+        catch (MissingRepositoryException)
+        {
+            return null;
         }
     }
 

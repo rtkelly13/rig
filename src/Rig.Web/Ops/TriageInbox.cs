@@ -57,10 +57,10 @@ public sealed class TriageInbox : IDisposable
     /// <summary>Refreshes every managed repository, then answers the queue again.</summary>
     /// <param name="registry">The managed-projects registry.</param>
     /// <param name="cancellationToken">Cancels the GitHub reads.</param>
-    public async Task<IReadOnlyList<TriageEntry>> RefreshAsync(string registry, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<TriageEntry> Entries, IReadOnlyList<string> Skipped)> RefreshAsync(string registry, CancellationToken cancellationToken = default)
     {
-        var entries = await _service.RefreshAsync(registry, cancellationToken).ConfigureAwait(false);
-        return Rows(entries, await SignalsAsync(cancellationToken).ConfigureAwait(false));
+        var refreshed = await _service.RefreshAsync(registry, cancellationToken).ConfigureAwait(false);
+        return (Rows(refreshed.Entries, await SignalsAsync(cancellationToken).ConfigureAwait(false)), refreshed.Skipped);
     }
 
     /// <summary>Observes one selected item once, then answers the queue again.</summary>

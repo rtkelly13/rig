@@ -153,12 +153,6 @@
       "color": "#a16207",
       "icon": "emoji:🪵"
     },
-    "diffra-pro": {
-      "path": "~/code/rtkelly-labs/diffra-pro",
-      "base_ref": "origin/main",
-      "color": "#d97706",
-      "icon": "Sparkles"
-    },
     "github-actions": {
       "path": "~/code/rtkelly-labs/github-actions",
       "base_ref": "origin/main",

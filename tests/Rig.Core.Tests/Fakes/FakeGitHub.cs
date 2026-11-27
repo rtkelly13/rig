@@ -42,6 +42,13 @@ public sealed class FakeGitHub : IGitHubApi
         return this;
     }
 
+    /// <summary>Fails <paramref name="method"/> <paramref name="route"/> as gh does for GraphQL errors: the body on stdout, a summary on stderr.</summary>
+    public FakeGitHub Fail(string method, string route, string json, string error)
+    {
+        _routes[(method, route)] = new Ran(1, json, error);
+        return this;
+    }
+
     /// <inheritdoc />
     public Task<Ran> CallAsync(ApiRequest request, CancellationToken cancellationToken = default)
     {

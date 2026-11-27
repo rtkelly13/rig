@@ -40,6 +40,7 @@ export interface Entry {
 export interface QueueResponse {
   entries: Entry[];
   queue_path: string;
+  skipped: string[];
   error?: string;
 }
 export type Action =
