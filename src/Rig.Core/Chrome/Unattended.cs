@@ -52,9 +52,12 @@ public static class Unattended
 
     /// <summary>
     /// Why the user is on a call or sharing their screen; null when nothing native says so. A tab recording or
-    /// sharing, or an audible call site, gives it away; failing that, Chrome holding the microphone or camera does (a
-    /// muted call, a Meet app window). A tab without native evidence never counts: its audio flag is a placeholder, and
-    /// a meeting page stays on its address after the call ends. A device check that fails says nothing.
+    /// sharing, or an audible meeting room, gives it away; failing that, Chrome holding the microphone or camera does
+    /// (a muted call, a Meet app window). An audible call site that is not a meeting room (the Meet home page, a Zoom
+    /// profile) is not a call: its title alone once held every scheduled run back for days. A tab without native
+    /// evidence never counts: its audio flag is a placeholder, and a meeting page stays on its address after the call
+    /// ends. A device check that fails says nothing. The reason names the tab and its address, so a trace shows which
+    /// tab held a run back.
     /// </summary>
     public static string? LiveCall(IPresence presence, IEnumerable<ChromeWindow> windows)
     {
@@ -64,12 +67,12 @@ public static class Unattended
         {
             if (tab.Alerts.FirstOrDefault(TabNames.LiveAlerts.Contains) is { } alert)
             {
-                return $"a call is live: {alert.ToLowerInvariant()} ({TabPlanText.Clip(tab.Title)})";
+                return $"a call is live: {alert.ToLowerInvariant()} ({Where(tab)})";
             }
 
-            if (tab.Audible && SiteRules.IsCall(tab.Title))
+            if (tab.Alerts.FirstOrDefault(TabNames.AudibleAlerts.Contains) is { } audio && InCallRoom(tab))
             {
-                return $"a call is live ({TabPlanText.Clip(tab.Title)})";
+                return $"a call is live: {audio.ToLowerInvariant()} in a meeting ({Where(tab)})";
             }
         }
 
@@ -101,6 +104,12 @@ public static class Unattended
 
     // Without an address the title is all there is, so a call site's title still counts.
     private static bool InCallRoom(ChromeTab tab) => tab.Url is { } url ? SiteRules.IsCallRoom(url) : SiteRules.IsCall(tab.Title);
+
+    // The title, then the host and path when the address is known; never the query, which can carry an account.
+    private static string Where(ChromeTab tab) =>
+        tab.Url is { IsAbsoluteUri: true } url
+            ? $"{TabPlanText.Clip(tab.Title)}, {url.Host}{url.AbsolutePath.TrimEnd('/')}"
+            : TabPlanText.Clip(tab.Title);
 }
 
 /// <summary>
