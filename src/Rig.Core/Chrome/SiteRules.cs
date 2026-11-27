@@ -168,7 +168,8 @@ public static partial class SiteRules
         return host switch
         {
             "meet.google.com" => MeetCode().IsMatch(first),
-            "meet.jit.si" or "whereby.com" => first.Length > 0,
+            "meet.jit.si" => first.Length > 0,
+            _ when OnHost(host, "whereby.com") => first.Length > 0,
             "app.slack.com" => path.Contains("/huddle/", StringComparison.Ordinal),
             "teams.microsoft.com" or "teams.live.com" => path.Contains("meetup-join", StringComparison.Ordinal)
                 || url.Query.Contains("meetingjoin", StringComparison.OrdinalIgnoreCase),

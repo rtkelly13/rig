@@ -176,6 +176,10 @@ public sealed class PresenceTests
         Assert.Null(Unattended.LiveCall(new FakePresence(), [WindowOf(Known(name, address))]));
 
     [Fact]
+    public void An_audible_whereby_organisation_room_is_live() =>
+        Assert.NotNull(Unattended.LiveCall(new FakePresence(), [WindowOf(Known("Standup | Whereby - Audio playing", "https://company.whereby.com/standup"))]));
+
+    [Fact]
     public void An_audible_meeting_room_is_live() =>
         Assert.Equal(
             "a call is live: audio playing in a meeting (Meet – abc-defg-hij, meet.google.com/abc-defg-hij)",
@@ -218,6 +222,9 @@ public sealed class PresenceTests
     [InlineData("https://app.slack.com/client/T01/C02", false)]
     [InlineData("https://meet.jit.si/standup", true)]
     [InlineData("https://meet.jit.si/", false)]
+    [InlineData("https://whereby.com/standup", true)]
+    [InlineData("https://company.whereby.com/standup", true)]
+    [InlineData("https://company.whereby.com/", false)]
     [InlineData("https://github.com/abc-defg-hij", false)]
     public void Only_a_meeting_address_is_a_call_room(string address, bool room) =>
         Assert.Equal(room, SiteRules.IsCallRoom(new Uri(address)));
