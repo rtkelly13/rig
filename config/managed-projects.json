@@ -256,6 +256,16 @@
       "stack": "AWS Batch / Python"
     },
     {
+      "name": "experiments",
+      "repo": "git@github.com:rtkelly13/experiments.git",
+      "description": "Personal experiments: .NET package ecosystem and testing-library evaluations with synthetic scenarios, AOT probes and benchmarks. Not released as packages.",
+      "domain": "Research & Evaluation",
+      "stack": ".NET / C#, Python",
+      "orca": {
+        "group": "personal/knowledge"
+      }
+    },
+    {
       "name": "Lake.NET",
       "repo": "git@github.com:rtkelly-labs/Lake.NET.git",
       "description": "Native .NET implementation of Apache Iceberg: tables, catalogs (Glue, REST, JDBC), writes, reads and maintenance.",

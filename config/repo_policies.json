@@ -210,7 +210,8 @@
       "repos": [
         "obsidian-vault",
         "rig",
-        "hearth"
+        "hearth",
+        "experiments"
       ]
     },
     "documentation_portal": {
@@ -323,6 +324,9 @@
     "rtkelly-labs": "rtkelly_labs"
   },
   "repo_overrides": {
+    "experiments": {
+      "required_checks": []
+    },
     "rig": {
       "script_ban": {
         "allowed_exceptions": [
