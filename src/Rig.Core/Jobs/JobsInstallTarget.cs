@@ -2,6 +2,19 @@ using Rig.Core.Processes;
 
 namespace Rig.Core.Jobs;
 
+/// <summary>Where a machine's jobs are scheduled.</summary>
+public enum JobsPlatform
+{
+    /// <summary>Task Scheduler tasks under <c>\Rig\</c>, registered through <c>schtasks</c>.</summary>
+    Windows,
+
+    /// <summary>LaunchAgents under <c>~/Library/LaunchAgents</c>, registered through <c>launchctl</c>.</summary>
+    MacOS,
+
+    /// <summary>systemd user units under <c>~/.config/systemd/user</c>, registered through <c>systemctl --user</c>.</summary>
+    Linux,
+}
+
 /// <summary>How the scheduled tasks start rig without leaving a console window on screen.</summary>
 public enum JobsLauncher
 {
@@ -40,20 +53,24 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
     /// <param name="appData">rig's per-user app data folder.</param>
     /// <param name="userPlan">The plan a checkout's guard reads.</param>
     /// <param name="proc">Runs git and uv.</param>
-    /// <param name="launcher">How the tasks start rig.</param>
+    /// <param name="platform">The scheduler's platform: Windows tasks, macOS LaunchAgents, or neither.</param>
+    /// <param name="launcher">How the Windows tasks start rig; ignored elsewhere.</param>
     /// <param name="pythonw">The <c>pythonw</c> to use; null asks uv for its managed Python.</param>
     /// <param name="cancellationToken">Stops the lookups.</param>
     public static async Task<JobsInstallTarget> ResolveAsync(
-        string checkout, string appData, string userPlan, IProc proc, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken = default)
+        string checkout, string appData, string userPlan, IProc proc, JobsPlatform platform, JobsLauncher launcher, string? pythonw,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(proc);
+        var windows = platform == JobsPlatform.Windows;
+        var binary = windows ? "rig.exe" : "rig";
         checkout = Path.GetFullPath(checkout);
         string root, plan, rig;
         if (JobsSite.CopyOf(Path.Join(checkout, JobsSite.PublishFolder), appData) is not null)
         {
             root = Path.Join(appData, JobsSite.RuntimeFolder, "current");
             plan = Path.Join(root, "desktop-manager", "workspace-plan.bundle.json");
-            rig = Path.Join(root, JobsSite.PublishFolder, "rig.exe");
+            rig = Path.Join(root, JobsSite.PublishFolder, binary);
         }
         else
         {
@@ -68,10 +85,10 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
                 throw new InvalidOperationException($"jobs install must run from the main checkout or a runtime copy, not a worktree.\nMain checkout: {main}");
             }
 
-            (root, plan, rig) = (checkout, userPlan, Path.Join(checkout, "temp", "jobs-runtime", "rig.exe"));
+            (root, plan, rig) = (checkout, userPlan, Path.Join(checkout, "temp", "jobs-runtime", binary));
         }
 
-        foreach (var path in new[] { rig, plan })
+        foreach (var path in windows ? new[] { rig, plan } : [rig])
         {
             if (!File.Exists(path))
             {
@@ -79,7 +96,8 @@ public sealed record JobsInstallTarget(string Root, string Plan, string Rig, str
             }
         }
 
-        if (launcher == JobsLauncher.Direct)
+        // Only Windows has a console to hide, and only there does a launcher exist.
+        if (!windows || launcher == JobsLauncher.Direct)
         {
             return new(root, plan, rig);
         }

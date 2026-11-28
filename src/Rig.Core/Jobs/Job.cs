@@ -58,6 +58,9 @@ public sealed record Job(
     /// <summary>The rig flag that must be on for the job to run; naming the job in <c>--only</c> runs it anyway.</summary>
     public string? Feature { get; init; }
 
+    /// <summary>Whether the job drives the Windows desktop, and so is left out of a registry elsewhere.</summary>
+    public bool WindowsOnly { get; init; }
+
     /// <summary>The triggers as <c>jobs status</c> lists them: <c>logon, tick</c>.</summary>
     public string TriggerList => string.Join(", ", Triggers.Select(JobWords.Wire).Order(StringComparer.Ordinal));
 }

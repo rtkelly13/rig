@@ -133,6 +133,12 @@ internal static class Program
         var servicePlatform = exportWindowsTree || (!exportTree && OperatingSystem.IsWindows())
             ? ServicePlatform.Windows
             : macOs ? ServicePlatform.MacOS : ServicePlatform.Linux;
+        var jobsPlatform = servicePlatform switch
+        {
+            ServicePlatform.Windows => JobsPlatform.Windows,
+            ServicePlatform.MacOS => JobsPlatform.MacOS,
+            _ => JobsPlatform.Linux,
+        };
         var tools = new ToolsCommand(
             new ServiceHost(
                 home,
@@ -260,7 +266,7 @@ internal static class Program
                         Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)))!, "temp", "triage", "queue.md"),
                         ManagedProjects.RegistryFile(checkout, Environment.CurrentDirectory)),
                     new QueueGitHub(github), Console.Out, Console.Error).Build,
-                new JobsCommand(JobsHostFor(layout, home, proc), Console.Out).Build,
+                new JobsCommand(JobsHostFor(layout, home, jobsPlatform, proc), Console.Out).Build,
                 new WorkCommand(new WorkHost(codeRoot, home), WorkCollectorFor(git, proc, home).CollectAsync, TimeProvider.System, Console.Out, Console.Error).Build,
                 new RuntimeCommand(
                     new RuntimeHost(
@@ -435,8 +441,8 @@ internal static class Program
             TimeProvider.System);
     }
 
-    // The jobs registry for this checkout: its scripts and the per-user plan.
-    private static JobsHost JobsHostFor(EstateLayout layout, string home, IProc proc)
+    // The jobs registry for this checkout: its scripts, the per-user plan and the platform's scheduler.
+    private static JobsHost JobsHostFor(EstateLayout layout, string home, JobsPlatform platform, IProc proc)
     {
         var (codeRoot, checkout) = (layout.CodeRoot, layout.Checkout);
         var windows = OperatingSystem.IsWindows();
@@ -461,8 +467,20 @@ internal static class Program
             () => JobRegistry.Default(environment),
             () => new FlagStore(Path.Join(AppData.Current(), "rig.db")).Effective(),
             TimeProvider.System,
-            now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), windows),
-            windows ? new Schtasks(proc, Path.Join(JobState.JobsDir(AppData.Current()), "temp")) : null,
+            now => BootTime.At(now, TimeSpan.FromMilliseconds(Environment.TickCount64), scheduled: true),
+            platform switch
+            {
+                JobsPlatform.Windows => new Schtasks(proc, Path.Join(JobState.JobsDir(AppData.Current()), "temp")),
+                JobsPlatform.MacOS => new LaunchAgents(
+                    async ct => new Launchd(proc, Launchd.AgentsDirUnder(home), Launchd.GuiDomain(await KnowledgeServerCommand.UserIdAsync(proc, ct).ConfigureAwait(false))),
+                    Path.Join(home, "Library", "Logs"),
+                    Environment.GetEnvironmentVariable("PATH")),
+                JobsPlatform.Linux => new SystemdTimers(
+                    proc,
+                    Path.Join(Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") is { Length: > 0 } config ? config : Path.Join(home, ".config"), "systemd", "user"),
+                    Environment.GetEnvironmentVariable("PATH")),
+                _ => null,
+            },
             new ProcessJobExecutor(TimeProvider.System, site.Environment),
             () => OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? Rig.Core.Chrome.Presence.IdleSeconds(new Rig.Core.Chrome.Windows.NativePresence()) : double.PositiveInfinity,
             (path, wait) => RunLock.Hold(path, wait, Thread.Sleep),
@@ -474,7 +492,7 @@ internal static class Program
                 TimeProvider.System),
             ShellWindow.WaitFor,
             Path.Join(AppData.Current(), "traces"),
-            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, launcher, pythonw, ct),
+            (launcher, pythonw, ct) => JobsInstallTarget.ResolveAsync(checkout, AppData.Current(), JobRegistry.DefaultPlanPath(Environment.GetEnvironmentVariable("APPDATA"), home, windows), proc, platform, launcher, pythonw, ct),
             WindowsUserId,
             () => File.Exists(environment.Script("rig")) ? null : environment.Script("rig"));
     }

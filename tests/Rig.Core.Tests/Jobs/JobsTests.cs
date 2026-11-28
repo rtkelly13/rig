@@ -52,8 +52,8 @@ public sealed class JobsTests : IDisposable
     {
         var now = new DateTimeOffset(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
 
-        Assert.Equal(now.AddHours(-2), BootTime.At(now, TimeSpan.FromHours(2), windows: true));
-        Assert.Equal(DateTimeOffset.UnixEpoch, BootTime.At(now, TimeSpan.FromHours(2), windows: false));
+        Assert.Equal(now.AddHours(-2), BootTime.At(now, TimeSpan.FromHours(2), scheduled: true));
+        Assert.Equal(DateTimeOffset.UnixEpoch, BootTime.At(now, TimeSpan.FromHours(2), scheduled: false));
     }
 
     [Fact]
@@ -65,6 +65,7 @@ public sealed class JobsTests : IDisposable
         using var scratch = new TempDir();
         var tasks = new Schtasks(proc, scratch.Path);
 
+        Assert.Equal(JobsPlatform.Windows, tasks.Platform);
         Assert.True(await tasks.ExistsAsync(CoordinatorTasks.Logon, TestContext.Current.CancellationToken));
         Assert.False(await tasks.ExistsAsync(CoordinatorTasks.Tick, TestContext.Current.CancellationToken));
         Assert.Equal(["schtasks", "/Query", "/TN", CoordinatorTasks.Logon], proc.Requests[0].Argv);
@@ -118,6 +119,22 @@ public sealed class JobsTests : IDisposable
 
         Assert.Equal([env.CodeRoot, "work", "/Code/work/ws"], env.EstateRoots);
         Assert.Equal(Path.Join("/rig/bin", "rig"), env.Script("rig"));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_windows_desktop_jobs_are_registered_only_on_windows(bool windows)
+    {
+        var env = new JobsEnvironment("/rig/bin", "plan", null, "/code/personal", [], "feed", "orca", Windows: windows);
+
+        var names = JobRegistry.Default(env).Select(job => job.Name).ToList();
+
+        Assert.Equal(windows, names.Contains("restore", StringComparer.Ordinal));
+        Assert.Equal(windows, names.Contains("align", StringComparer.Ordinal));
+        Assert.Contains("estate-sync", names, StringComparer.Ordinal);
+        Assert.Contains("chrome-organise", names, StringComparer.Ordinal);
+        Assert.Contains("otel-collector", names, StringComparer.Ordinal);
     }
 
     [Fact]

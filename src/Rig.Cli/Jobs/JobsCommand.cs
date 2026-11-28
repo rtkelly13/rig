@@ -14,7 +14,7 @@ namespace Rig.Cli.Jobs;
 /// <param name="Flags">The rig flags' effective state.</param>
 /// <param name="Clock">The clock <c>status</c> plans against.</param>
 /// <param name="Booted">When this machine booted, given the time now.</param>
-/// <param name="Tasks">The Task Scheduler to check the coordinator's tasks in; null where there is none (off Windows).</param>
+/// <param name="Tasks">The tasks, LaunchAgents or systemd units to install and check; null where nothing schedules the jobs.</param>
 /// <param name="Executor">Starts each job <c>run</c> takes.</param>
 /// <param name="IdleSeconds">Seconds since the last keyboard or mouse input.</param>
 /// <param name="Hold">Takes the run lock; <see cref="RunLock.Hold"/> outside tests.</param>
@@ -30,7 +30,7 @@ internal sealed record JobsHost(
     Func<IReadOnlyDictionary<string, bool>> Flags,
     TimeProvider Clock,
     Func<DateTimeOffset, DateTimeOffset> Booted,
-    IScheduledTasks? Tasks,
+    IJobsScheduler? Tasks,
     IJobExecutor Executor,
     Func<double> IdleSeconds,
     Func<string, TimeSpan, IDisposable?> Hold,
@@ -94,7 +94,9 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         };
         launcher.AcceptOnlyFromAmong("pythonw", "direct");
         var pythonw = new Option<string?>("--pythonw") { Description = "The pythonw.exe that starts rig. Default: uv's managed Python." };
-        var install = new Command("install", "Register the Logon, Tick and Display Guard tasks, and retire the separate tasks they replace.") { noStart, start, launcher, pythonw };
+        launcher.Hidden = Platform != JobsPlatform.Windows;
+        pythonw.Hidden = Platform != JobsPlatform.Windows;
+        var install = new Command("install", "Register the Logon and Tick schedules and the Windows display guard, and retire the separate tasks they replace.") { noStart, start, launcher, pythonw };
         install.SetAction((parsed, cancellationToken) => Install(
             !parsed.GetValue(noStart),
             parsed.GetRequiredValue(launcher) == "direct" ? JobsLauncher.Direct : JobsLauncher.Pythonw,
@@ -119,13 +121,16 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         return option;
     }
 
+    // The scheduler says which platform it is; with none, neither install nor uninstall works.
+    private JobsPlatform Platform => host.Tasks?.Platform ?? JobsPlatform.Linux;
+
     private string LogsDir => JobState.LogsDir(host.JobsDir);
 
     private async Task<int> Install(bool start, JobsLauncher launcher, string? pythonw, CancellationToken cancellationToken)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs install requires Windows.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs install has no scheduler on this platform.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
@@ -140,14 +145,14 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
             var target = await host.InstallTarget(launcher, pythonw, cancellationToken).ConfigureAwait(false);
             var user = host.UserId();
             var now = host.Clock.GetLocalNow();
-            foreach (var name in CoordinatorTasks.All)
+            foreach (var name in tasks.Names)
             {
-                await tasks.RegisterAsync(name, JobsTaskXml.Render(name, target, user, now), cancellationToken).ConfigureAwait(false);
+                await tasks.RegisterAsync(name, target, user, now, cancellationToken).ConfigureAwait(false);
                 await output.WriteLineAsync($"Registered {name}", cancellationToken).ConfigureAwait(false);
             }
 
             var retired = new List<string>();
-            foreach (var name in CoordinatorTasks.Retired)
+            foreach (var name in tasks.Retired)
             {
                 if (await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false))
                 {
@@ -155,9 +160,9 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
                 }
             }
 
-            if (start)
+            if (start && tasks.StartsAfterInstall is { } immediate)
             {
-                await tasks.StartAsync(CoordinatorTasks.Guard, cancellationToken).ConfigureAwait(false);
+                await tasks.StartAsync(immediate, cancellationToken).ConfigureAwait(false);
             }
 
             foreach (var name in retired)
@@ -165,7 +170,10 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
                 await output.WriteLineAsync($"Retired {name}", cancellationToken).ConfigureAwait(false);
             }
 
-            await output.WriteLineAsync($"Runs from: {target.Rig}\nLauncher: {target.Pythonw ?? "direct"}\nPlan: {target.Plan}", cancellationToken).ConfigureAwait(false);
+            var summary = Platform == JobsPlatform.Windows
+                ? $"Runs from: {target.Rig}\nLauncher: {target.Pythonw ?? "direct"}\nPlan: {target.Plan}"
+                : $"Runs from: {target.Rig}";
+            await output.WriteLineAsync(summary, cancellationToken).ConfigureAwait(false);
             return 0;
         }
         catch (Exception error) when (error is ProcException or InvalidOperationException or IOException or UnauthorizedAccessException)
@@ -184,11 +192,11 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
     {
         if (host.Tasks is not { } tasks)
         {
-            await output.WriteLineAsync("jobs uninstall requires Windows.", cancellationToken).ConfigureAwait(false);
+            await output.WriteLineAsync("jobs uninstall has no scheduler on this platform.", cancellationToken).ConfigureAwait(false);
             return 1;
         }
 
-        foreach (var name in CoordinatorTasks.All)
+        foreach (var name in tasks.Names)
         {
             var removed = await tasks.DeleteAsync(name, cancellationToken).ConfigureAwait(false);
             await output.WriteLineAsync($"{(removed ? "Removed" : "Not registered")} {name}", cancellationToken).ConfigureAwait(false);
@@ -230,7 +238,7 @@ internal sealed class JobsCommand(JobsHost host, TextWriter output)
         if (host.Tasks is { } tasks)
         {
             var missing = new List<string>();
-            foreach (var name in CoordinatorTasks.All)
+            foreach (var name in tasks.Names)
             {
                 if (!await tasks.ExistsAsync(name, cancellationToken).ConfigureAwait(false))
                 {

@@ -3,19 +3,38 @@ using Rig.Core.Processes;
 
 namespace Rig.Core.Jobs;
 
-/// <summary>The Windows Task Scheduler operations used by the jobs commands.</summary>
-public interface IScheduledTasks
+/// <summary>
+/// What the jobs commands install on one platform: Task Scheduler tasks on Windows, LaunchAgents on macOS, systemd user
+/// units on Linux. A registration is named the way its scheduler names it.
+/// </summary>
+public interface IJobsScheduler
 {
-    /// <summary>Whether the task <paramref name="name"/> (folder included) is registered.</summary>
+    /// <summary>The platform whose scheduler this is.</summary>
+    JobsPlatform Platform { get; }
+
+    /// <summary>The registrations it installs, in the order <c>jobs status</c> names any missing.</summary>
+    IReadOnlyList<string> Names { get; }
+
+    /// <summary>The registrations installing deletes because the coordinator replaced them.</summary>
+    IReadOnlyList<string> Retired { get; }
+
+    /// <summary>The registration install starts now when asked to, such as the display guard; null when none applies.</summary>
+    string? StartsAfterInstall { get; }
+
+    /// <summary>Whether the registration <paramref name="name"/> is in place.</summary>
     Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default);
 
-    /// <summary>Deletes the named task; false when it is absent or Task Scheduler refuses the deletion.</summary>
+    /// <summary>Deletes the named registration; false when it is absent or its scheduler refuses.</summary>
     Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default);
 
-    /// <summary>Registers or replaces a named task from its XML, or throws when Task Scheduler refuses.</summary>
-    Task RegisterAsync(string name, string xml, CancellationToken cancellationToken = default);
-
-    /// <summary>Starts a registered task, or throws when Task Scheduler refuses.</summary>
+    /// <summary>Registers or replaces a named registration, or throws when its scheduler refuses.</summary>
+    /// <param name="name">The scheduler's name for it, one of <see cref="Names"/>.</param>
+    /// <param name="target">The paths the registration runs rig from.</param>
+    /// <param name="userId">The interactive identity, where the scheduler records one.</param>
+    /// <param name="start">The time now, from which a repeating schedule is aligned.</param>
+    /// <param name="cancellationToken">Stops the registration.</param>
+    Task RegisterAsync(string name, JobsInstallTarget target, string userId, DateTimeOffset start, CancellationToken cancellationToken = default);
+    /// <summary>Starts a registered one now, or throws when its scheduler refuses.</summary>
     Task StartAsync(string name, CancellationToken cancellationToken = default);
 }
 
@@ -58,10 +77,26 @@ public static class CoordinatorTasks
 }
 
 /// <summary>Registers, starts, queries and deletes named tasks through <c>schtasks</c>.</summary>
-public sealed class Schtasks(IProc proc, string scratchDirectory) : IScheduledTasks
+public sealed class Schtasks(IProc proc, string scratchDirectory) : IJobsScheduler
 {
     /// <inheritdoc />
-    public async Task RegisterAsync(string name, string xml, CancellationToken cancellationToken = default)
+    public JobsPlatform Platform => JobsPlatform.Windows;
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> Names => CoordinatorTasks.All;
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> Retired => CoordinatorTasks.Retired;
+
+    /// <inheritdoc />
+    public string? StartsAfterInstall => CoordinatorTasks.Guard;
+
+    /// <inheritdoc />
+    public Task RegisterAsync(string name, JobsInstallTarget target, string userId, DateTimeOffset start, CancellationToken cancellationToken = default) =>
+        RegisterXmlAsync(name, JobsTaskXml.Render(name, target, userId, start), cancellationToken);
+
+    /// <summary>Registers or replaces a named task from its XML, or throws when Task Scheduler refuses.</summary>
+    public async Task RegisterXmlAsync(string name, string xml, CancellationToken cancellationToken = default)
     {
         var directory = Path.Join(scratchDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -98,8 +133,8 @@ public sealed class Schtasks(IProc proc, string scratchDirectory) : IScheduledTa
 public static class BootTime
 {
     /// <summary>
-    /// <paramref name="now"/> less <paramref name="uptime"/> on Windows; the epoch elsewhere, where nothing schedules the
-    /// jobs, so every once-per-boot job looks done.
+    /// <paramref name="now"/> less <paramref name="uptime"/> where something schedules the jobs; the epoch elsewhere,
+    /// so every once-per-boot job looks done.
     /// </summary>
-    public static DateTimeOffset At(DateTimeOffset now, TimeSpan uptime, bool windows) => windows ? now - uptime : DateTimeOffset.UnixEpoch;
+    public static DateTimeOffset At(DateTimeOffset now, TimeSpan uptime, bool scheduled) => scheduled ? now - uptime : DateTimeOffset.UnixEpoch;
 }
