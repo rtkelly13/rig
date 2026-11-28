@@ -88,21 +88,39 @@ public static class OrcaSync
     private static readonly string[] ScriptKinds = ["setup", "archive"];
 
     /// <summary>
-    /// Agent sleep as a <c>manual</c> row: <c>settings.update</c> rejects its keys and Orca's database must not be edited
-    /// while it runs, so sync names the change to make in Orca's Settings.
+    /// Agent sleep and keep-awake as <c>manual</c> rows: <c>settings.update</c> rejects their keys and Orca's database must
+    /// not be edited while it runs, so sync names the change to make in Orca's Settings.
     /// </summary>
     public static IReadOnlyList<SyncAction> SettingsManualActions(OrcaPolicy policy, OrcaSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(policy);
         ArgumentNullException.ThrowIfNull(snapshot);
-        if (policy.AgentSleep is null || snapshot.Settings is null)
+        if (snapshot.Settings is null)
         {
             return [];
         }
 
         var settings = snapshot.Settings.Settings;
-        var check = AgentSleepCheck.Of(policy.AgentSleep, settings.AgentSleep, settings.AgentSleepIdleMs);
-        return check.Ok ? [] : [new("settings", "manual", "agent sleep", check.Have, check.Want, false, check.Fix)];
+        List<SyncAction> actions = [];
+        if (policy.AgentSleep is not null)
+        {
+            var sleep = AgentSleepCheck.Of(policy.AgentSleep, settings.AgentSleep, settings.AgentSleepIdleMs);
+            if (!sleep.Ok)
+            {
+                actions.Add(new("settings", "manual", "agent sleep", sleep.Have, sleep.Want, false, sleep.Fix));
+            }
+        }
+
+        if (policy.KeepAwake is { } keepAwake)
+        {
+            var awake = KeepAwakeCheck.Of(keepAwake, settings.KeepAwake);
+            if (!awake.Ok)
+            {
+                actions.Add(new("settings", "manual", "keep awake", awake.Have, awake.Want, false, awake.Fix));
+            }
+        }
+
+        return actions;
     }
 
     /// <summary>

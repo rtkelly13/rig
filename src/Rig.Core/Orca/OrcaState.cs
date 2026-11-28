@@ -9,13 +9,15 @@ namespace Rig.Core.Orca;
 /// <param name="AgentSleepIdleMs">Agent sleep's idle window (<c>agentHibernationIdleMs</c>).</param>
 /// <param name="PermissionDefault">The default permission mode (<c>agentPermissionDefault</c>).</param>
 /// <param name="PermissionOverrides">Each agent's permission mode (<c>agentPermissionOverrides</c>).</param>
+/// <param name="KeepAwake">Whether Orca keeps the computer awake while agents run (<c>keepComputerAwakeWhileAgentsRun</c>).</param>
 public sealed record OrcaSettings(
     IReadOnlyDictionary<string, string>? AgentDefaultArgs = null,
     string? WorkspaceDir = null,
     bool? AgentSleep = null,
     long? AgentSleepIdleMs = null,
     string? PermissionDefault = null,
-    IReadOnlyDictionary<string, string>? PermissionOverrides = null)
+    IReadOnlyDictionary<string, string>? PermissionOverrides = null,
+    bool? KeepAwake = null)
 {
     /// <summary>The settings in a stored payload, or null when it is not a settings document.</summary>
     public static OrcaSettings? Parse(string payload)
@@ -29,7 +31,8 @@ public sealed record OrcaSettings(
                 OrcaJson.Bool(json, "experimentalAgentHibernation"),
                 OrcaJson.Integer(json, "agentHibernationIdleMs"),
                 OrcaJson.String(json, "agentPermissionDefault"),
-                OrcaJson.StringMap(json, "agentPermissionOverrides"));
+                OrcaJson.StringMap(json, "agentPermissionOverrides"),
+                OrcaJson.Bool(json, "keepComputerAwakeWhileAgentsRun"));
         }
         catch (InvalidDataException)
         {

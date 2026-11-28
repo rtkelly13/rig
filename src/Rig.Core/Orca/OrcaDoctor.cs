@@ -167,6 +167,14 @@ public static class OrcaDoctor
                 : new("settings", "agent sleep", CheckStatus.Fail, $"{check.Have}, want {check.Want}", check.Fix));
         }
 
+        if (policy.KeepAwake is { } keepAwake)
+        {
+            var check = KeepAwakeCheck.Of(keepAwake, copy.Settings.KeepAwake);
+            findings.Add(check.Ok
+                ? new("settings", "keep awake", CheckStatus.Ok, check.Have)
+                : new("settings", "keep awake", CheckStatus.Fail, $"{check.Have}, want {check.Want}", check.Fix));
+        }
+
         return findings;
     }
 

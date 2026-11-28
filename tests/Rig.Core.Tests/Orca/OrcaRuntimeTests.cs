@@ -191,6 +191,13 @@ public sealed class OrcaRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void Keep_awake_is_read_from_its_setting()
+    {
+        Assert.True(OrcaSettings.Parse("""{"keepComputerAwakeWhileAgentsRun": true}""")!.KeepAwake);
+        Assert.Null(OrcaSettings.Parse("{}")!.KeepAwake);
+    }
+
+    [Fact]
     public async Task Live_reports_success_and_failure_without_throwing()
     {
         var up = new OrcaLive(Runtime(new ScriptedExchange(Answer("{}"))));

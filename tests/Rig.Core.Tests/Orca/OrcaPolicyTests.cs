@@ -102,6 +102,7 @@ public sealed class OrcaPolicyTests
     [InlineData("""{"repos": {"x": {"external_worktree_visibility": "sideways"}}}""")]
     [InlineData("""{"agent_permissions": {"agents": {"claude": "yolo"}}}""")]
     [InlineData("""{"agent_sleep": {"idle_minutes": 30}}""")]
+    [InlineData("""{"keep_awake": "yes"}""")]
     [InlineData("""{"agent_sleep": {"enabled": true, "idle_minutes": 0}}""")]
     [InlineData("""{"agent_args": {"claude": 1}}""")]
     [InlineData("[]")]
@@ -116,6 +117,7 @@ public sealed class OrcaPolicyTests
 
         Assert.Equal("own", policy.AgentPermissions?.Default);
         Assert.Equal(new AgentSleepPolicy(false, 30), policy.AgentSleep);
+        Assert.Null(policy.KeepAwake);
         Assert.Empty(policy.AgentArgs);
         Assert.Empty(policy.Repos);
     }

@@ -18,6 +18,7 @@
   },
   "workspace_dir": "~/orca/workspaces",
   "agent_sleep": { "enabled": true, "idle_minutes": 30 },
+  "keep_awake": true,
   "repos": {
     "rig": {
       "path": "~/code/personal/rig",
