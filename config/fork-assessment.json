@@ -1,0 +1,263 @@
+{
+  "description": "What `rig fork assess` looks for in a repository before it is forked, and what each finding asks of the person forking. The assessment reads one revision of a git clone and nothing else (no network, no clock), so the same clone at the same revision always gives the same report. See docs/forks.md.",
+  "licences": [
+    {
+      "spdx": "AGPL-3.0",
+      "family": "network-copyleft",
+      "all_of": ["GNU AFFERO GENERAL PUBLIC LICENSE"],
+      "header_markers": ["GNU Affero General Public License"],
+      "obligations": [
+        "The fork stays under the AGPL-3.0, with the full licence text.",
+        "Anyone who uses the fork over a network must be offered its complete source, your changes included.",
+        "Keep every copyright notice and state which files you changed, and when."
+      ]
+    },
+    {
+      "spdx": "LGPL-3.0",
+      "family": "weak-copyleft",
+      "all_of": ["GNU LESSER GENERAL PUBLIC LICENSE", "Version 3"],
+      "header_markers": ["GNU Lesser General Public License"],
+      "obligations": [
+        "Changes to the library itself stay under the LGPL-3.0, and their source must be offered with any binary.",
+        "Keep every copyright notice and the licence text, and state which files you changed."
+      ]
+    },
+    {
+      "spdx": "LGPL-2.1",
+      "family": "weak-copyleft",
+      "all_of": ["GNU LESSER GENERAL PUBLIC LICENSE", "Version 2.1"],
+      "header_markers": [],
+      "obligations": [
+        "Changes to the library itself stay under the LGPL-2.1, and their source must be offered with any binary.",
+        "Keep every copyright notice and the licence text, and state which files you changed."
+      ]
+    },
+    {
+      "spdx": "GPL-3.0",
+      "family": "copyleft",
+      "all_of": ["GNU GENERAL PUBLIC LICENSE", "Version 3"],
+      "header_markers": ["GNU General Public License"],
+      "obligations": [
+        "The fork, and anything distributed that links it, stays under the GPL-3.0.",
+        "Every binary you distribute must come with, or offer, its complete source.",
+        "Keep every copyright notice and state which files you changed, and when."
+      ]
+    },
+    {
+      "spdx": "GPL-2.0",
+      "family": "copyleft",
+      "all_of": ["GNU GENERAL PUBLIC LICENSE", "Version 2"],
+      "header_markers": [],
+      "obligations": [
+        "The fork, and anything distributed that links it, stays under the GPL-2.0.",
+        "Every binary you distribute must come with, or offer, its complete source.",
+        "Keep every copyright notice and state which files you changed, and when."
+      ]
+    },
+    {
+      "spdx": "MPL-2.0",
+      "family": "weak-copyleft",
+      "all_of": ["Mozilla Public License", "2.0"],
+      "header_markers": ["Mozilla Public License"],
+      "obligations": [
+        "Files that came under the MPL-2.0 stay under it, changes included, and their source must be available.",
+        "Keep each file's licence header; new files of your own may use another licence."
+      ]
+    },
+    {
+      "spdx": "Apache-2.0",
+      "family": "permissive",
+      "all_of": ["Apache License", "Version 2.0"],
+      "header_markers": ["Licensed under the Apache License", "under the Apache License, Version 2.0"],
+      "obligations": [
+        "Ship the licence text with every copy, source and binary.",
+        "Carry upstream's NOTICE file, if there is one, in what you distribute.",
+        "Mark the files you changed as changed.",
+        "The licence grants no right to upstream's names or marks (section 6)."
+      ]
+    },
+    {
+      "spdx": "BSD-3-Clause",
+      "family": "permissive",
+      "all_of": ["Redistribution and use in source and binary forms", "Neither the name"],
+      "header_markers": [],
+      "obligations": [
+        "Keep the copyright notice, the conditions and the disclaimer in source, and reproduce them in binary distributions' documentation.",
+        "Never use upstream's or its contributors' names to endorse or promote the fork without written permission."
+      ]
+    },
+    {
+      "spdx": "BSD-2-Clause",
+      "family": "permissive",
+      "all_of": ["Redistribution and use in source and binary forms"],
+      "header_markers": ["Redistribution and use in source and binary forms"],
+      "obligations": [
+        "Keep the copyright notice, the conditions and the disclaimer in source, and reproduce them in binary distributions' documentation."
+      ]
+    },
+    {
+      "spdx": "MIT",
+      "family": "permissive",
+      "all_of": ["Permission is hereby granted, free of charge, to any person obtaining a copy"],
+      "header_markers": ["Permission is hereby granted, free of charge"],
+      "obligations": [
+        "Keep the copyright notice and the permission notice in every copy or substantial portion, packages included.",
+        "Never remove or replace upstream's copyright line; add your own beside it for your changes."
+      ]
+    },
+    {
+      "spdx": "ISC",
+      "family": "permissive",
+      "all_of": ["Permission to use, copy, modify, and/or distribute this software for any purpose"],
+      "header_markers": [],
+      "obligations": [
+        "Keep the copyright notice and the permission notice in every copy."
+      ]
+    },
+    {
+      "spdx": "MS-PL",
+      "family": "weak-copyleft",
+      "all_of": ["Microsoft Public License"],
+      "header_markers": [],
+      "obligations": [
+        "Source you distribute stays under the MS-PL, with its notices; binaries may use a compatible licence.",
+        "The licence grants no right to upstream's names, logos or trademarks."
+      ]
+    },
+    {
+      "spdx": "BSL-1.0",
+      "family": "permissive",
+      "all_of": ["Boost Software License"],
+      "header_markers": [],
+      "obligations": [
+        "Keep the licence text and copyright notices in source copies."
+      ]
+    },
+    {
+      "spdx": "Unlicense",
+      "family": "public-domain",
+      "all_of": ["This is free and unencumbered software released into the public domain"],
+      "header_markers": [],
+      "obligations": [
+        "No conditions, but credit upstream anyway: the history is the record of who wrote it."
+      ]
+    }
+  ],
+  "licence_files": "(?i)^(LICEN[CS]E|COPYING|UNLICENSE)([.-][A-Za-z0-9.-]+)?$",
+  "notice_files": "(?i)^NOTICE(\\.(md|txt))?$",
+  "trademark_files": "(?i)(^|/)TRADEMARKS?(\\.(md|txt))?$",
+  "policy_files": "(?i)^(README|CONTRIBUTING|AI_POLICY|CODE_OF_CONDUCT|GOVERNANCE|SUPPORT)(\\.[a-z]+)?$|^(docs|\\.github)/(README|CONTRIBUTING|AI_POLICY)(\\.[a-z]+)?$|^\\.github/(ISSUE_TEMPLATE/[^/]+|PULL_REQUEST_TEMPLATE(\\.md)?|pull_request_template\\.md)$",
+  "readme_files": "(?i)^(docs/)?README(\\.[a-z]+)?$",
+  "brand_assets": "(^|/)(icon|logo)[^/]*\\.(png|svg|ico|jpe?g|webp)$",
+  "vendored_directories": "(^|/)(vendor|third_party|third-party|thirdparty|extern)/",
+  "ignored_paths": "(^|/)(node_modules|bin|obj)/",
+  "package_manifests": [
+    { "kind": "nuget", "path": "\\.(cs|fs|vb)proj$", "name": "<PackageId>\\s*([^<$\\s]+)\\s*</PackageId>" },
+    { "kind": "npm", "path": "(^|/)package\\.json$", "name": "^\\s{2}\"name\"\\s*:\\s*\"([^\"]+)\"" },
+    { "kind": "pypi", "path": "(^|/)pyproject\\.toml$", "name": "^name\\s*=\\s*\"([^\"]+)\"" },
+    { "kind": "crates", "path": "(^|/)Cargo\\.toml$", "name": "^name\\s*=\\s*\"([^\"]+)\"" }
+  ],
+  "markers": {
+    "ai_policy": ["LLM", "large language model", "AI-generated", "AI generated", "generated by AI", "ChatGPT", "Copilot"],
+    "cla": ["Contributor License Agreement", "CLA assistant", "sign the CLA"],
+    "unmaintained": ["no longer maintained", "not maintained", "unmaintained", "this project is archived", "this repository is archived", "is deprecated", "end of life"]
+  },
+  "identity": {
+    "max_emails_per_name": 10
+  },
+  "blame_paths": "\\.(cs|fs|vb|ts|tsx|js|py|rs|go|java|kt|swift|c|cc|cpp|h|hpp|rb|php|scala|tt)$",
+  "thresholds": {
+    "single_maintainer_share": 0.5,
+    "recent_window_days": 365,
+    "bus_factor_coverage": 0.5,
+    "frequent_contributors": 10,
+    "evidence_limit": 8,
+    "stale_after_days": 365
+  },
+  "findings": {
+    "history.shallow": {
+      "severity": "blocker",
+      "responsibility": "Fetch the full history (git fetch --unshallow) and assess again: authorship and licence history are what you inherit."
+    },
+    "licence.missing": {
+      "severity": "blocker",
+      "responsibility": "Without a licence the code is all rights reserved. You may read it, but not copy, change or publish it. Ask the copyright holders for a licence, or do not fork."
+    },
+    "licence.unrecognised": {
+      "severity": "blocker",
+      "responsibility": "Read the licence yourself before forking. If it permits forking, add its fingerprint and obligations to config/fork-assessment.json so the next assessment classifies it."
+    },
+    "licence.terms": {
+      "severity": "obligation",
+      "responsibility": "These conditions travel with every copy you publish. A deleted or archived upstream changes none of them: a licence once granted is not withdrawn."
+    },
+    "licence.copyright": {
+      "severity": "info",
+      "responsibility": "These holders keep their copyright. Keep these lines exactly; add yours beside them only for what you write."
+    },
+    "notice.carry": {
+      "severity": "obligation",
+      "responsibility": "Carry the NOTICE file unchanged in every distribution, packages included. You may append your own attribution to it."
+    },
+    "third-party.licences": {
+      "severity": "obligation",
+      "responsibility": "These files are under another licence than the project's. Keep their headers, ship that licence's text, and list them in a THIRD-PARTY-NOTICES file."
+    },
+    "third-party.vendored": {
+      "severity": "risk",
+      "responsibility": "Vendored code keeps its own licence and authors. Check each directory's licence and record it in THIRD-PARTY-NOTICES before publishing."
+    },
+    "names.packages": {
+      "severity": "obligation",
+      "responsibility": "Upstream publishes under these names. Never publish under them, never claim to be their continuation, and pick a name no one would mistake for upstream's."
+    },
+    "names.brand-assets": {
+      "severity": "obligation",
+      "responsibility": "Logos and icons identify upstream's brand, which the code licence does not grant. Replace them before you publish anything."
+    },
+    "names.trademark": {
+      "severity": "obligation",
+      "responsibility": "Upstream states a trademark policy. Read it and follow it when you name, describe and brand the fork."
+    },
+    "contribution.ai-policy": {
+      "severity": "obligation",
+      "responsibility": "Upstream states a policy on AI or LLM use. Follow it in everything you send upstream, or send nothing; if the fork is AI-assisted, say so in its README."
+    },
+    "contribution.cla": {
+      "severity": "info",
+      "responsibility": "Upstream asks contributors to sign a CLA. Anything you offer back needs it, and code from your fork's own contributors may not be offerable unless they sign too."
+    },
+    "contribution.dco": {
+      "severity": "info",
+      "responsibility": "Upstream signs off commits (DCO). Keep signing off if you mean to offer changes back."
+    },
+    "people.single-maintainer": {
+      "severity": "risk",
+      "responsibility": "One person wrote most of this. If they stop, your fork may become what users depend on: budget for owning it, and credit them prominently."
+    },
+    "people.recent-single-maintainer": {
+      "severity": "risk",
+      "responsibility": "Recent work rests on one person. Expect upstream to stop or change direction without notice; keep your own copy of every ref you depend on."
+    },
+    "people.personal-data": {
+      "severity": "info",
+      "responsibility": "The history holds contributors' names and email addresses. Keep the history as provenance, but do not republish or reuse contributor data beyond it."
+    },
+    "activity.ended": {
+      "severity": "risk",
+      "responsibility": "Upstream says it is ended or deprecated. Present the fork as a fork, never as the official successor, and be explicit about how much maintenance you commit to."
+    },
+    "activity.stale": {
+      "severity": "risk",
+      "responsibility": "Nobody has committed for a long time. Look for an announcement, a successor or a living fork before starting another, and expect to carry security fixes and support yourself. Present the fork as a fork, never as the successor."
+    },
+    "history.unmerged-refs": {
+      "severity": "risk",
+      "responsibility": "These refs hold work that is not on the assessed revision. Push them to your fork now if you may need them: they disappear with upstream."
+    },
+    "ownership.concentration": {
+      "severity": "info",
+      "responsibility": "This is whose code you are carrying. Your fork's README, package metadata and release notes should credit them in proportion."
+    }
+  }
+}

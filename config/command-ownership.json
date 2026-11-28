@@ -176,6 +176,8 @@
     {"Id": "cs:jobs run","Capability": "jobs run","Owner": "cs:jobs run","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:jobs status","Capability": "jobs status","Owner": "cs:jobs status","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:jobs uninstall","Capability": "jobs uninstall","Owner": "cs:jobs uninstall","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:fork","Capability": "fork","Owner": "cs:fork","Platforms": ["linux","macos","windows"],"AliasTo": null},
+    {"Id": "cs:fork assess","Capability": "fork assess","Owner": "cs:fork assess","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:latex","Capability": "latex","Owner": "cs:latex","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:latex build","Capability": "latex build","Owner": "cs:latex build","Platforms": ["linux","macos","windows"],"AliasTo": null},
     {"Id": "cs:latex doctor","Capability": "latex doctor","Owner": "cs:latex doctor","Platforms": ["linux","macos","windows"],"AliasTo": null},
